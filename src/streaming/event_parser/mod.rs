@@ -6,18 +6,18 @@ pub mod protocols;
 pub use core::traits::{EventParser, UnifiedEvent};
 pub use factory::{EventParserFactory, Protocol};
 
-/// 宏：简化 downcast_ref 模式匹配
+/// Macro: Simplify downcast_ref pattern matching
 /// 
-/// # 使用示例
-/// ```
-/// use sol_trade_sdk::event_parser::match_event;
+/// # Usage Example
+/// ```ignore
+/// use sol_trade_sdk::streaming::event_parser::match_event;
 /// 
 /// match_event!(event, {
 ///     PumpSwapCreatePoolEvent => |typed_event| {
 ///         println!("CreatePool event: {:?}", typed_event);
 ///     },
 ///     PumpSwapDepositEvent => |typed_event| {
-///         // 处理存款事件
+///         // Handle deposit event
 ///     },
 /// });
 /// ```

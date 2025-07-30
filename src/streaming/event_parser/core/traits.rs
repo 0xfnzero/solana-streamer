@@ -237,11 +237,11 @@ pub trait EventParser: Send + Sync {
             accounts.extend(address_table_lookups.clone());
         }
 
-        // 解析内联指令事件
+        // Parse inner instruction events
         let mut inner_instruction_events = Vec::new();
-        // 检查交易是否成功
+        // Check if transaction was successful
         if meta.err.is_none() {
-            for inner_instruction in inner_instructions {
+            for inner_instruction in &inner_instructions {
                 for (index, instruction) in inner_instruction.instructions.iter().enumerate() {
                     match instruction {
                         UiInstruction::Compiled(compiled) => {
@@ -309,12 +309,37 @@ pub trait EventParser: Send + Sync {
             }
         }
 
+        // Parse events from transaction logs
+        let mut log_events = Vec::new();
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(log_messages) = &meta.log_messages {
+            log_events = self
+                .parse_events_from_logs(
+                    log_messages,
+                    signature,
+                    slot,
+                    block_time,
+                    &inner_instructions,
+                )
+                .await
+                .unwrap_or_else(|_e| vec![]);
+        }
+
+        // Merge log events with inner instruction events
+        inner_instruction_events.extend(log_events);
+
         if instruction_events.len() > 0 && inner_instruction_events.len() > 0 {
             for instruction_event in &mut instruction_events {
                 for inner_instruction_event in &inner_instruction_events {
                     if instruction_event.id() == inner_instruction_event.id() {
                         let i_index = instruction_event.index();
                         let in_index = inner_instruction_event.index();
+                        
+                        // Handle log events specially - they should merge with matching ID
+                        if in_index == "log" {
+                            instruction_event.merge(inner_instruction_event.clone_boxed());
+                            continue; // Don't break, might have multiple matches
+                        }
+                        
                         if !i_index.contains(".") && in_index.contains(".") {
                             let in_index_parent_index = in_index.split(".").nth(0).unwrap();
                             if in_index_parent_index == i_index {
@@ -436,6 +461,112 @@ pub trait EventParser: Send + Sync {
             index,
         );
         Ok(events)
+    }
+
+    /// Parse event data from log messages
+    async fn parse_events_from_logs(
+        &self,
+        logs: &[String],
+        signature: &str,
+        slot: Option<u64>,
+        block_time: Option<Timestamp>,
+        _inner_instructions: &[UiInnerInstructions],
+    ) -> Result<Vec<Box<dyn UnifiedEvent>>> {
+        use crate::streaming::event_parser::common::utils::{decode_base64, extract_program_data};
+        
+        let mut events = Vec::new();
+        
+        for log in logs {
+            if let Some(data_str) = extract_program_data(log) {
+                if let Ok(decoded) = decode_base64(data_str) {
+                    if decoded.len() >= 16 {
+                        let hex_str = format!("0x{}", hex::encode(&decoded));
+                        
+                        let discriminators = self.get_inner_instruction_configs();
+                        
+                        // Check both full 16-byte and 8-byte discriminators for log events
+                        for (discriminator, configs) in discriminators {
+                            // Try full discriminator match first
+                            if hex_str.starts_with(discriminator) {
+                                let data = &decoded[16..]; // Skip full 16-byte discriminator
+                                
+                                for config in configs {
+                                    if let Some(event) = (config.inner_instruction_parser)(
+                                        data,
+                                        EventMetadata::new(
+                                            signature.to_string(),
+                                            signature.to_string(),
+                                            slot.unwrap_or(0),
+                                            block_time.map(|bt| bt.seconds).unwrap_or(0),
+                                            block_time.map(|bt| bt.seconds * 1000 + (bt.nanos as i64) / 1_000_000).unwrap_or(0),
+                                            self.get_protocol_type(),
+                                            config.event_type.clone(),
+                                            self.get_program_id(),
+                                            "log".to_string(),
+                                            0, // program_received_time_ms
+                                        ),
+                                    ) {
+                                        events.push(event);
+                                    }
+                                }
+                            } else {
+                                // Try 8-byte discriminator (second half) for log events
+                                let discriminator_without_prefix = discriminator.strip_prefix("0x").unwrap_or(discriminator);
+                                if discriminator_without_prefix.len() >= 16 {
+                                    let second_half = &discriminator_without_prefix[16..]; // Take last 8 bytes
+                                    let second_half_with_prefix = format!("0x{}", second_half);
+                                    
+                                    if hex_str.starts_with(&second_half_with_prefix) {
+                                        let data = &decoded[8..]; // Skip 8-byte discriminator
+                                        
+                                        for config in configs {
+                                            if let Some(event) = (config.inner_instruction_parser)(
+                                                data,
+                                                EventMetadata::new(
+                                                    signature.to_string(),
+                                                    signature.to_string(),
+                                                    slot.unwrap_or(0),
+                                                    block_time.map(|bt| bt.seconds).unwrap_or(0),
+                                                    block_time.map(|bt| bt.seconds * 1000 + (bt.nanos as i64) / 1_000_000).unwrap_or(0),
+                                                    self.get_protocol_type(),
+                                                    config.event_type.clone(),
+                                                    self.get_program_id(),
+                                                    "log".to_string(),
+                                                    0, // program_received_time_ms
+                                                ),
+                                            ) {
+                                                events.push(event);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(events)
+    }
+
+    /// Get inner instruction configurations
+    fn get_inner_instruction_configs(&self) -> &std::collections::HashMap<&'static str, Vec<GenericEventParseConfig>> {
+        // Default implementation returns empty map - parsers should override this
+        use std::sync::LazyLock;
+        static EMPTY_MAP: LazyLock<std::collections::HashMap<&'static str, Vec<GenericEventParseConfig>>> = LazyLock::new(|| std::collections::HashMap::new());
+        &EMPTY_MAP
+    }
+    
+    /// 获取协议类型（需要实现）
+    fn get_protocol_type(&self) -> ProtocolType {
+        // Default implementation - parsers should override this
+        ProtocolType::PumpFun
+    }
+    
+    /// 获取程序ID（需要实现）
+    fn get_program_id(&self) -> Pubkey {
+        // Default implementation - parsers should override this
+        Pubkey::default()
     }
 
     /// 检查是否应该处理此程序ID
@@ -624,6 +755,10 @@ impl EventParser for GenericEventParser {
         program_received_time_ms: i64,
         index: String,
     ) -> Vec<Box<dyn UnifiedEvent>> {
+        // Check bounds for program_id_index
+        if instruction.program_id_index as usize >= accounts.len() {
+            return Vec::new();
+        }
         let program_id = accounts[instruction.program_id_index as usize];
         if !self.should_handle(&program_id) {
             return Vec::new();
@@ -664,6 +799,18 @@ impl EventParser for GenericEventParser {
         }
 
         events
+    }
+
+    fn get_inner_instruction_configs(&self) -> &std::collections::HashMap<&'static str, Vec<GenericEventParseConfig>> {
+        &self.inner_instruction_configs
+    }
+    
+    fn get_protocol_type(&self) -> ProtocolType {
+        self.protocol_type.clone()
+    }
+    
+    fn get_program_id(&self) -> Pubkey {
+        self.program_id
     }
 
     fn should_handle(&self, program_id: &Pubkey) -> bool {

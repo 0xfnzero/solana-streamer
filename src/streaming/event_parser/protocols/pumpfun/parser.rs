@@ -174,7 +174,7 @@ impl PumpFunEventParser {
             associated_bonding_curve: accounts[4],
             associated_user: accounts[5],
             user: accounts[6],
-            creator_vault: accounts[8],
+            creator_vault: accounts[9],
             max_sol_cost,
             amount,
             is_buy: true,
@@ -209,7 +209,7 @@ impl PumpFunEventParser {
             associated_bonding_curve: accounts[4],
             associated_user: accounts[5],
             user: accounts[6],
-            creator_vault: accounts[8],
+            creator_vault: accounts[9],
             min_sol_output,
             amount,
             is_buy: false,
@@ -258,6 +258,18 @@ impl EventParser for PumpFunEventParser {
             program_received_time_ms,
             index,
         )
+    }
+
+    fn get_inner_instruction_configs(&self) -> &std::collections::HashMap<&'static str, Vec<crate::streaming::event_parser::core::traits::GenericEventParseConfig>> {
+        self.inner.get_inner_instruction_configs()
+    }
+    
+    fn get_protocol_type(&self) -> crate::streaming::event_parser::common::ProtocolType {
+        self.inner.get_protocol_type()
+    }
+    
+    fn get_program_id(&self) -> Pubkey {
+        self.inner.get_program_id()
     }
 
     fn should_handle(&self, program_id: &Pubkey) -> bool {

@@ -415,4 +415,16 @@ impl EventParser for PumpSwapEventParser {
     fn supported_program_ids(&self) -> Vec<Pubkey> {
         self.inner.supported_program_ids()
     }
+
+    fn get_inner_instruction_configs(&self) -> &std::collections::HashMap<&'static str, Vec<crate::streaming::event_parser::core::traits::GenericEventParseConfig>> {
+        self.inner.get_inner_instruction_configs()
+    }
+    
+    fn get_protocol_type(&self) -> ProtocolType {
+        ProtocolType::PumpSwap
+    }
+    
+    fn get_program_id(&self) -> Pubkey {
+        PUMPSWAP_PROGRAM_ID
+    }
 }
