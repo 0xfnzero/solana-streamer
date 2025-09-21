@@ -438,6 +438,49 @@ impl EventParser {
         .await
     }
 
+    /// Enhanced version that passes raw gRPC transaction data to the callback
+    pub async fn parse_grpc_transaction_owned_with_raw_data(
+        &self,
+        grpc_tx: SubscribeUpdateTransactionInfo,
+        signature: Signature,
+        slot: Option<u64>,
+        block_time: Option<Timestamp>,
+        recv_us: i64,
+        bot_wallet: Option<Pubkey>,
+        transaction_index: Option<u64>,
+        enhanced_callback: crate::streaming::event_parser::core::traits::EnhancedEventCallback,
+    ) -> anyhow::Result<()> {
+        // Convert gRPC transaction to EncodedTransactionWithStatusMeta for raw data access
+        let raw_transaction = match yellowstone_grpc_proto::convert_from::create_tx_with_meta(grpc_tx.clone()) {
+            Ok(tx_with_meta) => {
+                Some(tx_with_meta.encode(
+                    solana_transaction_status::UiTransactionEncoding::JsonParsed,
+                    Some(u8::MAX),
+                    true
+                ).unwrap())
+            }
+            Err(_) => None
+        };
+
+        // Create adapter callback that passes both event and raw transaction data
+        let adapter_callback = Arc::new(move |event: &Box<dyn UnifiedEvent>| {
+            enhanced_callback(event.clone_boxed(), raw_transaction.as_ref());
+        });
+
+        // Call the original parsing method
+        self.parse_grpc_transaction(
+            grpc_tx,
+            signature,
+            slot,
+            block_time,
+            recv_us,
+            bot_wallet,
+            transaction_index,
+            adapter_callback,
+        )
+        .await
+    }
+
     async fn parse_grpc_transaction(
         &self,
         grpc_tx: SubscribeUpdateTransactionInfo,
