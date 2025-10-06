@@ -456,7 +456,7 @@ impl EventParser {
                 if let Some(meta) = grpc_tx.meta {
                     inner_instructions = meta.inner_instructions;
                     address_table_lookups.reserve(
-                        meta.loaded_writable_addresses.len() + meta.loaded_writable_addresses.len(),
+                        meta.loaded_writable_addresses.len() + meta.loaded_readonly_addresses.len(),
                     );
                     let loaded_writable_addresses = meta.loaded_writable_addresses;
                     let loaded_readonly_addresses = meta.loaded_readonly_addresses;
