@@ -32,6 +32,7 @@ pub struct EventProcessor {
     pub(crate) protocols: Vec<Protocol>,
     pub(crate) event_type_filter: Option<EventTypeFilter>,
     pub(crate) callback: Option<Arc<dyn Fn(Box<dyn UnifiedEvent>) + Send + Sync>>,
+    pub(crate) enhanced_callback: Option<crate::streaming::event_parser::core::traits::EnhancedEventCallback>,
     pub(crate) backpressure_config: BackpressureConfig,
     pub(crate) grpc_queue: Arc<SegQueue<(EventPretty, Option<Pubkey>)>>,
     pub(crate) shred_queue: Arc<SegQueue<(TransactionWithSlot, Option<Pubkey>)>>,
@@ -57,6 +58,7 @@ impl EventProcessor {
             event_type_filter: None,
             backpressure_config,
             callback: None,
+            enhanced_callback: None,
             grpc_queue,
             shred_queue,
             grpc_pending_count,
@@ -78,6 +80,31 @@ impl EventProcessor {
 
         self.backpressure_config = backpressure_config;
         self.callback = callback;
+        let protocols_ref = &self.protocols;
+        let event_type_filter_ref = self.event_type_filter.as_ref();
+        self.parser_cache.get_or_init(|| {
+            Arc::new(EventParser::new(protocols_ref.clone(), event_type_filter_ref.cloned()))
+        });
+
+        if matches!(self.backpressure_config.strategy, BackpressureStrategy::Block) {
+            self.start_block_processing_thread(source);
+        }
+    }
+
+    pub fn set_protocols_and_event_type_filter_with_enhanced_callback(
+        &mut self,
+        source: EventSource,
+        protocols: Vec<Protocol>,
+        event_type_filter: Option<EventTypeFilter>,
+        backpressure_config: BackpressureConfig,
+        enhanced_callback: Option<crate::streaming::event_parser::core::traits::EnhancedEventCallback>,
+    ) {
+        self.protocols = protocols;
+        self.event_type_filter = event_type_filter;
+        self.backpressure_config = backpressure_config;
+        self.enhanced_callback = enhanced_callback;
+        self.callback = None; // Clear standard callback when using enhanced callback
+
         let protocols_ref = &self.protocols;
         let event_type_filter_ref = self.event_type_filter.as_ref();
         self.parser_cache.get_or_init(|| {
@@ -190,19 +217,37 @@ impl EventProcessor {
                 let grpc_tx = transaction_pretty.grpc_tx;
 
                 let parser = self.get_parser();
-                let adapter_callback = self.create_adapter_callback();
-                parser
-                    .parse_grpc_transaction_owned(
-                        grpc_tx,
-                        signature,
-                        Some(slot),
-                        block_time,
-                        recv_us,
-                        bot_wallet,
-                        transaction_index,
-                        adapter_callback,
-                    )
-                    .await?;
+
+                // Use enhanced callback if available, otherwise use standard callback
+                if let Some(enhanced_callback) = &self.enhanced_callback {
+                    let enhanced_callback_clone = enhanced_callback.clone();
+                    parser
+                        .parse_grpc_transaction_owned_with_raw_data(
+                            grpc_tx,
+                            signature,
+                            Some(slot),
+                            block_time,
+                            recv_us,
+                            bot_wallet,
+                            transaction_index,
+                            enhanced_callback_clone,
+                        )
+                        .await?;
+                } else {
+                    let adapter_callback = self.create_adapter_callback();
+                    parser
+                        .parse_grpc_transaction_owned(
+                            grpc_tx,
+                            signature,
+                            Some(slot),
+                            block_time,
+                            recv_us,
+                            bot_wallet,
+                            transaction_index,
+                            adapter_callback,
+                        )
+                        .await?;
+                }
             }
             EventPretty::BlockMeta(block_meta_pretty) => {
                 self.metrics_manager.add_block_meta_process_count();
@@ -419,6 +464,7 @@ impl Clone for EventProcessor {
             event_type_filter: self.event_type_filter.clone(),
             backpressure_config: self.backpressure_config.clone(),
             callback: self.callback.clone(),
+            enhanced_callback: self.enhanced_callback.clone(),
             grpc_queue: self.grpc_queue.clone(),
             shred_queue: self.shred_queue.clone(),
             grpc_pending_count: self.grpc_pending_count.clone(),

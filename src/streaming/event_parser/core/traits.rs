@@ -2,6 +2,14 @@ use crate::streaming::event_parser::common::EventType;
 use crate::streaming::event_parser::common::SwapData;
 use solana_sdk::signature::Signature;
 use std::fmt::Debug;
+use std::sync::Arc;
+use solana_transaction_status::EncodedTransactionWithStatusMeta;
+
+/// Enhanced callback that receives both the event and raw gRPC transaction data
+pub type EnhancedEventCallback = Arc<dyn Fn(Box<dyn UnifiedEvent>, Option<&EncodedTransactionWithStatusMeta>) + Send + Sync>;
+
+/// Standard callback that only receives the event
+pub type StandardEventCallback = Arc<dyn Fn(Box<dyn UnifiedEvent>) + Send + Sync>;
 
 /// Unified Event Interface - All protocol events must implement this trait
 pub trait UnifiedEvent: Debug + Send + Sync {
