@@ -23,6 +23,7 @@ pub struct PooledObject<T> {
 }
 
 impl<T> PooledObject<T> {
+    #[allow(dead_code)]
     fn new(object: Box<T>, pool: Arc<Mutex<VecDeque<Box<T>>>>, max_size: usize) -> Self {
         Self { object: Some(object), pool, max_size }
     }

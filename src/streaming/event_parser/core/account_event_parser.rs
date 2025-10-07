@@ -14,8 +14,8 @@ use crate::streaming::event_parser::Protocol;
 use crate::streaming::grpc::AccountPretty;
 use serde::{Deserialize, Serialize};
 use solana_account_decoder::parse_nonce::parse_nonce;
-use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
+use spl_token::solana_program::program_pack::Pack;
 use spl_token::state::{Account, Mint};
 use spl_token_2022::{
     extension::StateWithExtensions,
@@ -332,7 +332,7 @@ impl AccountEventParser {
                 return Some(Box::new(event));
             }
         }
-        let amount = if account.owner == spl_token_2022::ID {
+        let amount = if account.owner.to_bytes() == spl_token_2022::ID.to_bytes() {
             StateWithExtensions::<Account2022>::unpack(&account.data)
                 .ok()
                 .map(|info| info.base.amount)

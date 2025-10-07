@@ -23,10 +23,7 @@ use crate::streaming::{
     },
 };
 use prost_types::Timestamp;
-use solana_sdk::{
-    bs58, instruction::CompiledInstruction, pubkey::Pubkey, signature::Signature,
-    transaction::VersionedTransaction,
-};
+use solana_sdk::{bs58, message::compiled_instruction::CompiledInstruction, pubkey::Pubkey, signature::Signature, transaction::VersionedTransaction};
 use solana_transaction_status::{
     EncodedConfirmedTransactionWithStatusMeta, InnerInstruction, InnerInstructions, UiInstruction,
 };

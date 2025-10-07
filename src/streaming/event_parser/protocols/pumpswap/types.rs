@@ -6,7 +6,7 @@ use crate::streaming::{
     event_parser::{
         common::EventMetadata,
         protocols::pumpswap::{
-            parser::PUMPSWAP_PROGRAM_ID, PumpSwapGlobalConfigAccountEvent, PumpSwapPoolAccountEvent,
+            PumpSwapGlobalConfigAccountEvent, PumpSwapPoolAccountEvent,
         },
         UnifiedEvent,
     },

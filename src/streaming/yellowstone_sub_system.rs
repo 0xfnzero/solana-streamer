@@ -8,8 +8,8 @@ use crate::{
 use futures::{SinkExt, StreamExt};
 use log::error;
 use solana_program::pubkey;
-use solana_sdk::{pubkey::Pubkey, transaction::VersionedTransaction};
-use solana_transaction_status::TransactionWithStatusMeta;
+use solana_sdk::pubkey::Pubkey;
+use yellowstone_grpc_proto::geyser::SubscribeUpdateTransactionInfo;
 use yellowstone_grpc_proto::geyser::{
     subscribe_update::UpdateOneof, SubscribeRequest, SubscribeRequestPing,
 };
@@ -26,7 +26,7 @@ pub enum SystemEvent {
 pub struct TransferInfo {
     pub slot: u64,
     pub signature: String,
-    pub tx: Option<VersionedTransaction>,
+    pub tx: Option<SubscribeUpdateTransactionInfo>,
 }
 
 impl YellowstoneGrpc {
@@ -100,22 +100,11 @@ impl YellowstoneGrpc {
     {
         match event_pretty {
             EventPretty::Transaction(transaction_pretty) => {
-                let tx = yellowstone_grpc_proto::convert_from::create_tx_with_meta(
-                    transaction_pretty.grpc_tx,
-                );
-                if let Ok(tx) = tx {
-                    let trade_raw: TransactionWithStatusMeta = tx;
-                    let meta = trade_raw.get_status_meta();
-                    if meta.is_none() {
-                        return Ok(());
-                    }
-                    let transaction = trade_raw.get_transaction();
-                    callback(SystemEvent::NewTransfer(TransferInfo {
-                        slot: transaction_pretty.slot,
-                        signature: transaction_pretty.signature.to_string(),
-                        tx: Some(transaction),
-                    }));
-                }
+                callback(SystemEvent::NewTransfer(TransferInfo {
+                    slot: transaction_pretty.slot,
+                    signature: transaction_pretty.signature.to_string(),
+                    tx: Some(transaction_pretty.grpc_tx),
+                }));
             }
             _ => {}
         }

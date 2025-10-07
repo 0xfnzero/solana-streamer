@@ -1,5 +1,4 @@
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
-use solana_transaction_status::{TransactionWithStatusMeta, VersionedTransactionWithStatusMeta};
 use std::{collections::HashMap, fmt};
 use yellowstone_grpc_proto::{
     geyser::{

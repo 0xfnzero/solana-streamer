@@ -394,7 +394,7 @@ impl EventProcessor {
         match source {
             EventSource::Grpc => {
                 std::thread::spawn(move || {
-                    let mut worker_threads =
+                    let worker_threads =
                         std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4); // 如果获取失败则回退到4个线程
 
                     let rt = tokio::runtime::Builder::new_multi_thread()

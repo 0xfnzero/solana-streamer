@@ -196,7 +196,7 @@ impl YellowstoneGrpc {
             .subscribe_with_account_request(account_filter, event_type_filter.as_ref());
 
         // 订阅事件
-        let (mut subscribe_tx, mut stream, subscribe_request) = self
+        let (subscribe_tx, mut stream, subscribe_request) = self
             .subscription_manager
             .subscribe_with_request(transactions, accounts, commitment, event_type_filter.as_ref())
             .await?;

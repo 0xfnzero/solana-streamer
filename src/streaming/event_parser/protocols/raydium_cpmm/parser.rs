@@ -2,7 +2,7 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::streaming::event_parser::{
     common::{read_u64_le, EventMetadata, EventType, ProtocolType},
-    core::event_parser::{EventParser, GenericEventParseConfig},
+    core::event_parser::GenericEventParseConfig,
     protocols::raydium_cpmm::{
         discriminators, RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent, RaydiumCpmmSwapEvent,
         RaydiumCpmmWithdrawEvent,
