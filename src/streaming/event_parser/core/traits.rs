@@ -11,6 +11,14 @@ use crate::streaming::event_parser::protocols::raydium_clmm::events::*;
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use std::sync::Arc;
+use solana_transaction_status::EncodedTransactionWithStatusMeta;
+
+/// Enhanced callback that receives both the event and raw gRPC transaction data
+pub type EnhancedEventCallback = Arc<dyn Fn(Box<dyn UnifiedEvent>, Option<&EncodedTransactionWithStatusMeta>) + Send + Sync>;
+
+/// Standard callback that only receives the event
+pub type StandardEventCallback = Arc<dyn Fn(Box<dyn UnifiedEvent>) + Send + Sync>;
 
 /// Unified Event Enum - Replaces the trait-based approach with a type-safe enum
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
