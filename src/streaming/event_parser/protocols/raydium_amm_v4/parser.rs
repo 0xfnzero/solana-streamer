@@ -1,11 +1,11 @@
 use crate::streaming::event_parser::{
     common::{read_u64_le, EventMetadata, EventType, ProtocolType},
-    core::event_parser::GenericEventParseConfig,
+    core::GenericEventParseConfig,
     protocols::raydium_amm_v4::{
         discriminators, RaydiumAmmV4DepositEvent, RaydiumAmmV4Initialize2Event,
         RaydiumAmmV4SwapEvent, RaydiumAmmV4WithdrawEvent, RaydiumAmmV4WithdrawPnlEvent,
     },
-    UnifiedEvent,
+    DexEvent,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -82,12 +82,12 @@ fn parse_withdraw_pnl_instruction(
     _data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if accounts.len() < 17 {
         return None;
     }
 
-    Some(Box::new(RaydiumAmmV4WithdrawPnlEvent {
+    Some(DexEvent::RaydiumAmmV4WithdrawPnlEvent(RaydiumAmmV4WithdrawPnlEvent {
         metadata,
         token_program: accounts[0],
         amm: accounts[1],
@@ -114,13 +114,13 @@ fn parse_withdraw_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 8 || accounts.len() < 22 {
         return None;
     }
     let amount = read_u64_le(data, 0)?;
 
-    Some(Box::new(RaydiumAmmV4WithdrawEvent {
+    Some(DexEvent::RaydiumAmmV4WithdrawEvent(RaydiumAmmV4WithdrawEvent {
         metadata,
         amount,
 
@@ -154,7 +154,7 @@ fn parse_initialize2_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 25 || accounts.len() < 21 {
         return None;
     }
@@ -163,7 +163,7 @@ fn parse_initialize2_instruction(
     let init_pc_amount = read_u64_le(data, 9)?;
     let init_coin_amount = read_u64_le(data, 17)?;
 
-    Some(Box::new(RaydiumAmmV4Initialize2Event {
+    Some(DexEvent::RaydiumAmmV4Initialize2Event(RaydiumAmmV4Initialize2Event {
         metadata,
         nonce,
         open_time,
@@ -199,7 +199,7 @@ fn parse_deposit_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 24 || accounts.len() < 14 {
         return None;
     }
@@ -207,7 +207,7 @@ fn parse_deposit_instruction(
     let max_pc_amount = read_u64_le(data, 8)?;
     let base_side = read_u64_le(data, 16)?;
 
-    Some(Box::new(RaydiumAmmV4DepositEvent {
+    Some(DexEvent::RaydiumAmmV4DepositEvent(RaydiumAmmV4DepositEvent {
         metadata,
         max_coin_amount,
         max_pc_amount,
@@ -235,7 +235,7 @@ fn parse_swap_base_output_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 16 || accounts.len() < 17 {
         return None;
     }
@@ -249,7 +249,7 @@ fn parse_swap_base_output_instruction(
         accounts.insert(4, Pubkey::default());
     }
 
-    Some(Box::new(RaydiumAmmV4SwapEvent {
+    Some(DexEvent::RaydiumAmmV4SwapEvent(RaydiumAmmV4SwapEvent {
         metadata,
         max_amount_in,
         amount_out,
@@ -282,7 +282,7 @@ fn parse_swap_base_input_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 16 || accounts.len() < 17 {
         return None;
     }
@@ -296,7 +296,7 @@ fn parse_swap_base_input_instruction(
         accounts.insert(4, Pubkey::default());
     }
 
-    Some(Box::new(RaydiumAmmV4SwapEvent {
+    Some(DexEvent::RaydiumAmmV4SwapEvent(RaydiumAmmV4SwapEvent {
         metadata,
         amount_in,
         minimum_amount_out,

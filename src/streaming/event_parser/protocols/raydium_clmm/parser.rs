@@ -3,14 +3,14 @@ use crate::streaming::event_parser::{
         read_i32_le, read_option_bool, read_u128_le, read_u64_le, read_u8_le, EventMetadata,
         EventType, ProtocolType,
     },
-    core::event_parser::GenericEventParseConfig,
+    core::GenericEventParseConfig,
     protocols::raydium_clmm::{
         discriminators, RaydiumClmmClosePositionEvent, RaydiumClmmCreatePoolEvent,
         RaydiumClmmDecreaseLiquidityV2Event, RaydiumClmmIncreaseLiquidityV2Event,
         RaydiumClmmOpenPositionV2Event, RaydiumClmmOpenPositionWithToken22NftEvent,
         RaydiumClmmSwapEvent, RaydiumClmmSwapV2Event,
     },
-    UnifiedEvent,
+    DexEvent,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -107,11 +107,11 @@ fn parse_open_position_v2_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 51 || accounts.len() < 22 {
         return None;
     }
-    Some(Box::new(RaydiumClmmOpenPositionV2Event {
+    Some(DexEvent::RaydiumClmmOpenPositionV2Event(RaydiumClmmOpenPositionV2Event {
         metadata,
         tick_lower_index: read_i32_le(data, 0)?,
         tick_upper_index: read_i32_le(data, 4)?,
@@ -153,42 +153,44 @@ fn parse_open_position_with_token_22_nft_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 51 || accounts.len() < 20 {
         return None;
     }
-    Some(Box::new(RaydiumClmmOpenPositionWithToken22NftEvent {
-        metadata,
-        tick_lower_index: read_i32_le(data, 0)?,
-        tick_upper_index: read_i32_le(data, 4)?,
-        tick_array_lower_start_index: read_i32_le(data, 8)?,
-        tick_array_upper_start_index: read_i32_le(data, 12)?,
-        liquidity: read_u128_le(data, 16)?,
-        amount0_max: read_u64_le(data, 32)?,
-        amount1_max: read_u64_le(data, 40)?,
-        with_metadata: read_u8_le(data, 48)? == 1,
-        base_flag: read_option_bool(data, &mut 49)?,
-        payer: accounts[0],
-        position_nft_owner: accounts[1],
-        position_nft_mint: accounts[2],
-        position_nft_account: accounts[3],
-        pool_state: accounts[4],
-        protocol_position: accounts[5],
-        tick_array_lower: accounts[6],
-        tick_array_upper: accounts[7],
-        personal_position: accounts[8],
-        token_account0: accounts[9],
-        token_account1: accounts[10],
-        token_vault0: accounts[11],
-        token_vault1: accounts[12],
-        rent: accounts[13],
-        system_program: accounts[14],
-        token_program: accounts[15],
-        associated_token_program: accounts[16],
-        token_program2022: accounts[17],
-        vault0_mint: accounts[18],
-        vault1_mint: accounts[19],
-    }))
+    Some(DexEvent::RaydiumClmmOpenPositionWithToken22NftEvent(
+        RaydiumClmmOpenPositionWithToken22NftEvent {
+            metadata,
+            tick_lower_index: read_i32_le(data, 0)?,
+            tick_upper_index: read_i32_le(data, 4)?,
+            tick_array_lower_start_index: read_i32_le(data, 8)?,
+            tick_array_upper_start_index: read_i32_le(data, 12)?,
+            liquidity: read_u128_le(data, 16)?,
+            amount0_max: read_u64_le(data, 32)?,
+            amount1_max: read_u64_le(data, 40)?,
+            with_metadata: read_u8_le(data, 48)? == 1,
+            base_flag: read_option_bool(data, &mut 49)?,
+            payer: accounts[0],
+            position_nft_owner: accounts[1],
+            position_nft_mint: accounts[2],
+            position_nft_account: accounts[3],
+            pool_state: accounts[4],
+            protocol_position: accounts[5],
+            tick_array_lower: accounts[6],
+            tick_array_upper: accounts[7],
+            personal_position: accounts[8],
+            token_account0: accounts[9],
+            token_account1: accounts[10],
+            token_vault0: accounts[11],
+            token_vault1: accounts[12],
+            rent: accounts[13],
+            system_program: accounts[14],
+            token_program: accounts[15],
+            associated_token_program: accounts[16],
+            token_program2022: accounts[17],
+            vault0_mint: accounts[18],
+            vault1_mint: accounts[19],
+        },
+    ))
 }
 
 /// 解析增加流动性v2指令事件
@@ -196,11 +198,11 @@ fn parse_increase_liquidity_v2_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 34 || accounts.len() < 15 {
         return None;
     }
-    Some(Box::new(RaydiumClmmIncreaseLiquidityV2Event {
+    Some(DexEvent::RaydiumClmmIncreaseLiquidityV2Event(RaydiumClmmIncreaseLiquidityV2Event {
         metadata,
         liquidity: read_u128_le(data, 0)?,
         amount0_max: read_u64_le(data, 16)?,
@@ -229,11 +231,11 @@ fn parse_create_pool_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 24 || accounts.len() < 13 {
         return None;
     }
-    Some(Box::new(RaydiumClmmCreatePoolEvent {
+    Some(DexEvent::RaydiumClmmCreatePoolEvent(RaydiumClmmCreatePoolEvent {
         metadata,
         sqrt_price_x64: read_u128_le(data, 0)?,
         open_time: read_u64_le(data, 16)?,
@@ -258,11 +260,11 @@ fn parse_decrease_liquidity_v2_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 32 || accounts.len() < 16 {
         return None;
     }
-    Some(Box::new(RaydiumClmmDecreaseLiquidityV2Event {
+    Some(DexEvent::RaydiumClmmDecreaseLiquidityV2Event(RaydiumClmmDecreaseLiquidityV2Event {
         metadata,
         liquidity: read_u128_le(data, 0)?,
         amount0_min: read_u64_le(data, 16)?,
@@ -292,11 +294,11 @@ fn parse_close_position_instruction(
     _data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if accounts.len() < 6 {
         return None;
     }
-    Some(Box::new(RaydiumClmmClosePositionEvent {
+    Some(DexEvent::RaydiumClmmClosePositionEvent(RaydiumClmmClosePositionEvent {
         metadata,
         nft_owner: accounts[0],
         position_nft_mint: accounts[1],
@@ -312,7 +314,7 @@ fn parse_swap_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 33 || accounts.len() < 10 {
         return None;
     }
@@ -322,7 +324,7 @@ fn parse_swap_instruction(
     let sqrt_price_limit_x64 = read_u128_le(data, 16)?;
     let is_base_input = read_u8_le(data, 32)?;
 
-    Some(Box::new(RaydiumClmmSwapEvent {
+    Some(DexEvent::RaydiumClmmSwapEvent(RaydiumClmmSwapEvent {
         metadata,
         amount,
         other_amount_threshold,
@@ -346,7 +348,7 @@ fn parse_swap_v2_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 33 || accounts.len() < 13 {
         return None;
     }
@@ -356,7 +358,7 @@ fn parse_swap_v2_instruction(
     let sqrt_price_limit_x64 = read_u128_le(data, 16)?;
     let is_base_input = read_u8_le(data, 32)?;
 
-    Some(Box::new(RaydiumClmmSwapV2Event {
+    Some(DexEvent::RaydiumClmmSwapV2Event(RaydiumClmmSwapV2Event {
         metadata,
         amount,
         other_amount_threshold,

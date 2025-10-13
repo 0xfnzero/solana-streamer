@@ -1,6 +1,6 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::{
-    impl_unified_event, streaming::event_parser::protocols::raydium_amm_v4::types::AmmInfo,
+    streaming::event_parser::protocols::raydium_amm_v4::types::AmmInfo,
 };
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
@@ -38,8 +38,6 @@ pub struct RaydiumAmmV4SwapEvent {
     pub user_source_owner: Pubkey,
 }
 
-impl_unified_event!(RaydiumAmmV4SwapEvent,);
-
 /// 添加流动性
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct RaydiumAmmV4DepositEvent {
@@ -64,7 +62,6 @@ pub struct RaydiumAmmV4DepositEvent {
     pub user_owner: Pubkey,
     pub serum_event_queue: Pubkey,
 }
-impl_unified_event!(RaydiumAmmV4DepositEvent,);
 
 /// 初始化
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -98,7 +95,6 @@ pub struct RaydiumAmmV4Initialize2Event {
     pub user_token_pc: Pubkey,
     pub user_lp_token_account: Pubkey,
 }
-impl_unified_event!(RaydiumAmmV4Initialize2Event,);
 
 /// 移除流动性
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -130,7 +126,6 @@ pub struct RaydiumAmmV4WithdrawEvent {
     pub serum_bids: Pubkey,
     pub serum_asks: Pubkey,
 }
-impl_unified_event!(RaydiumAmmV4WithdrawEvent,);
 
 /// 提现
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -156,7 +151,6 @@ pub struct RaydiumAmmV4WithdrawPnlEvent {
     pub serum_pc_vault_account: Pubkey,
     pub serum_vault_signer: Pubkey,
 }
-impl_unified_event!(RaydiumAmmV4WithdrawPnlEvent,);
 
 /// 池信息
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -170,7 +164,6 @@ pub struct RaydiumAmmV4AmmInfoAccountEvent {
     pub rent_epoch: u64,
     pub amm_info: AmmInfo,
 }
-impl_unified_event!(RaydiumAmmV4AmmInfoAccountEvent,);
 
 /// 事件鉴别器常量
 pub mod discriminators {

@@ -1,28 +1,14 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
-
-use crossbeam_queue::SegQueue;
-use solana_sdk::pubkey::Pubkey;
-
 use crate::common::AnyResult;
-use crate::streaming::common::BackpressureStrategy;
-use crate::streaming::common::{
-    MetricsEventType, MetricsManager, StreamClientConfig as ClientConfig,
-};
+use crate::streaming::common::MetricsEventType;
 use crate::streaming::event_parser::common::filter::EventTypeFilter;
 use crate::streaming::event_parser::core::account_event_parser::AccountEventParser;
 use crate::streaming::event_parser::core::common_event_parser::CommonEventParser;
-
 use crate::streaming::event_parser::core::event_parser::EventParser;
-use crate::streaming::event_parser::{core::traits::UnifiedEvent, Protocol};
-use crate::streaming::grpc::{BackpressureConfig, EventPretty};
+use crate::streaming::event_parser::{core::traits::DexEvent, Protocol};
+use crate::streaming::grpc::{EventPretty, MetricsManager};
 use crate::streaming::shred::TransactionWithSlot;
-use once_cell::sync::OnceCell;
-
-pub enum EventSource {
-    Grpc,
-    Shred,
-}
+use solana_sdk::pubkey::Pubkey;
+use std::sync::Arc;
 
 /// High-performance Event processor using SegQueue for all strategies
 pub struct EventProcessor {
@@ -266,192 +252,54 @@ impl EventProcessor {
                 self.update_metrics(MetricsEventType::BlockMeta, 1, processing_time_us);
             }
         }
+        EventPretty::Transaction(transaction_pretty) => {
+            MetricsManager::global().add_tx_process_count();
 
-        Ok(())
-    }
+            let slot = transaction_pretty.slot;
+            let signature = transaction_pretty.signature;
+            let block_time = transaction_pretty.block_time;
+            let recv_us = transaction_pretty.recv_us;
+            let transaction_index = transaction_pretty.transaction_index;
+            let grpc_tx = transaction_pretty.grpc_tx;
 
-    pub fn invoke_callback(&self, event: Box<dyn UnifiedEvent>) {
-        if let Some(callback) = self.callback.as_ref() {
-            callback(event);
-        }
-    }
+            let adapter_callback = create_metrics_callback(callback.clone());
 
-    pub async fn process_shred_transaction_immediate(
-        &self,
-        transaction_with_slot: TransactionWithSlot,
-        bot_wallet: Option<Pubkey>,
-    ) -> AnyResult<()> {
-        self.process_shred_transaction(transaction_with_slot, bot_wallet).await
-    }
-
-    pub async fn process_shred_transaction_with_metrics(
-        &self,
-        transaction_with_slot: TransactionWithSlot,
-        bot_wallet: Option<Pubkey>,
-    ) -> AnyResult<()> {
-        self.apply_shred_backpressure_control(transaction_with_slot, bot_wallet).await
-    }
-
-    async fn apply_shred_backpressure_control(
-        &self,
-        transaction_with_slot: TransactionWithSlot,
-        bot_wallet: Option<Pubkey>,
-    ) -> AnyResult<()> {
-        match self.backpressure_config.strategy {
-            BackpressureStrategy::Block => {
-                loop {
-                    let current_pending = self.shred_pending_count.load(Ordering::Relaxed);
-                    if current_pending < self.backpressure_config.permits {
-                        self.shred_queue.push((transaction_with_slot, bot_wallet));
-                        self.shred_pending_count.fetch_add(1, Ordering::Relaxed);
-                        break;
-                    }
-
-                    tokio::task::yield_now().await;
-                }
-                Ok(())
-            }
-            BackpressureStrategy::Drop => {
-                let current_pending = self.shred_pending_count.load(Ordering::Relaxed);
-                if current_pending >= self.backpressure_config.permits {
-                    self.metrics_manager.increment_dropped_events();
-                    Ok(())
-                } else {
-                    self.shred_pending_count.fetch_add(1, Ordering::Relaxed);
-                    let processor = self.clone();
-                    tokio::spawn(async move {
-                        match processor
-                            .process_shred_transaction(transaction_with_slot, bot_wallet)
-                            .await
-                        {
-                            Ok(_) => {
-                                processor.shred_pending_count.fetch_sub(1, Ordering::Relaxed);
-                            }
-                            Err(e) => {
-                                log::error!("Error in async shred processing: {}", e);
-                            }
-                        }
-                    });
-                    Ok(())
-                }
-            }
-        }
-    }
-
-    pub async fn process_shred_transaction(
-        &self,
-        transaction_with_slot: TransactionWithSlot,
-        bot_wallet: Option<Pubkey>,
-    ) -> AnyResult<()> {
-        if self.callback.is_none() {
-            return Ok(());
-        }
-        self.metrics_manager.add_tx_process_count();
-        let tx = transaction_with_slot.transaction;
-
-        let slot = transaction_with_slot.slot;
-        if tx.signatures.is_empty() {
-            return Ok(());
-        }
-        let signature = tx.signatures[0];
-        let recv_us = transaction_with_slot.recv_us;
-
-        let parser = self.get_parser();
-        let adapter_callback = self.create_adapter_callback();
-        parser
-            .parse_versioned_transaction_owned(
-                tx,
+            EventParser::parse_grpc_transaction_owned(
+                protocols,
+                event_type_filter,
+                grpc_tx,
                 signature,
                 Some(slot),
-                None,
+                block_time,
                 recv_us,
                 bot_wallet,
-                None,
-                &[],
+                transaction_index,
                 adapter_callback,
             )
             .await?;
+        }
+        EventPretty::BlockMeta(block_meta_pretty) => {
+            MetricsManager::global().add_block_meta_process_count();
 
-        Ok(())
-    }
+            let block_time_ms = block_meta_pretty
+                .block_time
+                .map(|ts| ts.seconds * 1000 + ts.nanos as i64 / 1_000_000)
+                .unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
 
-    fn update_metrics(&self, ty: MetricsEventType, count: u64, time_us: f64) {
-        self.metrics_manager.update_metrics(ty, count, time_us);
-    }
+            let block_meta_event = CommonEventParser::generate_block_meta_event(
+                block_meta_pretty.slot,
+                block_meta_pretty.block_hash,
+                block_time_ms,
+                block_meta_pretty.recv_us,
+            );
 
-    fn start_block_processing_thread(&self, source: EventSource) {
-        self.processing_shutdown.store(false, Ordering::Relaxed);
-
-        let grpc_queue = Arc::clone(&self.grpc_queue);
-        let shred_queue = Arc::clone(&self.shred_queue);
-        let grpc_pending_count = Arc::clone(&self.grpc_pending_count);
-        let shred_pending_count = Arc::clone(&self.shred_pending_count);
-        let shutdown_flag = Arc::clone(&self.processing_shutdown);
-        let shutdown_flag_clone = Arc::clone(&self.processing_shutdown);
-        let processor = self.clone();
-        let processor_clone = self.clone();
-        // Dedicated thread with busy-wait and lock-free processing
-        match source {
-            EventSource::Grpc => {
-                std::thread::spawn(move || {
-                    let worker_threads =
-                        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4); // 如果获取失败则回退到4个线程
-
-                    let rt = tokio::runtime::Builder::new_multi_thread()
-                        .worker_threads(worker_threads)
-                        .enable_all()
-                        .build()
-                        .unwrap();
-
-                    while !shutdown_flag.load(Ordering::Relaxed) {
-                        if let Some((event_pretty, bot_wallet)) = grpc_queue.pop() {
-                            grpc_pending_count.fetch_sub(1, Ordering::Relaxed);
-                            if let Err(e) = rt.block_on(
-                                processor.process_grpc_event_transaction(event_pretty, bot_wallet),
-                            ) {
-                                println!("Error processing gRPC event: {}", e);
-                            }
-                        } else {
-                            // 待测试替换方案： lock-free queue + spin + batch
-                            std::thread::sleep(std::time::Duration::from_micros(500));
-                        }
-                    }
-                });
-            }
-            EventSource::Shred => {
-                // Shred processing with same low-latency optimization
-                std::thread::spawn(move || {
-                    let worker_threads =
-                        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4); // 如果获取失败则回退到4个线程
-
-                    let rt = tokio::runtime::Builder::new_multi_thread()
-                        .worker_threads(worker_threads)
-                        .enable_all()
-                        .build()
-                        .unwrap();
-
-                    while !shutdown_flag_clone.load(Ordering::Relaxed) {
-                        if let Some((transaction_with_slot, bot_wallet)) = shred_queue.pop() {
-                            shred_pending_count.fetch_sub(1, Ordering::Relaxed);
-                            if let Err(e) = rt.block_on(
-                                processor_clone
-                                    .process_shred_transaction(transaction_with_slot, bot_wallet),
-                            ) {
-                                log::error!("Error processing shred transaction: {}", e);
-                            }
-                        } else {
-                            // 待测试替换方案： lock-free queue + spin + batch
-                            std::thread::sleep(std::time::Duration::from_micros(500));
-                        }
-                    }
-                });
-            }
+            let processing_time_us = block_meta_event.metadata().handle_us as f64;
+            callback(block_meta_event);
+            update_metrics(MetricsEventType::BlockMeta, 1, processing_time_us);
         }
     }
 
-    pub fn stop_processing(&self) {
-        self.processing_shutdown.store(true, Ordering::Relaxed);
-    }
+    Ok(())
 }
 
 impl Clone for EventProcessor {

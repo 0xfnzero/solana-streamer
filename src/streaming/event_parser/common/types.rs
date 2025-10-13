@@ -4,23 +4,7 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
 use std::{borrow::Cow, fmt, str::FromStr, sync::Arc};
 
-use crate::{
-    match_event,
-    streaming::{
-        common::SimdUtils,
-        event_parser::{
-            protocols::{
-                bonk::BonkTradeEvent,
-                pumpfun::PumpFunTradeEvent,
-                pumpswap::{PumpSwapBuyEvent, PumpSwapSellEvent},
-                raydium_amm_v4::RaydiumAmmV4SwapEvent,
-                raydium_clmm::{RaydiumClmmSwapEvent, RaydiumClmmSwapV2Event},
-                raydium_cpmm::RaydiumCpmmSwapEvent,
-            },
-            UnifiedEvent,
-        },
-    },
-};
+use crate::streaming::{common::SimdUtils, event_parser::DexEvent};
 
 // Object pool size configuration
 const EVENT_METADATA_POOL_SIZE: usize = 1000;
@@ -72,7 +56,7 @@ pub enum ProtocolType {
 
 /// Event type enumeration
 #[derive(
-    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+    Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]
 pub enum EventType {
     // PumpSwap events
@@ -364,7 +348,7 @@ lazy_static::lazy_static! {
 
 /// Parse token transfer data from next instructions
 pub fn parse_swap_data_from_next_instructions(
-    event: &dyn UnifiedEvent,
+    event: &DexEvent,
     inner_instruction: &solana_transaction_status::InnerInstructions,
     current_index: i8,
     accounts: &[Pubkey],
@@ -378,7 +362,7 @@ pub fn parse_swap_data_from_next_instructions(
     };
 
     // 先根据 event 取出关键信息
-    let mut user: Option<Pubkey> = None;
+    // let mut user: Option<Pubkey> = None;
     let mut from_mint: Option<Pubkey> = None;
     let mut to_mint: Option<Pubkey> = None;
     let mut user_from_token: Option<Pubkey> = None;
@@ -386,63 +370,66 @@ pub fn parse_swap_data_from_next_instructions(
     let mut from_vault: Option<Pubkey> = None;
     let mut to_vault: Option<Pubkey> = None;
 
-    match_event!(&*event, {
-        BonkTradeEvent => |e: BonkTradeEvent| {
-            user = Some(e.payer);
+    match event {
+        DexEvent::BonkTradeEvent(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.base_token_mint);
             to_mint = Some(e.quote_token_mint);
             user_from_token = Some(e.user_base_token);
             user_to_token = Some(e.user_quote_token);
             from_vault = Some(e.base_vault);
             to_vault = Some(e.quote_vault);
-        },
-        PumpFunTradeEvent => |e: PumpFunTradeEvent| {
+        }
+        DexEvent::PumpFunTradeEvent(e) => {
             swap_data.from_mint = if e.is_buy { *SOL_MINT } else { e.mint };
-            swap_data.to_mint   = if e.is_buy { e.mint } else { *SOL_MINT };
-        },
-        PumpSwapBuyEvent => |e: PumpSwapBuyEvent| {
+            swap_data.to_mint = if e.is_buy { e.mint } else { *SOL_MINT };
+        }
+        DexEvent::PumpSwapBuyEvent(e) => {
             swap_data.from_mint = e.quote_mint;
-            swap_data.to_mint   = e.base_mint;
-        },
-        PumpSwapSellEvent => |e: PumpSwapSellEvent| {
+            swap_data.to_mint = e.base_mint;
+        }
+        DexEvent::PumpSwapSellEvent(e) => {
             swap_data.from_mint = e.base_mint;
-            swap_data.to_mint   = e.quote_mint;
-        },
-        RaydiumCpmmSwapEvent => |e: RaydiumCpmmSwapEvent| {
-            user = Some(e.payer);
+            swap_data.to_mint = e.quote_mint;
+        }
+        DexEvent::RaydiumCpmmSwapEvent(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.input_token_mint);
-            to_mint   = Some(e.output_token_mint);
+            to_mint = Some(e.output_token_mint);
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumClmmSwapEvent => |e: RaydiumClmmSwapEvent| {
-            user = Some(e.payer);
-            swap_data.description = Some("Unable to get from_mint and to_mint from RaydiumClmmSwapEvent".into());
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumClmmSwapEvent(e) => {
+            // user = Some(e.payer);
+            swap_data.description =
+                Some("Unable to get from_mint and to_mint from RaydiumClmmSwapEvent".into());
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumClmmSwapV2Event => |e: RaydiumClmmSwapV2Event| {
-            user = Some(e.payer);
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumClmmSwapV2Event(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.input_vault_mint);
-            to_mint   = Some(e.output_vault_mint);
+            to_mint = Some(e.output_vault_mint);
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumAmmV4SwapEvent => |e: RaydiumAmmV4SwapEvent| {
-            user = Some(e.user_source_owner);
-            swap_data.description = Some("Unable to get from_mint and to_mint from RaydiumAmmV4SwapEvent".into());
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumAmmV4SwapEvent(e) => {
+            // user = Some(e.user_source_owner);
+            swap_data.description =
+                Some("Unable to get from_mint and to_mint from RaydiumAmmV4SwapEvent".into());
             user_from_token = Some(e.user_source_token_account);
-            user_to_token   = Some(e.user_destination_token_account);
+            user_to_token = Some(e.user_destination_token_account);
             from_vault = Some(e.pool_pc_token_account);
-            to_vault   = Some(e.pool_coin_token_account);
-        },
-    });
+            to_vault = Some(e.pool_coin_token_account);
+        }
+        _ => {}
+    }
 
     let user_to_token = user_to_token.unwrap_or_default();
     let user_from_token = user_from_token.unwrap_or_default();
@@ -531,7 +518,7 @@ pub fn parse_swap_data_from_next_instructions(
 /// Parse token transfer data from next instructions
 /// TODO: - wait refactor
 pub fn parse_swap_data_from_next_grpc_instructions(
-    event: &dyn UnifiedEvent,
+    event: &DexEvent,
     inner_instruction: &yellowstone_grpc_proto::prelude::InnerInstructions,
     current_index: i8,
     accounts: &[Pubkey],
@@ -545,7 +532,7 @@ pub fn parse_swap_data_from_next_grpc_instructions(
     };
 
     // 先根据 event 取出关键信息
-    let mut user: Option<Pubkey> = None;
+    // let mut user: Option<Pubkey> = None;
     let mut from_mint: Option<Pubkey> = None;
     let mut to_mint: Option<Pubkey> = None;
     let mut user_from_token: Option<Pubkey> = None;
@@ -553,63 +540,66 @@ pub fn parse_swap_data_from_next_grpc_instructions(
     let mut from_vault: Option<Pubkey> = None;
     let mut to_vault: Option<Pubkey> = None;
 
-    match_event!(&*event, {
-        BonkTradeEvent => |e: BonkTradeEvent| {
-            user = Some(e.payer);
+    match event {
+        DexEvent::BonkTradeEvent(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.base_token_mint);
             to_mint = Some(e.quote_token_mint);
             user_from_token = Some(e.user_base_token);
             user_to_token = Some(e.user_quote_token);
             from_vault = Some(e.base_vault);
             to_vault = Some(e.quote_vault);
-        },
-        PumpFunTradeEvent => |e: PumpFunTradeEvent| {
+        }
+        DexEvent::PumpFunTradeEvent(e) => {
             swap_data.from_mint = if e.is_buy { *SOL_MINT } else { e.mint };
-            swap_data.to_mint   = if e.is_buy { e.mint } else { *SOL_MINT };
-        },
-        PumpSwapBuyEvent => |e: PumpSwapBuyEvent| {
+            swap_data.to_mint = if e.is_buy { e.mint } else { *SOL_MINT };
+        }
+        DexEvent::PumpSwapBuyEvent(e) => {
             swap_data.from_mint = e.quote_mint;
-            swap_data.to_mint   = e.base_mint;
-        },
-        PumpSwapSellEvent => |e: PumpSwapSellEvent| {
+            swap_data.to_mint = e.base_mint;
+        }
+        DexEvent::PumpSwapSellEvent(e) => {
             swap_data.from_mint = e.base_mint;
-            swap_data.to_mint   = e.quote_mint;
-        },
-        RaydiumCpmmSwapEvent => |e: RaydiumCpmmSwapEvent| {
-            user = Some(e.payer);
+            swap_data.to_mint = e.quote_mint;
+        }
+        DexEvent::RaydiumCpmmSwapEvent(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.input_token_mint);
-            to_mint   = Some(e.output_token_mint);
+            to_mint = Some(e.output_token_mint);
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumClmmSwapEvent => |e: RaydiumClmmSwapEvent| {
-            user = Some(e.payer);
-            swap_data.description = Some("Unable to get from_mint and to_mint from RaydiumClmmSwapEvent".into());
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumClmmSwapEvent(e) => {
+            // user = Some(e.payer);
+            swap_data.description =
+                Some("Unable to get from_mint and to_mint from RaydiumClmmSwapEvent".into());
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumClmmSwapV2Event => |e: RaydiumClmmSwapV2Event| {
-            user = Some(e.payer);
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumClmmSwapV2Event(e) => {
+            // user = Some(e.payer);
             from_mint = Some(e.input_vault_mint);
-            to_mint   = Some(e.output_vault_mint);
+            to_mint = Some(e.output_vault_mint);
             user_from_token = Some(e.input_token_account);
-            user_to_token   = Some(e.output_token_account);
+            user_to_token = Some(e.output_token_account);
             from_vault = Some(e.input_vault);
-            to_vault   = Some(e.output_vault);
-        },
-        RaydiumAmmV4SwapEvent => |e: RaydiumAmmV4SwapEvent| {
-            user = Some(e.user_source_owner);
-            swap_data.description = Some("Unable to get from_mint and to_mint from RaydiumAmmV4SwapEvent".into());
+            to_vault = Some(e.output_vault);
+        }
+        DexEvent::RaydiumAmmV4SwapEvent(e) => {
+            // user = Some(e.user_source_owner);
+            swap_data.description =
+                Some("Unable to get from_mint and to_mint from RaydiumAmmV4SwapEvent".into());
             user_from_token = Some(e.user_source_token_account);
-            user_to_token   = Some(e.user_destination_token_account);
+            user_to_token = Some(e.user_destination_token_account);
             from_vault = Some(e.pool_pc_token_account);
-            to_vault   = Some(e.pool_coin_token_account);
-        },
-    });
+            to_vault = Some(e.pool_coin_token_account);
+        }
+        _ => {}
+    }
 
     let user_to_token = user_to_token.unwrap_or_default();
     let user_from_token = user_from_token.unwrap_or_default();

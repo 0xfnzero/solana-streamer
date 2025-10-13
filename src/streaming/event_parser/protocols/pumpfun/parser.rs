@@ -1,12 +1,12 @@
 use crate::streaming::event_parser::{
     common::{EventMetadata, EventType, ProtocolType},
-    core::event_parser::GenericEventParseConfig,
+    core::GenericEventParseConfig,
     protocols::pumpfun::{
         discriminators, pumpfun_create_token_event_log_decode, pumpfun_migrate_event_log_decode,
         pumpfun_trade_event_log_decode, PumpFunCreateTokenEvent, PumpFunMigrateEvent,
         PumpFunTradeEvent,
     },
-    UnifiedEvent,
+    DexEvent,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -60,12 +60,9 @@ pub const CONFIGS: &[GenericEventParseConfig] = &[
 ];
 
 /// 解析迁移事件
-fn parse_migrate_inner_instruction(
-    data: &[u8],
-    metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+fn parse_migrate_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     if let Some(event) = pumpfun_migrate_event_log_decode(data) {
-        Some(Box::new(PumpFunMigrateEvent { metadata, ..event }))
+        Some(DexEvent::PumpFunMigrateEvent(PumpFunMigrateEvent { metadata, ..event }))
     } else {
         None
     }
@@ -75,21 +72,18 @@ fn parse_migrate_inner_instruction(
 fn parse_create_token_inner_instruction(
     data: &[u8],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if let Some(event) = pumpfun_create_token_event_log_decode(data) {
-        Some(Box::new(PumpFunCreateTokenEvent { metadata, ..event }))
+        Some(DexEvent::PumpFunCreateTokenEvent(PumpFunCreateTokenEvent { metadata, ..event }))
     } else {
         None
     }
 }
 
 /// 解析交易事件
-fn parse_trade_inner_instruction(
-    data: &[u8],
-    metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+fn parse_trade_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     if let Some(event) = pumpfun_trade_event_log_decode(data) {
-        Some(Box::new(PumpFunTradeEvent { metadata, ..event }))
+        Some(DexEvent::PumpFunTradeEvent(PumpFunTradeEvent { metadata, ..event }))
     } else {
         None
     }
@@ -100,7 +94,7 @@ fn parse_create_token_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 16 || accounts.len() < 11 {
         return None;
     }
@@ -141,7 +135,7 @@ fn parse_create_token_instruction(
         Pubkey::default()
     };
 
-    Some(Box::new(PumpFunCreateTokenEvent {
+    Some(DexEvent::PumpFunCreateTokenEvent(PumpFunCreateTokenEvent {
         metadata,
         name: name.to_string(),
         symbol: symbol.to_string(),
@@ -161,13 +155,13 @@ fn parse_buy_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 16 || accounts.len() < 13 {
         return None;
     }
     let amount = u64::from_le_bytes(data[0..8].try_into().unwrap());
     let max_sol_cost = u64::from_le_bytes(data[8..16].try_into().unwrap());
-    Some(Box::new(PumpFunTradeEvent {
+    Some(DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
         metadata,
         global: accounts[0],
         fee_recipient: accounts[1],
@@ -195,13 +189,13 @@ fn parse_sell_instruction(
     data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if data.len() < 16 || accounts.len() < 11 {
         return None;
     }
     let amount = u64::from_le_bytes(data[0..8].try_into().unwrap());
     let min_sol_output = u64::from_le_bytes(data[8..16].try_into().unwrap());
-    Some(Box::new(PumpFunTradeEvent {
+    Some(DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
         metadata,
         global: accounts[0],
         fee_recipient: accounts[1],
@@ -229,11 +223,11 @@ fn parse_migrate_instruction(
     _data: &[u8],
     accounts: &[Pubkey],
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if accounts.len() < 24 {
         return None;
     }
-    Some(Box::new(PumpFunMigrateEvent {
+    Some(DexEvent::PumpFunMigrateEvent(PumpFunMigrateEvent {
         metadata,
         global: accounts[0],
         withdraw_authority: accounts[1],

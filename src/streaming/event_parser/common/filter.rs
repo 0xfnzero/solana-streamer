@@ -2,7 +2,7 @@ use crate::streaming::event_parser::common::{
     types::EventType, ACCOUNT_EVENT_TYPES, BLOCK_EVENT_TYPES,
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct EventTypeFilter {
     pub include: Vec<EventType>,
 }

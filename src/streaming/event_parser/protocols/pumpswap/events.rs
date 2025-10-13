@@ -2,7 +2,6 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::impl_unified_event;
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, Pool};
 
@@ -66,34 +65,6 @@ pub fn pump_swap_buy_event_log_decode(data: &[u8]) -> Option<PumpSwapBuyEvent> {
     borsh::from_slice::<PumpSwapBuyEvent>(&data[..PUMP_SWAP_BUY_EVENT_LOG_SIZE]).ok()
 }
 
-// 使用宏生成UnifiedEvent实现，指定需要合并的字段
-impl_unified_event!(
-    PumpSwapBuyEvent,
-    timestamp,
-    base_amount_out,
-    max_quote_amount_in,
-    user_base_token_reserves,
-    user_quote_token_reserves,
-    pool_base_token_reserves,
-    pool_quote_token_reserves,
-    quote_amount_in,
-    lp_fee_basis_points,
-    lp_fee,
-    protocol_fee_basis_points,
-    protocol_fee,
-    quote_amount_in_with_lp_fee,
-    user_quote_amount_in,
-    pool,
-    user,
-    user_base_token_account,
-    user_quote_token_account,
-    protocol_fee_recipient,
-    protocol_fee_recipient_token_account,
-    coin_creator,
-    coin_creator_fee_basis_points,
-    coin_creator_fee
-);
-
 /// 卖出事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapSellEvent {
@@ -149,34 +120,6 @@ pub fn pump_swap_sell_event_log_decode(data: &[u8]) -> Option<PumpSwapSellEvent>
     borsh::from_slice::<PumpSwapSellEvent>(&data[..PUMP_SWAP_SELL_EVENT_LOG_SIZE]).ok()
 }
 
-// 使用宏生成UnifiedEvent实现，指定需要合并的字段
-impl_unified_event!(
-    PumpSwapSellEvent,
-    timestamp,
-    base_amount_in,
-    min_quote_amount_out,
-    user_base_token_reserves,
-    user_quote_token_reserves,
-    pool_base_token_reserves,
-    pool_quote_token_reserves,
-    quote_amount_out,
-    lp_fee_basis_points,
-    lp_fee,
-    protocol_fee_basis_points,
-    protocol_fee,
-    quote_amount_out_without_lp_fee,
-    user_quote_amount_out,
-    pool,
-    user,
-    user_base_token_account,
-    user_quote_token_account,
-    protocol_fee_recipient,
-    protocol_fee_recipient_token_account,
-    coin_creator,
-    coin_creator_fee_basis_points,
-    coin_creator_fee
-);
-
 /// 创建池子事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapCreatePoolEvent {
@@ -219,30 +162,6 @@ pub fn pump_swap_create_pool_event_log_decode(data: &[u8]) -> Option<PumpSwapCre
     borsh::from_slice::<PumpSwapCreatePoolEvent>(&data[..PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE]).ok()
 }
 
-impl_unified_event!(
-    PumpSwapCreatePoolEvent,
-    timestamp,
-    index,
-    creator,
-    base_mint,
-    quote_mint,
-    base_mint_decimals,
-    quote_mint_decimals,
-    base_amount_in,
-    quote_amount_in,
-    pool_base_amount,
-    pool_quote_amount,
-    minimum_liquidity,
-    initial_liquidity,
-    lp_token_amount_out,
-    pool_bump,
-    pool,
-    lp_mint,
-    user_base_token_account,
-    user_quote_token_account,
-    coin_creator
-);
-
 /// 存款事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapDepositEvent {
@@ -282,26 +201,6 @@ pub fn pump_swap_deposit_event_log_decode(data: &[u8]) -> Option<PumpSwapDeposit
     }
     borsh::from_slice::<PumpSwapDepositEvent>(&data[..PUMP_SWAP_DEPOSIT_EVENT_LOG_SIZE]).ok()
 }
-
-impl_unified_event!(
-    PumpSwapDepositEvent,
-    timestamp,
-    lp_token_amount_out,
-    max_base_amount_in,
-    max_quote_amount_in,
-    user_base_token_reserves,
-    user_quote_token_reserves,
-    pool_base_token_reserves,
-    pool_quote_token_reserves,
-    base_amount_in,
-    quote_amount_in,
-    lp_mint_supply,
-    pool,
-    user,
-    user_base_token_account,
-    user_quote_token_account,
-    user_pool_token_account
-);
 
 /// 提款事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -343,26 +242,6 @@ pub fn pump_swap_withdraw_event_log_decode(data: &[u8]) -> Option<PumpSwapWithdr
     borsh::from_slice::<PumpSwapWithdrawEvent>(&data[..PUMP_SWAP_WITHDRAW_EVENT_LOG_SIZE]).ok()
 }
 
-impl_unified_event!(
-    PumpSwapWithdrawEvent,
-    timestamp,
-    lp_token_amount_in,
-    min_base_amount_out,
-    min_quote_amount_out,
-    user_base_token_reserves,
-    user_quote_token_reserves,
-    pool_base_token_reserves,
-    pool_quote_token_reserves,
-    base_amount_out,
-    quote_amount_out,
-    lp_mint_supply,
-    pool,
-    user,
-    user_base_token_account,
-    user_quote_token_account,
-    user_pool_token_account
-);
-
 /// 全局配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapGlobalConfigAccountEvent {
@@ -375,7 +254,6 @@ pub struct PumpSwapGlobalConfigAccountEvent {
     pub rent_epoch: u64,
     pub global_config: GlobalConfig,
 }
-impl_unified_event!(PumpSwapGlobalConfigAccountEvent,);
 
 /// 池
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -389,7 +267,6 @@ pub struct PumpSwapPoolAccountEvent {
     pub rent_epoch: u64,
     pub pool: Pool,
 }
-impl_unified_event!(PumpSwapPoolAccountEvent,);
 
 /// 事件鉴别器常量
 pub mod discriminators {

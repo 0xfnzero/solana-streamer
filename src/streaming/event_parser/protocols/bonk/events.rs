@@ -1,4 +1,3 @@
-use crate::impl_unified_event;
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::bonk::types::{
     CurveParams, MintParams, PoolStatus, TradeDirection, VestingParams,
@@ -81,28 +80,6 @@ pub fn bonk_trade_event_log_decode(data: &[u8]) -> Option<BonkTradeEvent> {
     borsh::from_slice::<BonkTradeEvent>(&data[..BONK_TRADE_EVENT_LOG_SIZE]).ok()
 }
 
-// Macro to generate UnifiedEvent implementation, specifying the fields to be merged
-impl_unified_event!(
-    BonkTradeEvent,
-    pool_state,
-    total_base_sell,
-    virtual_base,
-    virtual_quote,
-    real_base_before,
-    real_quote_before,
-    real_base_after,
-    real_quote_after,
-    amount_in,
-    amount_out,
-    protocol_fee,
-    platform_fee,
-    creator_fee,
-    share_fee,
-    trade_direction,
-    pool_status,
-    exact_in
-);
-
 /// Create pool event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BonkPoolCreateEvent {
@@ -139,18 +116,6 @@ pub fn bonk_pool_create_event_log_decode(data: &[u8]) -> Option<BonkPoolCreateEv
     }
     borsh::from_slice::<BonkPoolCreateEvent>(&data[..BONK_POOL_CREATE_EVENT_LOG_SIZE]).ok()
 }
-
-// Macro to generate UnifiedEvent implementation, specifying the fields to be merged
-impl_unified_event!(
-    BonkPoolCreateEvent,
-    pool_state,
-    creator,
-    config,
-    base_mint_param,
-    curve_param,
-    vesting_param,
-    amm_fee_on
-);
 
 /// Create pool event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -226,14 +191,6 @@ pub struct BonkMigrateToAmmEvent {
     pub rent_program: Pubkey,
 }
 
-// Macro to generate UnifiedEvent implementation, specifying the fields to be merged
-impl_unified_event!(
-    BonkMigrateToAmmEvent,
-    base_lot_size,
-    quote_lot_size,
-    market_vault_signer_nonce
-);
-
 // Migrate to CP Swap event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BonkMigrateToCpswapEvent {
@@ -270,9 +227,6 @@ pub struct BonkMigrateToCpswapEvent {
     pub remaining_accounts: Vec<Pubkey>,
 }
 
-// Macro to generate UnifiedEvent implementation, specifying the fields to be merged
-impl_unified_event!(BonkMigrateToCpswapEvent,);
-
 /// 池状态
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BonkPoolStateAccountEvent {
@@ -284,7 +238,6 @@ pub struct BonkPoolStateAccountEvent {
     pub rent_epoch: u64,
     pub pool_state: PoolState,
 }
-impl_unified_event!(BonkPoolStateAccountEvent,);
 
 /// 全局配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -297,7 +250,6 @@ pub struct BonkGlobalConfigAccountEvent {
     pub rent_epoch: u64,
     pub global_config: GlobalConfig,
 }
-impl_unified_event!(BonkGlobalConfigAccountEvent,);
 
 /// 平台配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -310,7 +262,6 @@ pub struct BonkPlatformConfigAccountEvent {
     pub rent_epoch: u64,
     pub platform_config: PlatformConfig,
 }
-impl_unified_event!(BonkPlatformConfigAccountEvent,);
 
 /// Event discriminator constants
 pub mod discriminators {

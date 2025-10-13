@@ -2,7 +2,7 @@ use anyhow::Result;
 use solana_commitment_config::CommitmentConfig;
 use solana_streamer_sdk::streaming::event_parser::core::event_parser::EventParser;
 use solana_streamer_sdk::streaming::event_parser::Protocol;
-use solana_streamer_sdk::streaming::event_parser::UnifiedEvent;
+use solana_streamer_sdk::streaming::event_parser::DexEvent;
 use std::str::FromStr;
 use std::sync::Arc;
 /// Get transaction data based on transaction signature
@@ -96,16 +96,16 @@ async fn get_single_transaction_details(signature_str: &str) -> Result<()> {
                 Protocol::RaydiumCpmm,
                 Protocol::RaydiumAmmV4,
             ];
-            let parser: Arc<EventParser> = Arc::new(EventParser::new(protocols, None));
-            parser
-                .parse_encoded_confirmed_transaction_with_status_meta(
-                    signature,
-                    transaction,
-                    Arc::new(move |event: &Box<dyn UnifiedEvent>| {
-                        println!("{:?}\n", event);
-                    }),
-                )
-                .await?;
+            EventParser::parse_encoded_confirmed_transaction_with_status_meta(
+                &protocols,
+                None,
+                signature,
+                transaction,
+                Arc::new(move |event: &DexEvent| {
+                    println!("{:?}\n", event);
+                }),
+            )
+            .await?;
         }
         Err(e) => {
             println!("Failed to get transaction: {}", e);

@@ -45,6 +45,7 @@
 
 - [🚀 项目特性](#-项目特性)
 - [⚡ 安装](#-安装)
+- [🔄 迁移指南](#-迁移指南)
 - [⚙️ 配置系统](#️-配置系统)
 - [📚 使用示例](#-使用示例)
 - [🔧 支持的协议](#-支持的协议)
@@ -107,74 +108,69 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "0.5.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.0.0" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "0.5.0"
+solana-streamer-sdk = "1.0.0"
+```
+
+## 🔄 迁移指南
+
+### 从 v0.5.x 迁移到 v1.0.0
+
+版本 1.0.0 引入了从基于 trait 的事件处理到基于 enum 的事件的重大架构变更。这提供了更好的类型安全性、改进的性能和更简单的代码模式。
+
+**主要变更：**
+
+1. **事件类型变更** - `Box<dyn UnifiedEvent>` → `DexEvent` 枚举
+2. **回调签名** - 回调现在接收具体的 `DexEvent` 而不是 trait 对象
+3. **事件匹配** - 使用标准 Rust `match` 而不是 `match_event!` 宏
+4. **元数据访问** - 事件属性现在通过 `.metadata()` 方法访问
+
+详细的迁移步骤和代码示例，请参阅 [MIGRATION.md](MIGRATION.md) 或 [MIGRATION_CN.md](MIGRATION_CN.md)（中文版本）。
+
+**快速迁移示例：**
+
+```rust
+// 旧版 (v0.5.x)
+let callback = |event: Box<dyn UnifiedEvent>| {
+    println!("Event: {:?}", event.event_type());
+};
+
+// 新版 (v1.0.0)
+let callback = |event: DexEvent| {
+    println!("Event: {:?}", event.metadata().event_type);
+};
 ```
 
 ## ⚙️ 配置系统
 
-### 预设配置
-
-库提供了三种预设配置，针对不同的使用场景进行了优化：
-
-#### 1. 高吞吐量配置 (`high_throughput()`)
-
-专为高并发场景优化，优先考虑吞吐量而非延迟：
+您可以自定义客户端配置：
 
 ```rust
-let config = StreamClientConfig::high_throughput();
-// 或者使用便捷方法
-let grpc = YellowstoneGrpc::new_high_throughput(endpoint, token)?;
-let shred = ShredStreamGrpc::new_high_throughput(endpoint).await?;
+use solana_streamer_sdk::streaming::grpc::ClientConfig;
+
+// 使用默认配置
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+// 或创建自定义配置
+let mut config = ClientConfig::default();
+config.enable_metrics = true;  // 启用性能监控
+config.connection.connect_timeout = 30;  // 30 秒
+config.connection.request_timeout = 120;  // 120 秒
+
+let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 ```
 
-**特性：**
-- **背压策略**: Drop（丢弃策略）- 在高负载时丢弃消息以避免阻塞
-- **缓冲区大小**: 5,000 个许可证，处理突发流量
-- **适用场景**: 需要处理大量数据且可以容忍在峰值负载时偶尔丢失消息的场景
-
-#### 2. 低延迟配置 (`low_latency()`)
-
-专为实时场景优化，优先考虑延迟而非吞吐量：
-
-```rust
-let config = StreamClientConfig::low_latency();
-// 或者使用便捷方法
-let grpc = YellowstoneGrpc::new_low_latency(endpoint, token)?;
-let shred = ShredStreamGrpc::new_low_latency(endpoint).await?;
-```
-
-**特性：**
-- **背压策略**: Block（阻塞策略）- 确保不丢失任何数据
-- **缓冲区大小**: 4000 个许可证，平衡吞吐量和延迟
-- **立即处理**: 不进行缓冲，立即处理事件
-- **适用场景**: 每毫秒都很重要且不能丢失任何事件的场景，如交易应用或实时监控
-
-
-### 自定义配置
-
-您也可以创建自定义配置：
-
-```rust
-let config = StreamClientConfig {
-    connection: ConnectionConfig {
-        connect_timeout: 30,
-        request_timeout: 120,
-        max_decoding_message_size: 20 * 1024 * 1024, // 20MB
-    },
-    backpressure: BackpressureConfig {
-        permits: 2000,
-        strategy: BackpressureStrategy::Block,
-    },
-    enable_metrics: true,
-};
-```
+**可用配置选项：**
+- `enable_metrics`: 启用/禁用性能监控（默认：false）
+- `connection.connect_timeout`: 连接超时（秒）（默认：10）
+- `connection.request_timeout`: 请求超时（秒）（默认：60）
+- `connection.max_decoding_message_size`: 最大消息大小（字节）（默认：10MB）
 
 ## 📚 使用示例
 
@@ -295,7 +291,7 @@ grpc.update_subscription(
 
 ### 统一事件接口
 
-- **UnifiedEvent Trait**: 所有协议事件实现通用接口
+- **DexEvent 枚举**: 包含所有协议事件的类型安全枚举
 - **Protocol Enum**: 轻松识别事件来源
 - **Event Factory**: 自动事件解析和分类
 

@@ -1,7 +1,7 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::raydium_clmm::types::{PoolState, TickArrayState};
 use crate::{
-    impl_unified_event, streaming::event_parser::protocols::raydium_clmm::types::AmmConfig,
+    streaming::event_parser::protocols::raydium_clmm::types::AmmConfig,
 };
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
@@ -27,7 +27,6 @@ pub struct RaydiumClmmSwapEvent {
     pub remaining_accounts: Vec<Pubkey>,
 }
 
-impl_unified_event!(RaydiumClmmSwapEvent,);
 
 /// 交易v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,7 +51,6 @@ pub struct RaydiumClmmSwapV2Event {
     pub output_vault_mint: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
 }
-impl_unified_event!(RaydiumClmmSwapV2Event,);
 
 /// 关闭仓位
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,7 +63,6 @@ pub struct RaydiumClmmClosePositionEvent {
     pub system_program: Pubkey,
     pub token_program: Pubkey,
 }
-impl_unified_event!(RaydiumClmmClosePositionEvent,);
 
 /// 减少流动性v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,7 +89,6 @@ pub struct RaydiumClmmDecreaseLiquidityV2Event {
     pub vault1_mint: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
 }
-impl_unified_event!(RaydiumClmmDecreaseLiquidityV2Event,);
 
 /// 创建池
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,7 +110,6 @@ pub struct RaydiumClmmCreatePoolEvent {
     pub system_program: Pubkey,
     pub rent: Pubkey,
 }
-impl_unified_event!(RaydiumClmmCreatePoolEvent,);
 
 /// 增加流动性v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -140,7 +135,6 @@ pub struct RaydiumClmmIncreaseLiquidityV2Event {
     pub vault0_mint: Pubkey,
     pub vault1_mint: Pubkey,
 }
-impl_unified_event!(RaydiumClmmIncreaseLiquidityV2Event,);
 
 /// 打开仓位v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -177,7 +171,6 @@ pub struct RaydiumClmmOpenPositionWithToken22NftEvent {
     pub vault0_mint: Pubkey,
     pub vault1_mint: Pubkey,
 }
-impl_unified_event!(RaydiumClmmOpenPositionWithToken22NftEvent,);
 
 /// 打开仓位V2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -217,7 +210,6 @@ pub struct RaydiumClmmOpenPositionV2Event {
     pub vault1_mint: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
 }
-impl_unified_event!(RaydiumClmmOpenPositionV2Event,);
 
 /// 池配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -230,7 +222,6 @@ pub struct RaydiumClmmAmmConfigAccountEvent {
     pub rent_epoch: u64,
     pub amm_config: AmmConfig,
 }
-impl_unified_event!(RaydiumClmmAmmConfigAccountEvent,);
 
 /// 池状态
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -243,7 +234,6 @@ pub struct RaydiumClmmPoolStateAccountEvent {
     pub rent_epoch: u64,
     pub pool_state: PoolState,
 }
-impl_unified_event!(RaydiumClmmPoolStateAccountEvent,);
 
 /// 池状态
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -256,7 +246,6 @@ pub struct RaydiumClmmTickArrayStateAccountEvent {
     pub rent_epoch: u64,
     pub tick_array_state: TickArrayState,
 }
-impl_unified_event!(RaydiumClmmTickArrayStateAccountEvent,);
 
 /// 事件鉴别器常量
 pub mod discriminators {

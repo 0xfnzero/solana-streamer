@@ -1,4 +1,3 @@
-use crate::impl_unified_event;
 use crate::streaming::event_parser::common::{types::EventType, EventMetadata};
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
@@ -36,6 +35,3 @@ impl BlockMetaEvent {
         Self { metadata, slot, block_hash }
     }
 }
-
-// 使用macro生成UnifiedEvent实现
-impl_unified_event!(BlockMetaEvent,);

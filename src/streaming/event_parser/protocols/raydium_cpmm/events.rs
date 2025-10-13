@@ -1,7 +1,7 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::raydium_cpmm::types::PoolState;
 use crate::{
-    impl_unified_event, streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig,
+    streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig,
 };
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,6 @@ pub struct RaydiumCpmmSwapEvent {
     pub observation_state: Pubkey,
 }
 
-impl_unified_event!(RaydiumCpmmSwapEvent,);
 
 /// 存款
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -56,7 +55,6 @@ pub struct RaydiumCpmmDepositEvent {
     pub vault1_mint: Pubkey,
     pub lp_mint: Pubkey,
 }
-impl_unified_event!(RaydiumCpmmDepositEvent,);
 
 /// 初始化
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -88,7 +86,6 @@ pub struct RaydiumCpmmInitializeEvent {
     pub system_program: Pubkey,
     pub rent: Pubkey,
 }
-impl_unified_event!(RaydiumCpmmInitializeEvent,);
 
 /// 提款
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -114,7 +111,6 @@ pub struct RaydiumCpmmWithdrawEvent {
     pub lp_mint: Pubkey,
     pub memo_program: Pubkey,
 }
-impl_unified_event!(RaydiumCpmmWithdrawEvent,);
 
 /// 池配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -128,7 +124,6 @@ pub struct RaydiumCpmmAmmConfigAccountEvent {
     pub rent_epoch: u64,
     pub amm_config: AmmConfig,
 }
-impl_unified_event!(RaydiumCpmmAmmConfigAccountEvent,);
 
 /// 池状态
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -142,7 +137,6 @@ pub struct RaydiumCpmmPoolStateAccountEvent {
     pub rent_epoch: u64,
     pub pool_state: PoolState,
 }
-impl_unified_event!(RaydiumCpmmPoolStateAccountEvent,);
 
 /// 事件鉴别器常量
 pub mod discriminators {

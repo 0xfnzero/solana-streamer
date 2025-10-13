@@ -1,15 +1,11 @@
-use solana_streamer_sdk::{
-    match_event,
-    streaming::{
-        event_parser::{
-            common::{filter::EventTypeFilter, EventType},
-            core::account_event_parser::TokenInfoEvent,
-            UnifiedEvent,
-        },
-        grpc::ClientConfig,
-        yellowstone_grpc::{AccountFilter, TransactionFilter},
-        YellowstoneGrpc,
+use solana_streamer_sdk::streaming::{
+    event_parser::{
+        common::{filter::EventTypeFilter, EventType},
+        DexEvent,
     },
+    grpc::ClientConfig,
+    yellowstone_grpc::{AccountFilter, TransactionFilter},
+    YellowstoneGrpc,
 };
 
 #[tokio::main]
@@ -22,7 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
     println!("Subscribing to Yellowstone gRPC events...");
     // Create low-latency configuration
-    let mut config: ClientConfig = ClientConfig::low_latency();
+    let mut config: ClientConfig = ClientConfig::default();
     // Enable performance monitoring, has performance overhead, disabled by default
     config.enable_metrics = true;
     let grpc = YellowstoneGrpc::new_with_config(
@@ -80,12 +76,11 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_event_callback() -> impl Fn(Box<dyn UnifiedEvent>) {
-    |event: Box<dyn UnifiedEvent>| {
-        match_event!(event, {
-            TokenInfoEvent => |e: TokenInfoEvent| {
-                println!("TokenInfoEvent: {:?}", e.decimals);
-            },
-        });
+fn create_event_callback() -> impl Fn(DexEvent) {
+    |event: DexEvent| match event {
+        DexEvent::TokenInfoEvent(e) => {
+            println!("TokenInfoEvent: {:?}", e.decimals);
+        }
+        _ => {}
     }
 }

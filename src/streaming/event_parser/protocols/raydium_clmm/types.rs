@@ -9,7 +9,7 @@ use crate::streaming::{
             RaydiumClmmAmmConfigAccountEvent, RaydiumClmmPoolStateAccountEvent,
             RaydiumClmmTickArrayStateAccountEvent,
         },
-        UnifiedEvent,
+        DexEvent,
     },
     grpc::AccountPretty,
 };
@@ -37,15 +37,12 @@ pub fn amm_config_decode(data: &[u8]) -> Option<AmmConfig> {
     borsh::from_slice::<AmmConfig>(&data[..AMM_CONFIG_SIZE]).ok()
 }
 
-pub fn amm_config_parser(
-    account: &AccountPretty,
-    metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+pub fn amm_config_parser(account: &AccountPretty, metadata: EventMetadata) -> Option<DexEvent> {
     if account.data.len() < AMM_CONFIG_SIZE + 8 {
         return None;
     }
     if let Some(amm_config) = amm_config_decode(&account.data[8..AMM_CONFIG_SIZE + 8]) {
-        Some(Box::new(RaydiumClmmAmmConfigAccountEvent {
+        Some(DexEvent::RaydiumClmmAmmConfigAccountEvent(RaydiumClmmAmmConfigAccountEvent {
             metadata,
             pubkey: account.pubkey,
             executable: account.executable,
@@ -125,15 +122,12 @@ pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
     borsh::from_slice::<PoolState>(&data[..POOL_STATE_SIZE]).ok()
 }
 
-pub fn pool_state_parser(
-    account: &AccountPretty,
-    metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+pub fn pool_state_parser(account: &AccountPretty, metadata: EventMetadata) -> Option<DexEvent> {
     if account.data.len() < POOL_STATE_SIZE + 8 {
         return None;
     }
     if let Some(pool_state) = pool_state_decode(&account.data[8..POOL_STATE_SIZE + 8]) {
-        Some(Box::new(RaydiumClmmPoolStateAccountEvent {
+        Some(DexEvent::RaydiumClmmPoolStateAccountEvent(RaydiumClmmPoolStateAccountEvent {
             metadata,
             pubkey: account.pubkey,
             executable: account.executable,
@@ -209,22 +203,24 @@ pub fn tick_array_state_decode(data: &[u8]) -> Option<TickArrayState> {
 pub fn tick_array_state_parser(
     account: &AccountPretty,
     metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+) -> Option<DexEvent> {
     if account.data.len() < TICK_ARRAY_STATE_SIZE + 8 {
         return None;
     }
     if let Some(tick_array_state) =
         tick_array_state_decode(&account.data[8..TICK_ARRAY_STATE_SIZE + 8])
     {
-        Some(Box::new(RaydiumClmmTickArrayStateAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            tick_array_state: tick_array_state,
-        }))
+        Some(DexEvent::RaydiumClmmTickArrayStateAccountEvent(
+            RaydiumClmmTickArrayStateAccountEvent {
+                metadata,
+                pubkey: account.pubkey,
+                executable: account.executable,
+                lamports: account.lamports,
+                owner: account.owner,
+                rent_epoch: account.rent_epoch,
+                tick_array_state: tick_array_state,
+            },
+        ))
     } else {
         None
     }

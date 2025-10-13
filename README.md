@@ -46,6 +46,7 @@
 
 - [🚀 Project Features](#-project-features)
 - [⚡ Installation](#-installation)
+- [🔄 Migration Guide](#-migration-guide)
 - [⚙️ Configuration System](#️-configuration-system)
 - [📚 Usage Examples](#-usage-examples)
 - [🔧 Supported Protocols](#-supported-protocols)
@@ -108,74 +109,69 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "0.5.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.0.0" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "0.5.0"
+solana-streamer-sdk = "1.0.0"
+```
+
+## 🔄 Migration Guide
+
+### Migrating from v0.5.x to v1.0.0
+
+Version 1.0.0 introduces a major architectural change from trait-based event handling to enum-based events. This provides better type safety, improved performance, and simpler code patterns.
+
+**Key Changes:**
+
+1. **Event Type Changed** - `Box<dyn UnifiedEvent>` → `DexEvent` enum
+2. **Callback Signature** - Callbacks now receive concrete `DexEvent` instead of trait objects
+3. **Event Matching** - Use standard Rust `match` instead of `match_event!` macro
+4. **Metadata Access** - Event properties now accessed through `.metadata()` method
+
+For detailed migration steps and code examples, see [MIGRATION.md](MIGRATION.md) or [MIGRATION_CN.md](MIGRATION_CN.md) (Chinese version).
+
+**Quick Migration Example:**
+
+```rust
+// Old (v0.5.x)
+let callback = |event: Box<dyn UnifiedEvent>| {
+    println!("Event: {:?}", event.event_type());
+};
+
+// New (v1.0.0)
+let callback = |event: DexEvent| {
+    println!("Event: {:?}", event.metadata().event_type);
+};
 ```
 
 ## ⚙️ Configuration System
 
-### Preset Configurations
-
-The library provides three preset configurations optimized for different use cases:
-
-#### 1. High Throughput Configuration (`high_throughput()`)
-
-Optimized for high-concurrency scenarios, prioritizing throughput over latency:
+You can customize client configuration:
 
 ```rust
-let config = StreamClientConfig::high_throughput();
-// Or use convenience methods
-let grpc = YellowstoneGrpc::new_high_throughput(endpoint, token)?;
-let shred = ShredStreamGrpc::new_high_throughput(endpoint).await?;
+use solana_streamer_sdk::streaming::grpc::ClientConfig;
+
+// Use default configuration
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+// Or create custom configuration
+let mut config = ClientConfig::default();
+config.enable_metrics = true;  // Enable performance monitoring
+config.connection.connect_timeout = 30;  // 30 seconds
+config.connection.request_timeout = 120;  // 120 seconds
+
+let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 ```
 
-**Features:**
-- **Backpressure Strategy**: Drop - drops messages during high load to avoid blocking
-- **Buffer Size**: 5,000 permits to handle burst traffic
-- **Use Case**: Scenarios where you need to process large volumes of data and can tolerate occasional message drops during peak loads
-
-#### 2. Low Latency Configuration (`low_latency()`)
-
-Optimized for real-time scenarios, prioritizing latency over throughput:
-
-```rust
-let config = StreamClientConfig::low_latency();
-// Or use convenience methods
-let grpc = YellowstoneGrpc::new_low_latency(endpoint, token)?;
-let shred = ShredStreamGrpc::new_low_latency(endpoint).await?;
-```
-
-**Features:**
-- **Backpressure Strategy**: Block - ensures no data loss
-- **Buffer Size**: 4000 permits for balanced throughput and latency
-- **Immediate Processing**: No buffering, processes events immediately
-- **Use Case**: Scenarios where every millisecond counts and you cannot afford to lose any events, such as trading applications or real-time monitoring
-
-
-### Custom Configuration
-
-You can also create custom configurations:
-
-```rust
-let config = StreamClientConfig {
-    connection: ConnectionConfig {
-        connect_timeout: 30,
-        request_timeout: 120,
-        max_decoding_message_size: 20 * 1024 * 1024, // 20MB
-    },
-    backpressure: BackpressureConfig {
-        permits: 2000,
-        strategy: BackpressureStrategy::Block,
-    },
-    enable_metrics: true,
-};
-```
+**Available Configuration Options:**
+- `enable_metrics`: Enable/disable performance monitoring (default: false)
+- `connection.connect_timeout`: Connection timeout in seconds (default: 10)
+- `connection.request_timeout`: Request timeout in seconds (default: 60)
+- `connection.max_decoding_message_size`: Maximum message size in bytes (default: 10MB)
 
 ## 📚 Usage Examples
 
@@ -296,7 +292,7 @@ Note: Multiple subscription attempts on the same client return an error.
 
 ### Unified Event Interface
 
-- **UnifiedEvent Trait**: All protocol events implement a common interface
+- **DexEvent Enum**: Type-safe enum containing all protocol events
 - **Protocol Enum**: Easy identification of event sources
 - **Event Factory**: Automatic event parsing and categorization
 

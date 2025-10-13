@@ -5,7 +5,7 @@ use solana_sdk::pubkey::Pubkey;
 use crate::streaming::{
     event_parser::{
         common::EventMetadata, protocols::raydium_amm_v4::RaydiumAmmV4AmmInfoAccountEvent,
-        UnifiedEvent,
+        DexEvent,
     },
     grpc::AccountPretty,
 };
@@ -86,15 +86,12 @@ pub fn amm_info_decode(data: &[u8]) -> Option<AmmInfo> {
     borsh::from_slice::<AmmInfo>(&data[..AMM_INFO_SIZE]).ok()
 }
 
-pub fn amm_info_parser(
-    account: &AccountPretty,
-    metadata: EventMetadata,
-) -> Option<Box<dyn UnifiedEvent>> {
+pub fn amm_info_parser(account: &AccountPretty, metadata: EventMetadata) -> Option<DexEvent> {
     if account.data.len() < AMM_INFO_SIZE {
         return None;
     }
     if let Some(amm_info) = amm_info_decode(&account.data[..AMM_INFO_SIZE]) {
-        Some(Box::new(RaydiumAmmV4AmmInfoAccountEvent {
+        Some(DexEvent::RaydiumAmmV4AmmInfoAccountEvent(RaydiumAmmV4AmmInfoAccountEvent {
             metadata,
             pubkey: account.pubkey,
             executable: account.executable,
