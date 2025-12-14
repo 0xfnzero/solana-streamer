@@ -8,11 +8,13 @@ use crate::streaming::event_parser::core::common_event_parser::{
 use crate::streaming::event_parser::protocols::block::block_meta_event::BlockMetaEvent;
 use crate::streaming::event_parser::protocols::bonk::events::*;
 use crate::streaming::event_parser::protocols::meteora_damm_v2::events::*;
+use crate::streaming::event_parser::protocols::meteora_dlmm::events::*;
 use crate::streaming::event_parser::protocols::pumpfun::events::*;
 use crate::streaming::event_parser::protocols::pumpswap::events::*;
 use crate::streaming::event_parser::protocols::raydium_amm_v4::events::*;
 use crate::streaming::event_parser::protocols::raydium_clmm::events::*;
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::*;
+use crate::streaming::event_parser::protocols::whirlpool::events::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -65,6 +67,7 @@ pub enum DexEvent {
     RaydiumClmmAmmConfigAccountEvent(RaydiumClmmAmmConfigAccountEvent),
     RaydiumClmmPoolStateAccountEvent(RaydiumClmmPoolStateAccountEvent),
     RaydiumClmmTickArrayStateAccountEvent(RaydiumClmmTickArrayStateAccountEvent),
+    RaydiumClmmTickArrayBitmapExtensionAccountEvent(RaydiumClmmTickArrayBitmapExtensionAccountEvent),
 
     // Raydium CPMM events
     RaydiumCpmmSwapEvent(RaydiumCpmmSwapEvent),
@@ -80,6 +83,12 @@ pub enum DexEvent {
     MeteoraDammV2InitializePoolEvent(MeteoraDammV2InitializePoolEvent),
     MeteoraDammV2InitializeCustomizablePoolEvent(MeteoraDammV2InitializeCustomizablePoolEvent),
     MeteoraDammV2InitializePoolWithDynamicConfigEvent(MeteoraDammV2InitializePoolWithDynamicConfigEvent),
+
+    // Meteora DLMM events
+    MeteoraDlmmLbPairAccountEvent(MeteoraDlmmLbPairAccountEvent),
+
+    // Whirlpool events
+    WhirlpoolAccountEvent(WhirlpoolAccountEvent),
 
     // Common events
     TokenAccountEvent(TokenAccountEvent),
@@ -130,6 +139,7 @@ impl DexEvent {
             DexEvent::RaydiumClmmAmmConfigAccountEvent(e) => &e.metadata,
             DexEvent::RaydiumClmmPoolStateAccountEvent(e) => &e.metadata,
             DexEvent::RaydiumClmmTickArrayStateAccountEvent(e) => &e.metadata,
+            DexEvent::RaydiumClmmTickArrayBitmapExtensionAccountEvent(e) => &e.metadata,
             DexEvent::RaydiumCpmmSwapEvent(e) => &e.metadata,
             DexEvent::RaydiumCpmmDepositEvent(e) => &e.metadata,
             DexEvent::RaydiumCpmmWithdrawEvent(e) => &e.metadata,
@@ -141,6 +151,8 @@ impl DexEvent {
             DexEvent::MeteoraDammV2InitializePoolEvent(e) => &e.metadata,
             DexEvent::MeteoraDammV2InitializeCustomizablePoolEvent(e) => &e.metadata,
             DexEvent::MeteoraDammV2InitializePoolWithDynamicConfigEvent(e) => &e.metadata,
+            DexEvent::MeteoraDlmmLbPairAccountEvent(e) => &e.metadata,
+            DexEvent::WhirlpoolAccountEvent(e) => &e.metadata,
             DexEvent::TokenAccountEvent(e) => &e.metadata,
             DexEvent::NonceAccountEvent(e) => &e.metadata,
             DexEvent::TokenInfoEvent(e) => &e.metadata,
@@ -189,6 +201,7 @@ impl DexEvent {
             DexEvent::RaydiumClmmAmmConfigAccountEvent(e) => &mut e.metadata,
             DexEvent::RaydiumClmmPoolStateAccountEvent(e) => &mut e.metadata,
             DexEvent::RaydiumClmmTickArrayStateAccountEvent(e) => &mut e.metadata,
+            DexEvent::RaydiumClmmTickArrayBitmapExtensionAccountEvent(e) => &mut e.metadata,
             DexEvent::RaydiumCpmmSwapEvent(e) => &mut e.metadata,
             DexEvent::RaydiumCpmmDepositEvent(e) => &mut e.metadata,
             DexEvent::RaydiumCpmmWithdrawEvent(e) => &mut e.metadata,
@@ -200,6 +213,8 @@ impl DexEvent {
             DexEvent::MeteoraDammV2InitializePoolEvent(e) => &mut e.metadata,
             DexEvent::MeteoraDammV2InitializeCustomizablePoolEvent(e) => &mut e.metadata,
             DexEvent::MeteoraDammV2InitializePoolWithDynamicConfigEvent(e) => &mut e.metadata,
+            DexEvent::MeteoraDlmmLbPairAccountEvent(e) => &mut e.metadata,
+            DexEvent::WhirlpoolAccountEvent(e) => &mut e.metadata,
             DexEvent::TokenAccountEvent(e) => &mut e.metadata,
             DexEvent::NonceAccountEvent(e) => &mut e.metadata,
             DexEvent::TokenInfoEvent(e) => &mut e.metadata,

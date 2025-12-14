@@ -388,21 +388,13 @@ impl EventParser {
             None => return Ok(()),
         };
 
-        // 处理 inner instructions - 查找对应的 CPI log 进行 merge
-        // 当 inner_index 有值时，只查找索引大于当前 inner_index 的 CPI log
+        // 处理 inner instructions
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
-            let current_inner_idx = inner_index.unwrap_or(-1) as i32;
-            
             // 并行执行两个任务: 解析 inner event 和提取 swap_data
             let (inner_event_result, swap_data_result) = std::thread::scope(|s| {
                 let inner_event_handle = s.spawn(|| {
-                    for (idx, inner_instruction) in inner_instructions_ref.instructions.iter().enumerate() {
-                        // 只查找索引大于当前 inner_index 的 CPI log
-                        if (idx as i32) <= current_inner_idx {
-                            continue;
-                        }
-                        
+                    for inner_instruction in inner_instructions_ref.instructions.iter() {
                         let inner_data = &inner_instruction.data;
                         // 检查长度（需要 16 字节的 discriminator）
                         if inner_data.len() < 16 {
@@ -428,7 +420,7 @@ impl EventParser {
                         parse_swap_data_from_next_grpc_instructions(
                             &event,
                             inner_instructions_ref,
-                            current_inner_idx as i8,
+                            inner_index.unwrap_or(-1_i64) as i8,
                             accounts,
                         )
                     } else {
@@ -571,21 +563,13 @@ impl EventParser {
             None => return Ok(()),
         };
 
-        // 处理 inner instructions - 查找对应的 CPI log 进行 merge
-        // 当 inner_index 有值时，只查找索引大于当前 inner_index 的 CPI log
+        // 处理 inner instructions
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
-            let current_inner_idx = inner_index.unwrap_or(-1) as i32;
-            
             // 并行执行两个任务: 解析 inner event 和提取 swap_data
             let (inner_event_result, swap_data_result) = std::thread::scope(|s| {
                 let inner_event_handle = s.spawn(|| {
-                    for (idx, inner_instruction) in inner_instructions_ref.instructions.iter().enumerate() {
-                        // 只查找索引大于当前 inner_index 的 CPI log
-                        if (idx as i32) <= current_inner_idx {
-                            continue;
-                        }
-                        
+                    for inner_instruction in inner_instructions_ref.instructions.iter() {
                         let inner_data = &inner_instruction.instruction.data;
                         // 检查长度（需要 16 字节的 discriminator）
                         if inner_data.len() < 16 {
@@ -611,7 +595,7 @@ impl EventParser {
                         parse_swap_data_from_next_instructions(
                             &event,
                             inner_instructions_ref,
-                            current_inner_idx as i8,
+                            inner_index.unwrap_or(-1_i64) as i8,
                             accounts,
                         )
                     } else {
@@ -751,4 +735,3 @@ impl EventParser {
         }
     }
 }
-

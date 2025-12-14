@@ -79,6 +79,9 @@ pub fn parse_raydium_clmm_account_data(
         discriminators::TICK_ARRAY_STATE => {
             crate::streaming::event_parser::protocols::raydium_clmm::types::tick_array_state_parser(account, metadata)
         }
+        discriminators::TICK_ARRAY_BITMAP_EXTENSION => {
+            crate::streaming::event_parser::protocols::raydium_clmm::types::tick_array_bitmap_extension_parser(account, metadata)
+        }
         _ => None,
     }
 }

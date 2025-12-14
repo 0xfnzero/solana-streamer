@@ -7,7 +7,7 @@ use crate::streaming::{
         common::{EventMetadata, EventType},
         protocols::raydium_clmm::{
             RaydiumClmmAmmConfigAccountEvent, RaydiumClmmPoolStateAccountEvent,
-            RaydiumClmmTickArrayStateAccountEvent,
+            RaydiumClmmTickArrayBitmapExtensionAccountEvent, RaydiumClmmTickArrayStateAccountEvent,
         },
         DexEvent,
     },
@@ -225,6 +225,109 @@ pub fn tick_array_state_parser(
                 owner: account.owner,
                 rent_epoch: account.rent_epoch,
                 tick_array_state: tick_array_state,
+            },
+        ))
+    } else {
+        None
+    }
+}
+
+// EXTENSION_TICKARRAY_BITMAP_SIZE 常量，根据 Raydium CLMM 实现，通常为 14
+pub const EXTENSION_TICKARRAY_BITMAP_SIZE: usize = 14;
+
+#[repr(C, packed)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct TickArrayBitmapExtension {
+    pub pool_id: Pubkey,
+    /// Packed initialized tick array state for start_tick_index is positive
+    pub positive_tick_array_bitmap: [[u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE],
+    /// Packed initialized tick array state for start_tick_index is negative
+    pub negative_tick_array_bitmap: [[u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE],
+}
+
+impl Default for TickArrayBitmapExtension {
+    fn default() -> Self {
+        Self {
+            pool_id: Pubkey::default(),
+            positive_tick_array_bitmap: [[0u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE],
+            negative_tick_array_bitmap: [[0u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE],
+        }
+    }
+}
+
+pub const TICK_ARRAY_BITMAP_EXTENSION_SIZE: usize = 32 + (EXTENSION_TICKARRAY_BITMAP_SIZE * 8 * 8) + (EXTENSION_TICKARRAY_BITMAP_SIZE * 8 * 8);
+
+pub fn tick_array_bitmap_extension_decode(data: &[u8]) -> Option<TickArrayBitmapExtension> {
+    if data.len() < TICK_ARRAY_BITMAP_EXTENSION_SIZE {
+        return None;
+    }
+    
+    // 由于使用了 #[repr(C, packed)]，我们需要手动解析
+    let mut offset = 0;
+    
+    // 读取 pool_id (32 bytes)
+    if data.len() < offset + 32 {
+        return None;
+    }
+    let pool_id = Pubkey::try_from(&data[offset..offset + 32]).ok()?;
+    offset += 32;
+    
+    // 读取 positive_tick_array_bitmap
+    let mut positive_tick_array_bitmap = [[0u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE];
+    for i in 0..EXTENSION_TICKARRAY_BITMAP_SIZE {
+        for j in 0..8 {
+            if data.len() < offset + 8 {
+                return None;
+            }
+            positive_tick_array_bitmap[i][j] = u64::from_le_bytes(
+                data[offset..offset + 8].try_into().ok()?
+            );
+            offset += 8;
+        }
+    }
+    
+    // 读取 negative_tick_array_bitmap
+    let mut negative_tick_array_bitmap = [[0u64; 8]; EXTENSION_TICKARRAY_BITMAP_SIZE];
+    for i in 0..EXTENSION_TICKARRAY_BITMAP_SIZE {
+        for j in 0..8 {
+            if data.len() < offset + 8 {
+                return None;
+            }
+            negative_tick_array_bitmap[i][j] = u64::from_le_bytes(
+                data[offset..offset + 8].try_into().ok()?
+            );
+            offset += 8;
+        }
+    }
+    
+    Some(TickArrayBitmapExtension {
+        pool_id,
+        positive_tick_array_bitmap,
+        negative_tick_array_bitmap,
+    })
+}
+
+pub fn tick_array_bitmap_extension_parser(
+    account: &AccountPretty,
+    mut metadata: EventMetadata,
+) -> Option<DexEvent> {
+    metadata.event_type = EventType::AccountRaydiumClmmTickArrayBitmapExtension;
+
+    if account.data.len() < TICK_ARRAY_BITMAP_EXTENSION_SIZE + 8 {
+        return None;
+    }
+    if let Some(tick_array_bitmap_extension) =
+        tick_array_bitmap_extension_decode(&account.data[8..TICK_ARRAY_BITMAP_EXTENSION_SIZE + 8])
+    {
+        Some(DexEvent::RaydiumClmmTickArrayBitmapExtensionAccountEvent(
+            RaydiumClmmTickArrayBitmapExtensionAccountEvent {
+                metadata,
+                pubkey: account.pubkey,
+                executable: account.executable,
+                lamports: account.lamports,
+                owner: account.owner,
+                rent_epoch: account.rent_epoch,
+                tick_array_bitmap_extension,
             },
         ))
     } else {
