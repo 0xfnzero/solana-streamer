@@ -9,13 +9,13 @@ use crate::streaming::event_parser::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-/// PumpFun程序ID
+/// PumpFun program ID
 pub const PUMPFUN_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P");
 
-/// 解析 PumpFun instruction data
+/// Parse PumpFun instruction data
 ///
-/// 根据判别器路由到具体的 instruction 解析函数
+/// Route to specific instruction parser based on discriminator
 pub fn parse_pumpfun_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -34,9 +34,9 @@ pub fn parse_pumpfun_instruction_data(
     }
 }
 
-/// 解析 PumpFun inner instruction data
+/// Parse PumpFun inner instruction data
 ///
-/// 根据判别器路由到具体的 inner instruction 解析函数
+/// Route to specific inner instruction parser based on discriminator
 pub fn parse_pumpfun_inner_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -52,9 +52,9 @@ pub fn parse_pumpfun_inner_instruction_data(
     }
 }
 
-/// 解析 PumpFun 账户数据
+/// Parse PumpFun account data
 ///
-/// 根据判别器路由到具体的账户解析函数
+/// Route to specific account parser based on discriminator
 pub fn parse_pumpfun_account_data(
     discriminator: &[u8],
     account: &crate::streaming::grpc::AccountPretty,

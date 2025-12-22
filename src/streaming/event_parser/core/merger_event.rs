@@ -140,6 +140,48 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.coin_creator = cpie.coin_creator;
                 e.coin_creator_fee_basis_points = cpie.coin_creator_fee_basis_points;
                 e.coin_creator_fee = cpie.coin_creator_fee;
+                e.track_volume = cpie.track_volume;
+                e.total_unclaimed_tokens = cpie.total_unclaimed_tokens;
+                e.total_claimed_tokens = cpie.total_claimed_tokens;
+                e.current_sol_volume = cpie.current_sol_volume;
+                e.last_update_timestamp = cpie.last_update_timestamp;
+                e.min_base_amount_out = cpie.min_base_amount_out;
+                e.ix_name = cpie.ix_name;
+            }
+            _ => {}
+        },
+        DexEvent::PumpSwapBuyExactQuoteInEvent(e) => match cpi_log_event {
+            DexEvent::PumpSwapBuyExactQuoteInEvent(cpie) => {
+                e.timestamp = cpie.timestamp;
+                e.base_amount_out = cpie.base_amount_out;
+                e.max_quote_amount_in = cpie.max_quote_amount_in;
+                e.user_base_token_reserves = cpie.user_base_token_reserves;
+                e.user_quote_token_reserves = cpie.user_quote_token_reserves;
+                e.pool_base_token_reserves = cpie.pool_base_token_reserves;
+                e.pool_quote_token_reserves = cpie.pool_quote_token_reserves;
+                e.quote_amount_in = cpie.quote_amount_in;
+                e.lp_fee_basis_points = cpie.lp_fee_basis_points;
+                e.lp_fee = cpie.lp_fee;
+                e.protocol_fee_basis_points = cpie.protocol_fee_basis_points;
+                e.protocol_fee = cpie.protocol_fee;
+                e.quote_amount_in_with_lp_fee = cpie.quote_amount_in_with_lp_fee;
+                e.user_quote_amount_in = cpie.user_quote_amount_in;
+                e.pool = cpie.pool;
+                e.user = cpie.user;
+                e.user_base_token_account = cpie.user_base_token_account;
+                e.user_quote_token_account = cpie.user_quote_token_account;
+                e.protocol_fee_recipient = cpie.protocol_fee_recipient;
+                e.protocol_fee_recipient_token_account = cpie.protocol_fee_recipient_token_account;
+                e.coin_creator = cpie.coin_creator;
+                e.coin_creator_fee_basis_points = cpie.coin_creator_fee_basis_points;
+                e.coin_creator_fee = cpie.coin_creator_fee;
+                e.track_volume = cpie.track_volume;
+                e.total_unclaimed_tokens = cpie.total_unclaimed_tokens;
+                e.total_claimed_tokens = cpie.total_claimed_tokens;
+                e.current_sol_volume = cpie.current_sol_volume;
+                e.last_update_timestamp = cpie.last_update_timestamp;
+                e.min_base_amount_out = cpie.min_base_amount_out;
+                e.ix_name = cpie.ix_name;
             }
             _ => {}
         },

@@ -3,7 +3,7 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::signature::Signature;
 
-/// Block元数据事件
+/// Block metadata event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BlockMetaEvent {
     #[borsh(skip)]

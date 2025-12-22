@@ -8,7 +8,7 @@ use crate::streaming::common::{
     MetricsManager, PerformanceMetrics, StreamClientConfig, SubscriptionHandle,
 };
 
-/// ShredStream gRPC 客户端
+/// ShredStream gRPC client
 #[derive(Clone)]
 pub struct ShredStreamGrpc {
     pub shredstream_client: Arc<ShredstreamProxyClient<Channel>>,
@@ -17,12 +17,12 @@ pub struct ShredStreamGrpc {
 }
 
 impl ShredStreamGrpc {
-    /// 创建客户端，使用默认配置
+    /// Create client with default configuration
     pub async fn new(endpoint: String) -> AnyResult<Self> {
         Self::new_with_config(endpoint, StreamClientConfig::default()).await
     }
 
-    /// 创建客户端，使用自定义配置
+    /// Create client with custom configuration
     pub async fn new_with_config(endpoint: String, config: StreamClientConfig) -> AnyResult<Self> {
         let shredstream_client = ShredstreamProxyClient::connect(endpoint.clone()).await?;
         MetricsManager::init(config.enable_metrics);
@@ -33,37 +33,37 @@ impl ShredStreamGrpc {
         })
     }
 
-    /// 获取当前配置
+    /// Get current configuration
     pub fn get_config(&self) -> &StreamClientConfig {
         &self.config
     }
 
-    /// 更新配置
+    /// Update configuration
     pub fn update_config(&mut self, config: StreamClientConfig) {
         self.config = config;
     }
 
-    /// 获取性能指标
+    /// Get performance metrics
     pub fn get_metrics(&self) -> PerformanceMetrics {
         MetricsManager::global().get_metrics()
     }
 
-    /// 启用或禁用性能监控
+    /// Enable or disable performance monitoring
     pub fn set_enable_metrics(&mut self, enabled: bool) {
         self.config.enable_metrics = enabled;
     }
 
-    /// 打印性能指标
+    /// Print performance metrics
     pub fn print_metrics(&self) {
         MetricsManager::global().print_metrics();
     }
 
-    /// 启动自动性能监控任务
+    /// Start automatic performance monitoring task
     pub async fn start_auto_metrics_monitoring(&self) {
         MetricsManager::global().start_auto_monitoring().await;
     }
 
-    /// 停止当前订阅
+    /// Stop current subscription
     pub async fn stop(&self) {
         let mut handle_guard = self.subscription_handle.lock().await;
         if let Some(handle) = handle_guard.take() {

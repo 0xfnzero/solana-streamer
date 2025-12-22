@@ -1,16 +1,16 @@
-// gRPC 相关模块
+// gRPC related modules
 pub mod connection;
 pub mod pool;
 pub mod subscription;
 pub mod types;
 
-// 重新导出主要类型
+// Re-export main types
 pub use connection::*;
 pub use pool::*;
 pub use subscription::*;
 pub use types::*;
 
-// 从公用模块重新导出
+// Re-export from common modules
 pub use crate::streaming::common::{
     ConnectionConfig, MetricsManager, PerformanceMetrics, StreamClientConfig as ClientConfig,
 };

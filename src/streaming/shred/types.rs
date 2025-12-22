@@ -1,6 +1,6 @@
 use solana_sdk::transaction::VersionedTransaction;
 
-/// 携带槽位信息的交易
+/// Transaction with slot information
 #[derive(Debug, Clone, Default)]
 pub struct TransactionWithSlot {
     pub transaction: VersionedTransaction,
@@ -9,7 +9,7 @@ pub struct TransactionWithSlot {
 }
 
 impl TransactionWithSlot {
-    /// 创建新的带槽位的交易
+    /// Create new transaction with slot
     pub fn new(
         transaction: VersionedTransaction,
         slot: u64,

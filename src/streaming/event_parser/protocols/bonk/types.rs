@@ -94,7 +94,7 @@ pub struct VestingSchedule {
     pub allocated_share_amount: u64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PoolState {
     pub epoch: u64,
     pub auth_bump: u8,
@@ -120,10 +120,13 @@ pub struct PoolState {
     pub base_vault: Pubkey,
     pub quote_vault: Pubkey,
     pub creator: Pubkey,
-    pub padding: [u64; 8],
+    pub token_program_flag: u8,
+    pub amm_creator_fee_on: AmmFeeOn,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u8; 62],
 }
 
-pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5;
+pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 8 * 5 + 32 * 7 + 1 + 1 + 62;
 
 pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
     if data.len() < POOL_STATE_SIZE {
@@ -207,6 +210,28 @@ pub fn global_config_parser(
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct BondingCurveParam {
+    pub migrate_type: u8,
+    pub migrate_cpmm_fee_on: u8,
+    pub supply: u64,
+    pub total_base_sell: u64,
+    pub total_quote_fund_raising: u64,
+    pub total_locked_amount: u64,
+    pub cliff_period: u64,
+    pub unlock_period: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct PlatformCurveParam {
+    pub epoch: u64,
+    pub index: u8,
+    pub global_config: Pubkey,
+    pub bonding_curve_param: BondingCurveParam,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u64; 50],
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PlatformConfig {
     pub epoch: u64,
     pub platform_fee_wallet: Pubkey,
@@ -215,19 +240,27 @@ pub struct PlatformConfig {
     pub creator_scale: u64,
     pub burn_scale: u64,
     pub fee_rate: u64,
-    pub name: Vec<u8>,
-    pub web: Vec<u8>,
-    pub img: Vec<u8>,
-    pub padding: Vec<u8>,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub name: [u8; 64],
+    #[serde(with = "serde_big_array::BigArray")]
+    pub web: [u8; 256],
+    #[serde(with = "serde_big_array::BigArray")]
+    pub img: [u8; 256],
+    pub cpswap_config: Pubkey,
+    pub creator_fee_rate: u64,
+    pub transfer_fee_extension_auth: Pubkey,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u8; 180],
+    pub curve_params: Vec<PlatformCurveParam>,
 }
 
-pub const PLATFORM_CONFIG_SIZE: usize = 8 + 32 * 2 + 8 * 4 + 8 * 64 + 8 * 256 + 8 * 256 + 8 * 256;
+pub const PLATFORM_CONFIG_MIN_SIZE: usize = 936;
 
 pub fn platform_config_decode(data: &[u8]) -> Option<PlatformConfig> {
-    if data.len() < PLATFORM_CONFIG_SIZE {
+    if data.len() < PLATFORM_CONFIG_MIN_SIZE {
         return None;
     }
-    borsh::from_slice::<PlatformConfig>(&data[..PLATFORM_CONFIG_SIZE]).ok()
+    borsh::from_slice::<PlatformConfig>(data).ok()
 }
 
 pub fn platform_config_parser(
@@ -236,11 +269,11 @@ pub fn platform_config_parser(
 ) -> Option<DexEvent> {
     metadata.event_type = EventType::AccountBonkPlatformConfig;
 
-    if account.data.len() < PLATFORM_CONFIG_SIZE + 8 {
+    if account.data.len() < PLATFORM_CONFIG_MIN_SIZE + 8 {
         return None;
     }
     if let Some(platform_config) =
-        platform_config_decode(&account.data[8..PLATFORM_CONFIG_SIZE + 8])
+        platform_config_decode(&account.data[8..])
     {
         Some(DexEvent::BonkPlatformConfigAccountEvent(BonkPlatformConfigAccountEvent {
             metadata,

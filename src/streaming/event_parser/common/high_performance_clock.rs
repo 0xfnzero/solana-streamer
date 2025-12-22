@@ -1,33 +1,33 @@
 use std::fmt::Debug;
 use std::time::Instant;
 
-/// 高性能时钟管理器，减少系统调用开销并最小化延迟
+/// High-performance clock manager, reduces system call overhead and minimizes latency
 #[derive(Debug)]
 pub struct HighPerformanceClock {
-    /// 基准时间点（程序启动时的单调时钟时间）
+    /// Base time point (monotonic clock time at program startup)
     base_instant: Instant,
-    /// 基准时间点对应的UTC时间戳（微秒）
+    /// UTC timestamp (microseconds) corresponding to base time point
     base_timestamp_us: i64,
-    /// 上次校准时间（用于检测是否需要重新校准）
+    /// Last calibration time (used to detect if recalibration is needed)
     last_calibration: Instant,
-    /// 校准间隔（秒）
+    /// Calibration interval (seconds)
     calibration_interval_secs: u64,
 }
 
 impl HighPerformanceClock {
-    /// 创建新的高性能时钟
+    /// Create new high-performance clock
     pub fn new() -> Self {
-        Self::new_with_calibration_interval(300) // 默认5分钟校准一次
+        Self::new_with_calibration_interval(300) // Default: calibrate every 5 minutes
     }
 
-    /// 创建带自定义校准间隔的高性能时钟
+    /// Create high-performance clock with custom calibration interval
     pub fn new_with_calibration_interval(calibration_interval_secs: u64) -> Self {
-        // 通过多次采样来减少初始化误差
+        // Reduce initialization error through multiple samples
         let mut best_offset = i64::MAX;
         let mut best_instant = Instant::now();
         let mut best_timestamp = chrono::Utc::now().timestamp_micros();
 
-        // 进行3次采样，选择延迟最小的
+        // Perform 3 samples, choose the one with minimum latency
         for _ in 0..3 {
             let instant_before = Instant::now();
             let timestamp = chrono::Utc::now().timestamp_micros();
@@ -50,35 +50,35 @@ impl HighPerformanceClock {
         }
     }
 
-    /// 获取当前时间戳（微秒），使用单调时钟计算，避免系统调用
+    /// Get current timestamp (microseconds), calculated using monotonic clock to avoid system calls
     #[inline(always)]
     pub fn now_micros(&self) -> i64 {
         let elapsed = self.base_instant.elapsed();
         self.base_timestamp_us + elapsed.as_micros() as i64
     }
 
-    /// 获取高精度当前时间戳（微秒），在必要时进行校准
+    /// Get high-precision current timestamp (microseconds), calibrate when necessary
     pub fn now_micros_with_calibration(&mut self) -> i64 {
-        // 检查是否需要重新校准
+        // Check if recalibration is needed
         if self.last_calibration.elapsed().as_secs() >= self.calibration_interval_secs {
             self.recalibrate();
         }
         self.now_micros()
     }
 
-    /// 重新校准时钟，减少累积漂移
+    /// Recalibrate clock to reduce accumulated drift
     fn recalibrate(&mut self) {
         let current_monotonic = Instant::now();
         let current_utc = chrono::Utc::now().timestamp_micros();
 
-        // 计算预期的UTC时间戳（基于单调时钟）
+        // Calculate expected UTC timestamp (based on monotonic clock)
         let expected_utc = self.base_timestamp_us
             + current_monotonic.duration_since(self.base_instant).as_micros() as i64;
 
-        // 计算漂移量
+        // Calculate drift amount
         let drift_us = current_utc - expected_utc;
 
-        // 如果漂移超过1毫秒，进行校准
+        // If drift exceeds 1 millisecond, perform calibration
         if drift_us.abs() > 1000 {
             self.base_instant = current_monotonic;
             self.base_timestamp_us = current_utc;
@@ -87,20 +87,20 @@ impl HighPerformanceClock {
         self.last_calibration = current_monotonic;
     }
 
-    /// 计算从指定时间戳到现在的消耗时间（微秒）
+    /// Calculate elapsed time (microseconds) from specified timestamp to now
     #[inline(always)]
     pub fn elapsed_micros_since(&self, start_timestamp_us: i64) -> i64 {
         self.now_micros() - start_timestamp_us
     }
 
-    /// 获取高精度纳秒时间戳
+    /// Get high-precision nanosecond timestamp
     #[inline(always)]
     pub fn now_nanos(&self) -> i128 {
         let elapsed = self.base_instant.elapsed();
         (self.base_timestamp_us as i128 * 1000) + elapsed.as_nanos() as i128
     }
 
-    /// 重置时钟（强制重新初始化）
+    /// Reset clock (force re-initialization)
     pub fn reset(&mut self) {
         *self = Self::new_with_calibration_interval(self.calibration_interval_secs);
     }
@@ -112,11 +112,11 @@ impl Default for HighPerformanceClock {
     }
 }
 
-/// 全局高性能时钟实例
+/// Global high-performance clock instance
 static HIGH_PERF_CLOCK: once_cell::sync::OnceCell<HighPerformanceClock> =
     once_cell::sync::OnceCell::new();
 
-/// 获取全局高性能时钟实例（最简单的实现）
+/// Get global high-performance clock instance (simplest implementation)
 #[inline(always)]
 pub fn get_high_perf_clock() -> i64 {
     let clock = HIGH_PERF_CLOCK.get_or_init(HighPerformanceClock::new);

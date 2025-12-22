@@ -10,9 +10,9 @@ use crate::streaming::shred::TransactionWithSlot;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 
-/// 创建带 metrics 统计的 callback 包装器
+/// Create callback wrapper with metrics statistics
 ///
-/// 用于 Transaction 事件处理，在调用原始 callback 的同时更新 metrics
+/// Used for Transaction event processing, updates metrics while calling the original callback
 #[inline]
 fn create_metrics_callback(
     callback: Arc<dyn Fn(DexEvent) + Send + Sync>,

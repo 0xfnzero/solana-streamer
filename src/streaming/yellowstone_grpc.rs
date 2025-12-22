@@ -21,7 +21,7 @@ use yellowstone_grpc_proto::geyser::{
     CommitmentLevel, SubscribeRequest, SubscribeRequestFilterAccountsFilter, SubscribeRequestPing,
 };
 
-/// 交易过滤器
+/// Transaction filter
 #[derive(Debug, Clone)]
 pub struct TransactionFilter {
     pub account_include: Vec<String>,
@@ -29,7 +29,7 @@ pub struct TransactionFilter {
     pub account_required: Vec<String>,
 }
 
-/// 账户过滤器
+/// Account filter
 #[derive(Debug, Clone)]
 pub struct AccountFilter {
     pub account: Vec<String>,
@@ -52,12 +52,12 @@ pub struct YellowstoneGrpc {
 }
 
 impl YellowstoneGrpc {
-    /// 创建客户端，使用默认配置
+    /// Create client with default configuration
     pub fn new(endpoint: String, x_token: Option<String>) -> AnyResult<Self> {
         Self::new_with_config(endpoint, x_token, StreamClientConfig::default())
     }
 
-    /// 创建客户端，使用自定义配置
+    /// Create client with custom configuration
     pub fn new_with_config(
         endpoint: String,
         x_token: Option<String>,
@@ -81,32 +81,32 @@ impl YellowstoneGrpc {
         })
     }
 
-    /// 获取配置
+    /// Get configuration
     pub fn get_config(&self) -> &StreamClientConfig {
         &self.config
     }
 
-    /// 更新配置
+    /// Update configuration
     pub fn update_config(&mut self, config: StreamClientConfig) {
         self.config = config;
     }
 
-    /// 获取性能指标
+    /// Get performance metrics
     pub fn get_metrics(&self) -> PerformanceMetrics {
         MetricsManager::global().get_metrics()
     }
 
-    /// 打印性能指标
+    /// Print performance metrics
     pub fn print_metrics(&self) {
         MetricsManager::global().print_metrics();
     }
 
-    /// 启用或禁用性能监控
+    /// Enable or disable performance monitoring
     pub fn set_enable_metrics(&mut self, enabled: bool) {
         self.config.enable_metrics = enabled;
     }
 
-    /// 停止当前订阅
+    /// Stop current subscription
     pub async fn stop(&self) {
         let mut handle_guard = self.subscription_handle.lock().await;
         if let Some(handle) = handle_guard.take() {
@@ -153,7 +153,7 @@ impl YellowstoneGrpc {
         }
 
         let mut metrics_handle = None;
-        // 启动自动性能监控（如果启用）
+        // Start automatic performance monitoring (if enabled)
         if self.config.enable_metrics {
             metrics_handle = MetricsManager::global().start_auto_monitoring().await;
         }
@@ -165,13 +165,13 @@ impl YellowstoneGrpc {
             .subscription_manager
             .subscribe_with_account_request(account_filter, event_type_filter.as_ref());
 
-        // 订阅事件
+        // Subscribe to events
         let (subscribe_tx, mut stream, subscribe_request) = self
             .subscription_manager
             .subscribe_with_request(transactions, accounts, commitment, event_type_filter.as_ref())
             .await?;
 
-        // 用 Arc<Mutex<>> 包装 subscribe_tx 以支持多线程共享
+        // Wrap subscribe_tx with Arc<Mutex<>> to support multi-threaded sharing
         let subscribe_tx = Arc::new(Mutex::new(subscribe_tx));
         *self.current_request.write().await = Some(subscribe_request);
         let (control_tx, mut control_rx) = mpsc::channel(100);
@@ -238,7 +238,7 @@ impl YellowstoneGrpc {
                                         }
                                     }
                                     Some(UpdateOneof::Ping(_)) => {
-                                        // 只在需要时获取锁，并立即释放
+                                        // Only acquire lock when needed and release immediately
                                         if let Ok(mut tx_guard) = subscribe_tx.try_lock() {
                                             let _ = tx_guard
                                                 .send(SubscribeRequest {
@@ -274,7 +274,7 @@ impl YellowstoneGrpc {
             }
         });
 
-        // 保存订阅句柄
+        // Save subscription handle
         let subscription_handle = SubscriptionHandle::new(stream_handle, None, metrics_handle);
         let mut handle_guard = self.subscription_handle.lock().await;
         *handle_guard = Some(subscription_handle);
@@ -343,7 +343,7 @@ impl YellowstoneGrpc {
     }
 }
 
-// 实现 Clone trait 以支持模块间共享
+// Implement Clone trait to support sharing between modules
 impl Clone for YellowstoneGrpc {
     fn clone(&self) -> Self {
         Self {
@@ -351,7 +351,7 @@ impl Clone for YellowstoneGrpc {
             x_token: self.x_token.clone(),
             config: self.config.clone(),
             subscription_manager: self.subscription_manager.clone(),
-            subscription_handle: self.subscription_handle.clone(), // 共享同一个 Arc<Mutex<>>
+            subscription_handle: self.subscription_handle.clone(), // Share the same Arc<Mutex<>>
             active_subscription: self.active_subscription.clone(),
             control_tx: self.control_tx.clone(),
             event_type_filter: self.event_type_filter.clone(),

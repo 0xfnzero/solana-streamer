@@ -7,7 +7,7 @@ use crate::streaming::event_parser::protocols::{
 use anyhow::{anyhow, Result};
 use solana_sdk::pubkey::Pubkey;
 
-/// 支持的协议
+/// Supported protocols
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Protocol {
     PumpSwap,

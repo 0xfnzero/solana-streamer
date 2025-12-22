@@ -6,7 +6,7 @@ use crate::streaming::common::constants::{
     DEFAULT_CONNECT_TIMEOUT, DEFAULT_REQUEST_TIMEOUT, DEFAULT_MAX_DECODING_MESSAGE_SIZE
 };
 
-/// gRPC连接池 - 简化版本
+/// gRPC connection pool - simplified version
 pub struct GrpcConnectionPool {
     endpoint: String,
     x_token: Option<String>,

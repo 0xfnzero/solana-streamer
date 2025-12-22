@@ -227,8 +227,8 @@ pub struct BonkMigrateToCpswapEvent {
     pub remaining_accounts: Vec<Pubkey>,
 }
 
-/// 池状态
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Pool state account event
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BonkPoolStateAccountEvent {
     pub metadata: EventMetadata,
     pub pubkey: Pubkey,
@@ -239,8 +239,8 @@ pub struct BonkPoolStateAccountEvent {
     pub pool_state: PoolState,
 }
 
-/// 全局配置
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Global config account event
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BonkGlobalConfigAccountEvent {
     pub metadata: EventMetadata,
     pub pubkey: Pubkey,
@@ -251,8 +251,8 @@ pub struct BonkGlobalConfigAccountEvent {
     pub global_config: GlobalConfig,
 }
 
-/// 平台配置
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Platform config account event
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BonkPlatformConfigAccountEvent {
     pub metadata: EventMetadata,
     pub pubkey: Pubkey,

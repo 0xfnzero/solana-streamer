@@ -15,9 +15,9 @@ use crate::streaming::event_parser::{
 pub const BONK_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj");
 
-/// 解析 Bonk instruction data
+/// Parse Bonk instruction data
 ///
-/// 根据判别器路由到具体的 instruction 解析函数
+/// Route to specific instruction parser based on discriminator
 pub fn parse_bonk_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -56,9 +56,9 @@ pub fn parse_bonk_instruction_data(
     }
 }
 
-/// 解析 Bonk inner instruction data
+/// Parse Bonk inner instruction data
 ///
-/// 根据判别器路由到具体的 inner instruction 解析函数
+/// Route to specific inner instruction parser based on discriminator
 pub fn parse_bonk_inner_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -75,9 +75,9 @@ pub fn parse_bonk_inner_instruction_data(
     }
 }
 
-/// 解析 Bonk 账户数据
+/// Parse Bonk account data
 ///
-/// 根据判别器路由到具体的账户解析函数
+/// Route to specific account parser based on discriminator
 pub fn parse_bonk_account_data(
     discriminator: &[u8],
     account: &crate::streaming::grpc::AccountPretty,

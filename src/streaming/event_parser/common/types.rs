@@ -30,7 +30,7 @@ impl EventMetadataPool {
     }
 
     pub fn release(&self, metadata: EventMetadata) {
-        // 如果队列已满，push 会失败，但不会阻塞
+        // If queue is full, push will fail but won't block
         let _ = self.pool.push(metadata);
     }
 }
@@ -63,6 +63,7 @@ pub enum EventType {
     // PumpSwap events
     #[default]
     PumpSwapBuy,
+    PumpSwapBuyExactQuoteIn,
     PumpSwapSell,
     PumpSwapCreatePool,
     PumpSwapDeposit,
@@ -168,6 +169,7 @@ impl fmt::Display for EventType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EventType::PumpSwapBuy => write!(f, "PumpSwapBuy"),
+            EventType::PumpSwapBuyExactQuoteIn => write!(f, "PumpSwapBuyExactQuoteIn"),
             EventType::PumpSwapSell => write!(f, "PumpSwapSell"),
             EventType::PumpSwapCreatePool => write!(f, "PumpSwapCreatePool"),
             EventType::PumpSwapDeposit => write!(f, "PumpSwapDeposit"),
@@ -301,7 +303,7 @@ pub struct SwapData {
 pub struct EventMetadata {
     pub signature: Signature,
     pub slot: u64,
-    pub transaction_index: Option<u64>, // 新增：交易在slot中的索引
+    pub transaction_index: Option<u64>, // New: transaction index within the slot
     pub block_time: i64,
     pub block_time_ms: i64,
     pub recv_us: i64,
@@ -380,7 +382,7 @@ pub fn parse_swap_data_from_next_instructions(
         description: None,
     };
 
-    // 先根据 event 取出关键信息
+    // First extract key information from event
     // let mut user: Option<Pubkey> = None;
     let mut from_mint: Option<Pubkey> = None;
     let mut to_mint: Option<Pubkey> = None;
@@ -404,6 +406,10 @@ pub fn parse_swap_data_from_next_instructions(
             swap_data.to_mint = if e.is_buy { e.mint } else { *SOL_MINT };
         }
         DexEvent::PumpSwapBuyEvent(e) => {
+            swap_data.from_mint = e.quote_mint;
+            swap_data.to_mint = e.base_mint;
+        }
+        DexEvent::PumpSwapBuyExactQuoteInEvent(e) => {
             swap_data.from_mint = e.quote_mint;
             swap_data.to_mint = e.base_mint;
         }
@@ -457,7 +463,7 @@ pub fn parse_swap_data_from_next_instructions(
     let to_mint = to_mint.unwrap_or_default();
     let from_mint = from_mint.unwrap_or_default();
 
-    // 单次循环完成提取和判断
+    // Single loop to complete extraction and validation
     for instruction in inner_instruction.instructions.iter().skip((current_index + 1) as usize) {
         let compiled = &instruction.instruction;
         let program_id = accounts[compiled.program_id_index as usize];
@@ -466,7 +472,7 @@ pub fn parse_swap_data_from_next_instructions(
         }
         let data = &compiled.data;
 
-        // 使用 SIMD 验证数据格式
+        // Use SIMD to validate data format
         if !SimdUtils::validate_data_format(data, 8) {
             continue;
         }
@@ -550,7 +556,7 @@ pub fn parse_swap_data_from_next_grpc_instructions(
         description: None,
     };
 
-    // 先根据 event 取出关键信息
+    // First extract key information from event
     // let mut user: Option<Pubkey> = None;
     let mut from_mint: Option<Pubkey> = None;
     let mut to_mint: Option<Pubkey> = None;
@@ -574,6 +580,10 @@ pub fn parse_swap_data_from_next_grpc_instructions(
             swap_data.to_mint = if e.is_buy { e.mint } else { *SOL_MINT };
         }
         DexEvent::PumpSwapBuyEvent(e) => {
+            swap_data.from_mint = e.quote_mint;
+            swap_data.to_mint = e.base_mint;
+        }
+        DexEvent::PumpSwapBuyExactQuoteInEvent(e) => {
             swap_data.from_mint = e.quote_mint;
             swap_data.to_mint = e.base_mint;
         }
@@ -627,7 +637,7 @@ pub fn parse_swap_data_from_next_grpc_instructions(
     let to_mint = to_mint.unwrap_or_default();
     let from_mint = from_mint.unwrap_or_default();
 
-    // 单次循环完成提取和判断
+    // Single loop to complete extraction and validation
     for instruction in inner_instruction.instructions.iter().skip((current_index + 1) as usize) {
         let compiled = &instruction;
         let program_id = accounts[compiled.program_id_index as usize];
@@ -636,7 +646,7 @@ pub fn parse_swap_data_from_next_grpc_instructions(
         }
         let data = &compiled.data;
 
-        // 使用 SIMD 验证数据格式
+        // Use SIMD to validate data format
         if !SimdUtils::validate_data_format(data, 8) {
             continue;
         }

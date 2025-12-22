@@ -11,21 +11,21 @@ use solana_sdk::pubkey::Pubkey;
 pub const COMPUTE_BUDGET_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("ComputeBudget111111111111111111111111111111");
 
-/// SetComputeUnitLimit 事件
+/// SetComputeUnitLimit event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct SetComputeUnitLimitEvent {
     #[borsh(skip)]
     pub metadata: EventMetadata,
-    /// 请求的计算单元数量
+    /// Number of compute units requested
     pub units: u32,
 }
 
-/// SetComputeUnitPrice 事件
+/// SetComputeUnitPrice event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct SetComputeUnitPriceEvent {
     #[borsh(skip)]
     pub metadata: EventMetadata,
-    /// 每个计算单元的价格 (micro-lamports)
+    /// Price per compute unit (micro-lamports)
     pub micro_lamports: u64,
 }
 
@@ -43,7 +43,7 @@ impl CommonEventParser {
         DexEvent::BlockMetaEvent(block_meta_event)
     }
 
-    /// 解析 Compute Budget 指令
+    /// Parse Compute Budget instruction
     pub fn parse_compute_budget_instruction(
         instruction_data: &[u8],
         mut metadata: EventMetadata,
@@ -52,10 +52,10 @@ impl CommonEventParser {
             return None;
         }
 
-        // 设置 protocol 为 Common
+        // Set protocol to Common
         metadata.protocol = ProtocolType::Common;
 
-        // Compute Budget 指令使用单字节判别器
+        // Compute Budget instructions use single-byte discriminator
         match instruction_data[0] {
             // SetComputeUnitLimit: discriminator = 2
             2 => {

@@ -14,7 +14,7 @@ use spl_token_2022::{
     state::{Account as Account2022, Mint as Mint2022},
 };
 
-/// 通用账户事件
+/// Generic account event
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenAccountEvent {
     pub metadata: EventMetadata,
@@ -63,39 +63,39 @@ impl AccountEventParser {
     ) -> Option<DexEvent> {
         use crate::streaming::event_parser::core::dispatcher::EventDispatcher;
 
-        // 1. 尝试从账户 discriminator 解析（协议特定账户）
+        // 1. Try to parse from account discriminator (protocol-specific accounts)
         if account.data.len() >= 8 {
             let discriminator = &account.data[0..8];
 
-            // 尝试识别协议类型
+            // Try to identify protocol type
             if let Some(protocol) = EventDispatcher::match_protocol_by_program_id(&account.owner) {
-                // 检查是否在请求的协议列表中
+                // Check if in the requested protocol list
                 if protocols.contains(&protocol) {
-                    // 构建临时元数据（protocol会被dispatcher设置，event_type会在parser中设置）
+                    // Build temporary metadata (protocol will be set by dispatcher, event_type will be set by parser)
                     let metadata = EventMetadata {
                         slot: account.slot,
                         signature: account.signature,
-                        protocol: ProtocolType::Common, // 会被 EventDispatcher::dispatch_account 设置
-                        event_type: EventType::default(), // 会被具体 parser 设置
+                        protocol: ProtocolType::Common, // Will be set by EventDispatcher::dispatch_account
+                        event_type: EventType::default(), // Will be set by specific parser
                         program_id: account.owner,
                         recv_us: account.recv_us,
                         handle_us: elapsed_micros_since(account.recv_us),
                         ..Default::default()
                     };
 
-                    // 使用 dispatcher 解析
+                    // Use dispatcher to parse
                     if let Some(event) = EventDispatcher::dispatch_account(
                         protocol,
                         discriminator,
                         &account,
                         metadata,
                     ) {
-                        // 应用事件类型过滤
+                        // Apply event type filter
                         if let Some(filter) = event_type_filter {
                             if filter.include.contains(&event.metadata().event_type) {
                                 return Some(event);
                             }
-                            // 不匹配过滤器，继续尝试其他解析方式
+                            // Doesn't match filter, continue trying other parsing methods
                         } else {
                             return Some(event);
                         }
@@ -104,8 +104,8 @@ impl AccountEventParser {
             }
         }
 
-        // 2. 尝试解析特殊账户类型（Token、Nonce等）
-        // 这些是通用的，不属于特定协议
+        // 2. Try to parse special account types (Token, Nonce, etc.)
+        // These are generic and don't belong to specific protocols
         let metadata = EventMetadata {
             slot: account.slot,
             signature: account.signature,
@@ -117,7 +117,7 @@ impl AccountEventParser {
             ..Default::default()
         };
 
-        // 尝试解析 Nonce 账户
+        // Try to parse Nonce account
         if let Some(event) = Self::parse_nonce_account_event(&account, metadata.clone()) {
             if let Some(filter) = event_type_filter {
                 if filter.include.contains(&event.metadata().event_type) {
@@ -128,7 +128,7 @@ impl AccountEventParser {
             }
         }
 
-        // 尝试解析 Token 账户
+        // Try to parse Token account
         if let Some(event) = Self::parse_token_account_event(&account, metadata) {
             if let Some(filter) = event_type_filter {
                 if filter.include.contains(&event.metadata().event_type) {

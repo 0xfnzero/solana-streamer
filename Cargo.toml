@@ -16,24 +16,13 @@ crate-type = ["cdylib", "rlib"]
 solana-sdk = "3.0.0"
 solana-client = "3.1.4"
 solana-program = "3.0.0" 
-solana-rpc-client = "3.1.4"
-solana-rpc-client-api = "3.1.4"
 solana-transaction-status = "3.1.4"
 solana-account-decoder = "3.1.4"
-solana-hash = "4.0.1"
 solana-entry = "3.1.4"
-solana-rpc-client-nonce-utils = "3.1.4"
-solana-perf = "3.1.4"
-solana-metrics = "3.1.4"
-spl-associated-token-account = "8.0.0"
 borsh = { version = "1.6.0", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.134"
 serde-big-array = "0.5.1"
 futures = "0.3.31"
-futures-util = "0.3.31"
-base64 = "0.22.1"
-rand = "0.9.2"
 bincode = "1.3"
 anyhow = "1.0.90"
 yellowstone-grpc-client = {  version = "10.2.0" }
@@ -41,30 +30,15 @@ yellowstone-grpc-proto = {  version = "10.1.1" }
 tokio = { version = "1.42.0", features = ["full", "rt-multi-thread"]}
 tonic = { version = "0.14.2", features = ["transport"] }
 rustls = { version = "0.23.35", features = ["ring"], default-features = false }
-rustls-native-certs = "0.8.2"
-tokio-rustls = "0.26.4"
 log = "0.4.29"
 chrono = "0.4.42"
-regex = "1"
-tracing = "0.1.43"
-thiserror = "2.0.17"
-async-trait = "0.1.86"
 lazy_static = "1.5.0"
 once_cell = "1.20.3"
 dashmap = "6.1.0"
 prost = "0.14.1"
 prost-types = "0.14.1"
-num_enum = "0.7.5"
-num-derive = "0.4.2"
-num-traits = "0.2.19"
-hex = "0.4.3"
-bytemuck = { version = "1.24.0" }
-arrayref = "0.3.6"
-borsh-derive = "1.6.0"
-indicatif = "0.18.3"
 maplit = "1.0.2"
 env_logger = "0.11.8"
-crossbeam = "0.8.4"
 crossbeam-queue = "0.3.12"
 parking_lot = "0.12.5"
 wide = "1.1.0"
@@ -72,6 +46,3 @@ spl-token = "9.0.0"
 spl-token-2022 = "10.0.0"
 solana-commitment-config = { version = "3.1.0", features = ["serde"] }
 tonic-prost = "0.14.2"
-
-[dev-dependencies]
-criterion = { version = "0.8.1", features = ["html_reports"] }

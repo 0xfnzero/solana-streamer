@@ -1,22 +1,24 @@
 use crate::streaming::event_parser::{
     common::{read_u64_le, EventMetadata, EventType},
     protocols::pumpswap::{
-        discriminators, pump_swap_buy_event_log_decode, pump_swap_create_pool_event_log_decode,
-        pump_swap_deposit_event_log_decode, pump_swap_sell_event_log_decode,
-        pump_swap_withdraw_event_log_decode, PumpSwapBuyEvent, PumpSwapCreatePoolEvent,
-        PumpSwapDepositEvent, PumpSwapSellEvent, PumpSwapWithdrawEvent,
+        discriminators, pump_swap_buy_event_log_decode,
+        pump_swap_buy_exact_quote_in_event_log_decode,
+        pump_swap_create_pool_event_log_decode, pump_swap_deposit_event_log_decode,
+        pump_swap_sell_event_log_decode, pump_swap_withdraw_event_log_decode, PumpSwapBuyEvent,
+        PumpSwapBuyExactQuoteInEvent, PumpSwapCreatePoolEvent, PumpSwapDepositEvent,
+        PumpSwapSellEvent, PumpSwapWithdrawEvent,
     },
     DexEvent,
 };
 use solana_sdk::pubkey::Pubkey;
 
-/// PumpSwap程序ID
+/// PumpSwap program ID
 pub const PUMPSWAP_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA");
 
-/// 解析 PumpSwap instruction data
+/// Parse PumpSwap instruction data
 ///
-/// 根据判别器路由到具体的 instruction 解析函数
+/// Routes to specific instruction parser based on discriminator
 pub fn parse_pumpswap_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -25,6 +27,7 @@ pub fn parse_pumpswap_instruction_data(
 ) -> Option<DexEvent> {
     match discriminator {
         discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_EXACT_QUOTE_IN_IX => parse_buy_exact_quote_in_instruction(data, accounts, metadata),
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::CREATE_POOL_IX => {
             parse_create_pool_instruction(data, accounts, metadata)
@@ -35,9 +38,9 @@ pub fn parse_pumpswap_instruction_data(
     }
 }
 
-/// 解析 PumpSwap inner instruction data
+/// Parse PumpSwap inner instruction data
 ///
-/// 根据判别器路由到具体的 inner instruction 解析函数
+/// Routes to specific inner instruction parser based on discriminator
 pub fn parse_pumpswap_inner_instruction_data(
     discriminator: &[u8],
     data: &[u8],
@@ -56,9 +59,9 @@ pub fn parse_pumpswap_inner_instruction_data(
 }
 
 
-/// 解析 PumpSwap 账户数据
+/// Parse PumpSwap account data
 ///
-/// 根据判别器路由到具体的账户解析函数
+/// Routes to specific account parser based on discriminator
 pub fn parse_pumpswap_account_data(
     discriminator: &[u8],
     account: &crate::streaming::grpc::AccountPretty,
@@ -75,17 +78,25 @@ pub fn parse_pumpswap_account_data(
     }
 }
 
-/// 解析买入日志事件
+/// Parse buy event log
 fn parse_buy_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
-    // Note: event_type will be set by instruction parser
-    if let Some(event) = pump_swap_buy_event_log_decode(data) {
-        Some(DexEvent::PumpSwapBuyEvent(PumpSwapBuyEvent { metadata, ..event }))
-    } else {
-        None
+    // First try to decode as buy_exact_quote_in to read ix_name
+    if let Some(event) = pump_swap_buy_exact_quote_in_event_log_decode(data) {
+        if event.ix_name == "buy_exact_quote_in" {
+            return Some(DexEvent::PumpSwapBuyExactQuoteInEvent(PumpSwapBuyExactQuoteInEvent {
+                metadata,
+                ..event
+            }));
+        }
     }
+    
+    // If not buy_exact_quote_in, decode as normal buy
+    pump_swap_buy_event_log_decode(data).map(|event| {
+        DexEvent::PumpSwapBuyEvent(PumpSwapBuyEvent { metadata, ..event })
+    })
 }
 
-/// 解析卖出日志事件
+/// Parse sell event log
 fn parse_sell_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     // Note: event_type will be set by instruction parser
     if let Some(event) = pump_swap_sell_event_log_decode(data) {
@@ -95,7 +106,7 @@ fn parse_sell_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<
     }
 }
 
-/// 解析创建池子日志事件
+/// Parse create pool event log
 fn parse_create_pool_inner_instruction(
     data: &[u8],
     metadata: EventMetadata,
@@ -108,7 +119,7 @@ fn parse_create_pool_inner_instruction(
     }
 }
 
-/// 解析存款日志事件
+/// Parse deposit event log
 fn parse_deposit_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     // Note: event_type will be set by instruction parser
     if let Some(event) = pump_swap_deposit_event_log_decode(data) {
@@ -118,7 +129,7 @@ fn parse_deposit_inner_instruction(data: &[u8], metadata: EventMetadata) -> Opti
     }
 }
 
-/// 解析提款日志事件
+/// Parse withdraw event log
 fn parse_withdraw_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     // Note: event_type will be set by instruction parser
     if let Some(event) = pump_swap_withdraw_event_log_decode(data) {
@@ -128,7 +139,7 @@ fn parse_withdraw_inner_instruction(data: &[u8], metadata: EventMetadata) -> Opt
     }
 }
 
-/// 解析买入指令事件
+/// Parse buy instruction
 fn parse_buy_instruction(
     data: &[u8],
     accounts: &[Pubkey],
@@ -165,7 +176,46 @@ fn parse_buy_instruction(
     }))
 }
 
-/// 解析卖出指令事件
+/// Parse `buy_exact_quote_in` instruction
+fn parse_buy_exact_quote_in_instruction(
+    data: &[u8],
+    accounts: &[Pubkey],
+    mut metadata: EventMetadata,
+) -> Option<DexEvent> {
+    metadata.event_type = EventType::PumpSwapBuyExactQuoteIn;
+
+    if data.len() < 16 || accounts.len() < 13 {
+        return None;
+    }
+
+    let spendable_quote_in = read_u64_le(data, 0)?;
+    let min_base_amount_out = read_u64_le(data, 8)?;
+
+    Some(DexEvent::PumpSwapBuyExactQuoteInEvent(
+        PumpSwapBuyExactQuoteInEvent {
+            metadata,
+            spendable_quote_in,
+            min_base_amount_out,
+            pool: accounts[0],
+            user: accounts[1],
+            base_mint: accounts[3],
+            quote_mint: accounts[4],
+            user_base_token_account: accounts[5],
+            user_quote_token_account: accounts[6],
+            pool_base_token_account: accounts[7],
+            pool_quote_token_account: accounts[8],
+            protocol_fee_recipient: accounts[9],
+            protocol_fee_recipient_token_account: accounts[10],
+            base_token_program: accounts[11],
+            quote_token_program: accounts[12],
+            coin_creator_vault_ata: accounts.get(17).copied().unwrap_or_default(),
+            coin_creator_vault_authority: accounts.get(18).copied().unwrap_or_default(),
+            ..Default::default()
+        },
+    ))
+}
+
+/// Parse sell instruction
 fn parse_sell_instruction(
     data: &[u8],
     accounts: &[Pubkey],
@@ -202,7 +252,7 @@ fn parse_sell_instruction(
     }))
 }
 
-/// 解析创建池子指令事件
+/// Parse create pool instruction
 fn parse_create_pool_instruction(
     data: &[u8],
     accounts: &[Pubkey],
@@ -243,7 +293,7 @@ fn parse_create_pool_instruction(
     }))
 }
 
-/// 解析存款指令事件
+/// Parse deposit instruction
 fn parse_deposit_instruction(
     data: &[u8],
     accounts: &[Pubkey],
@@ -277,7 +327,7 @@ fn parse_deposit_instruction(
     }))
 }
 
-/// 解析提款指令事件
+/// Parse withdraw instruction
 fn parse_withdraw_instruction(
     data: &[u8],
     accounts: &[Pubkey],

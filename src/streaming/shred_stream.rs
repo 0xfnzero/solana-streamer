@@ -17,7 +17,7 @@ use solana_entry::entry::Entry;
 use super::ShredStreamGrpc;
 
 impl ShredStreamGrpc {
-    /// 订阅ShredStream事件（支持批处理和即时处理）
+    /// Subscribe to ShredStream events (supports batch and real-time processing)
     pub async fn shredstream_subscribe<F>(
         &self,
         protocols: Vec<Protocol>,
@@ -28,16 +28,16 @@ impl ShredStreamGrpc {
     where
         F: Fn(DexEvent) + Send + Sync + 'static,
     {
-        // 如果已有活跃订阅，先停止它
+        // If there's an active subscription, stop it first
         self.stop().await;
 
         let mut metrics_handle = None;
-        // 启动自动性能监控（如果启用）
+        // Start automatic performance monitoring (if enabled)
         if self.config.enable_metrics {
             metrics_handle = MetricsManager::global().start_auto_monitoring().await;
         }
 
-        // 启动流处理
+        // Start stream processing
         let mut client = (*self.shredstream_client).clone();
         let request = tonic::Request::new(SubscribeEntriesRequest {});
         let mut stream = client.subscribe_entries(request).await?.into_inner();
@@ -83,7 +83,7 @@ impl ShredStreamGrpc {
             }
         });
 
-        // 保存订阅句柄
+        // Save subscription handle
         let subscription_handle = SubscriptionHandle::new(stream_task, None, metrics_handle);
         let mut handle_guard = self.subscription_handle.lock().await;
         *handle_guard = Some(subscription_handle);

@@ -1,4 +1,4 @@
-// 公用模块 - 包含流处理相关的通用功能
+// Common modules - contains common functionality related to stream processing
 pub mod config;
 pub mod metrics;
 pub mod constants;
@@ -6,7 +6,7 @@ pub mod subscription;
 pub mod event_processor;
 pub mod simd_utils;
 
-// 重新导出主要类型
+// Re-export main types
 pub use config::*;
 pub use metrics::*;
 pub use constants::*;

@@ -6,7 +6,7 @@ use solana_sdk::transaction::VersionedTransaction;
 use super::TransactionWithSlot;
 
 
-/// TransactionWithSlot 对象池
+/// TransactionWithSlot object pool
 pub struct TransactionWithSlotPool {
     pool: Arc<Mutex<VecDeque<Box<TransactionWithSlot>>>>,
     max_size: usize,
@@ -16,7 +16,7 @@ impl TransactionWithSlotPool {
     pub fn new(initial_size: usize, max_size: usize) -> Self {
         let mut pool = VecDeque::with_capacity(initial_size);
 
-        // 预分配对象
+        // Pre-allocate objects
         for _ in 0..initial_size {
             pool.push_back(Box::new(TransactionWithSlot::default()));
         }
@@ -39,7 +39,7 @@ impl TransactionWithSlotPool {
     }
 }
 
-/// 带自动归还的 TransactionWithSlot
+/// TransactionWithSlot with automatic return
 pub struct PooledTransactionWithSlot {
     transaction: Box<TransactionWithSlot>,
     pool: Arc<Mutex<VecDeque<Box<TransactionWithSlot>>>>,
@@ -47,7 +47,7 @@ pub struct PooledTransactionWithSlot {
 }
 
 impl PooledTransactionWithSlot {
-    /// 从原始数据重置
+    /// Reset from raw data
     pub fn reset_from_data(
         &mut self, 
         transaction: VersionedTransaction, 
@@ -59,9 +59,9 @@ impl PooledTransactionWithSlot {
         self.transaction.recv_us = recv_us;
     }
 
-    /// 使用优化的工厂方法创建 TransactionWithSlot（移动数据而不是克隆）
+    /// Create TransactionWithSlot using optimized factory method (move data instead of cloning)
     pub fn into_transaction_with_slot(mut self) -> TransactionWithSlot {
-        // 移动数据而不是克隆，避免多余的内存分配
+        // Move data instead of cloning to avoid unnecessary memory allocation
         std::mem::replace(self.deref_mut(), TransactionWithSlot::default())
     }
 }
@@ -70,10 +70,10 @@ impl Drop for PooledTransactionWithSlot {
     fn drop(&mut self) {
         let mut pool = self.pool.lock().unwrap();
         if pool.len() < self.max_size {
-            // 清理敏感数据
+            // Clear sensitive data
             self.transaction.slot = 0;
             self.transaction.recv_us = 0;
-            // 重置交易为默认值以清理敏感数据
+            // Reset transaction to default to clear sensitive data
             self.transaction.transaction = VersionedTransaction::default();
             pool.push_back(std::mem::take(&mut self.transaction));
         }
@@ -94,7 +94,7 @@ impl std::ops::DerefMut for PooledTransactionWithSlot {
     }
 }
 
-/// Shred 对象池管理器
+/// Shred object pool manager
 pub struct ShredPoolManager {
     transaction_pool: TransactionWithSlotPool,
 }
@@ -103,8 +103,8 @@ impl ShredPoolManager {
     pub fn new() -> Self {
         Self {
             transaction_pool: TransactionWithSlotPool::new(
-                5000,  // 初始大小 - Shred 事件通常较多
-                15000, // 最大大小
+                5000,  // Initial size - Shred events are usually numerous
+                15000, // Max size
             ),
         }
     }
@@ -113,7 +113,7 @@ impl ShredPoolManager {
         &self.transaction_pool
     }
 
-    /// 创建优化的 TransactionWithSlot
+    /// Create optimized TransactionWithSlot
     pub fn create_transaction_with_slot_optimized(
         &self,
         transaction: VersionedTransaction,
@@ -132,16 +132,16 @@ impl Default for ShredPoolManager {
     }
 }
 
-// 全局 Shred 池管理器实例
+// Global Shred pool manager instance
 lazy_static::lazy_static! {
     pub static ref GLOBAL_SHRED_POOL_MANAGER: ShredPoolManager = ShredPoolManager::new();
 }
 
-/// 便捷的全局工厂函数
+/// Convenient global factory functions
 pub mod factory {
     use super::*;
 
-    /// 使用对象池创建 TransactionWithSlot（推荐用于高性能场景）
+    /// Create TransactionWithSlot using object pool (recommended for high-performance scenarios)
     pub fn create_transaction_with_slot_pooled(
         transaction: VersionedTransaction,
         slot: u64,

@@ -42,7 +42,7 @@ impl EventParser {
         transaction_index: Option<u64>,
         callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        // 创建适配器回调，将所有权回调转换为引用回调
+        // Create adapter callback to convert ownership callback to reference callback
         let adapter_callback = Arc::new(move |event: &DexEvent| {
             callback(event.clone());
         });
@@ -69,7 +69,7 @@ impl EventParser {
                     Vec::with_capacity(message.account_keys.len() + address_table_lookups.len());
                 accounts_bytes.extend_from_slice(&message.account_keys);
                 accounts_bytes.extend(address_table_lookups);
-                // 转换为 Pubkey
+                // Convert to Pubkey
                 let accounts: Vec<Pubkey> = accounts_bytes
                     .iter()
                     .filter_map(|account| {
@@ -80,7 +80,7 @@ impl EventParser {
                         }
                     })
                     .collect();
-                // 解析指令事件
+                // Parse instruction events
                 let instructions = &message.instructions;
                 Self::parse_instruction_events_from_grpc_transaction(
                     protocols,
@@ -122,28 +122,28 @@ impl EventParser {
         transaction_index: Option<u64>,
         callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        // 创建适配器回调，将所有权回调转换为引用回调
+        // Create adapter callback to convert ownership callback to reference callback
         let adapter_callback = Arc::new(move |event: &DexEvent| {
             callback(event.clone());
         });
-        // 获取交易的指令和账户
+        // Get transaction instructions and accounts
         let compiled_instructions = transaction.message.instructions();
         let mut accounts: Vec<Pubkey> = accounts.to_vec();
-        // 检查交易中是否包含程序
+        // Check if transaction contains the program
         let has_program = accounts
             .iter()
             .any(|account| Self::should_handle(protocols, event_type_filter, account));
         if has_program {
-            // 解析每个指令
+            // Parse each instruction
             for (index, instruction) in compiled_instructions.iter().enumerate() {
                 if let Some(program_id) = accounts.get(instruction.program_id_index as usize) {
-                    let program_id = *program_id; // 克隆程序ID，避免借用冲突
+                    let program_id = *program_id; // Clone program ID to avoid borrow conflicts
                     let inner_instructions = inner_instructions
                         .iter()
                         .find(|inner_instruction| inner_instruction.index == index as u8);
                     if Self::should_handle(protocols, event_type_filter, &program_id) {
                         let max_idx = instruction.accounts.iter().max().unwrap_or(&0);
-                        // 补齐accounts(使用Pubkey::default())
+                        // Pad accounts (using Pubkey::default())
                         if *max_idx as usize >= accounts.len() {
                             accounts.resize(*max_idx as usize + 1, Pubkey::default());
                         }
@@ -216,22 +216,22 @@ impl EventParser {
         transaction_index: Option<u64>,
         callback: Arc<dyn for<'a> Fn(&'a DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        // 获取交易的指令和账户
+        // Get transaction instructions and accounts
         let mut accounts = accounts.to_vec();
-        // 检查交易中是否包含程序
+        // Check if transaction contains the program
         let has_program = accounts
             .iter()
             .any(|account| Self::should_handle(protocols, event_type_filter, account));
         if has_program {
-            // 解析每个指令
+            // Parse each instruction
             for (index, instruction) in compiled_instructions.iter().enumerate() {
                 if let Some(program_id) = accounts.get(instruction.program_id_index as usize) {
-                    let program_id = *program_id; // 克隆程序ID，避免借用冲突
+                    let program_id = *program_id; // Clone program ID to avoid borrow conflicts
                     let inner_instructions = inner_instructions
                         .iter()
                         .find(|inner_instruction| inner_instruction.index == index as u32);
                     let max_idx = instruction.accounts.iter().max().unwrap_or(&0);
-                    // 补齐accounts(使用Pubkey::default())
+                    // Pad accounts (using Pubkey::default())
                     if *max_idx as usize >= accounts.len() {
                         accounts.resize(*max_idx as usize + 1, Pubkey::default());
                     }
@@ -311,7 +311,7 @@ impl EventParser {
         inner_instructions: Option<&yellowstone_grpc_proto::prelude::InnerInstructions>,
         callback: Arc<dyn for<'a> Fn(&'a DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        // 添加边界检查以防止越界访问
+        // Add bounds check to prevent out-of-bounds access
         let program_id_index = instruction.program_id_index as usize;
         if program_id_index >= accounts.len() {
             return Ok(());
@@ -328,11 +328,11 @@ impl EventParser {
             _ => 8,
         };
 
-        // 检查指令数据长度（至少需要 disc_len 字节的 discriminator）
+        // Check instruction data length (at least disc_len bytes for discriminator)
         if !is_cu_program && instruction.data.len() < disc_len {
             return Ok(());
         }
-        // 创建元数据
+        // Create metadata
         let timestamp = block_time.unwrap_or(Timestamp { seconds: 0, nanos: 0 });
         let block_time_ms = timestamp.seconds * 1000 + (timestamp.nanos as i64) / 1_000_000;
         let metadata = EventMetadata::new(
@@ -359,24 +359,24 @@ impl EventParser {
             return Ok(());
         }
 
-        // 使用 EventDispatcher 匹配协议
+        // Use EventDispatcher to match protocol
         let protocol = match EventDispatcher::match_protocol_by_program_id(&program_id) {
             Some(p) => p,
             None => return Ok(()),
         };
 
-        // 提取 discriminator 和数据
+        // Extract discriminator and data
         let instruction_discriminator = &instruction.data[..disc_len];
         let instruction_data = &instruction.data[disc_len..];
 
-        // 构建账户公钥列表
+        // Build account pubkey list
         let account_pubkeys: Vec<Pubkey> = instruction
             .accounts
             .iter()
             .filter_map(|&idx| accounts.get(idx as usize).copied())
             .collect();
 
-        // 使用 EventDispatcher 解析 instruction 事件
+        // Use EventDispatcher to parse instruction event
         let mut event = match EventDispatcher::dispatch_instruction(
             protocol.clone(),
             instruction_discriminator,
@@ -388,23 +388,23 @@ impl EventParser {
             None => return Ok(()),
         };
 
-        // 处理 inner instructions - 查找对应的 CPI log 进行 merge
-        // 当 inner_index 有值时，只查找索引大于当前 inner_index 的 CPI log
+        // Process inner instructions - find corresponding CPI log for merge
+        // When inner_index has a value, only search for CPI logs with index greater than current inner_index
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
             let current_inner_idx = inner_index.unwrap_or(-1) as i32;
             
-            // 并行执行两个任务: 解析 inner event 和提取 swap_data
+            // Execute two tasks in parallel: parse inner event and extract swap_data
             let (inner_event_result, swap_data_result) = std::thread::scope(|s| {
                 let inner_event_handle = s.spawn(|| {
                     for (idx, inner_instruction) in inner_instructions_ref.instructions.iter().enumerate() {
-                        // 只查找索引大于当前 inner_index 的 CPI log
+                        // Only search for CPI logs with index greater than current inner_index
                         if (idx as i32) <= current_inner_idx {
                             continue;
                         }
                         
                         let inner_data = &inner_instruction.data;
-                        // 检查长度（需要 16 字节的 discriminator）
+                        // Check length (needs 16 bytes for discriminator)
                         if inner_data.len() < 16 {
                             continue;
                         }
@@ -436,7 +436,7 @@ impl EventParser {
                     }
                 });
 
-                // 等待两个任务完成
+                // Wait for both tasks to complete
                 (inner_event_handle.join().unwrap(), swap_data_handle.join().unwrap())
             });
 
@@ -446,7 +446,7 @@ impl EventParser {
             }
         }
 
-        // 特殊处理: PumpFun MIGRATE 指令需要 inner instruction data
+        // Special handling: PumpFun MIGRATE instruction requires inner instruction data
         if matches!(protocol, Protocol::PumpFun) {
             const PUMPFUN_MIGRATE_IX: &[u8] = &[155, 234, 231, 146, 236, 158, 162, 30];
             if instruction_discriminator == PUMPFUN_MIGRATE_IX && inner_instruction_event.is_none()
@@ -455,12 +455,12 @@ impl EventParser {
             }
         }
 
-        // 合并事件
+        // Merge events
         if let Some(inner_instruction_event) = inner_instruction_event {
             merge(&mut event, inner_instruction_event);
         }
 
-        // 设置处理时间（使用高性能时钟）
+        // Set processing time (using high-performance clock)
         event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
         event = Self::process_event(event, bot_wallet);
         callback(&event);
@@ -493,7 +493,7 @@ impl EventParser {
         inner_instructions: Option<&InnerInstructions>,
         callback: Arc<dyn for<'a> Fn(&'a DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        // 添加边界检查以防止越界访问
+        // Add bounds check to prevent out-of-bounds access
         let program_id_index = instruction.program_id_index as usize;
         if program_id_index >= accounts.len() {
             return Ok(());
@@ -510,12 +510,12 @@ impl EventParser {
             _ => 8,
         };
 
-        // 检查指令数据长度（至少需要 8 字节的 discriminator）
+        // Check instruction data length (at least 8 bytes for discriminator)
         if !is_cu_program && instruction.data.len() < disc_len {
             return Ok(());
         }
 
-        // 创建元数据
+        // Create metadata
         let timestamp = block_time.unwrap_or(Timestamp { seconds: 0, nanos: 0 });
         let block_time_ms = timestamp.seconds * 1000 + (timestamp.nanos as i64) / 1_000_000;
         let metadata = EventMetadata::new(
@@ -542,24 +542,24 @@ impl EventParser {
             return Ok(());
         }
 
-        // 使用 EventDispatcher 匹配协议
+        // Use EventDispatcher to match protocol
         let protocol = match EventDispatcher::match_protocol_by_program_id(&program_id) {
             Some(p) => p,
             None => return Ok(()),
         };
 
-        // 提取 discriminator 和数据
+        // Extract discriminator and data
         let instruction_discriminator = &instruction.data[..disc_len];
         let instruction_data = &instruction.data[disc_len..];
 
-        // 构建账户公钥列表
+        // Build account pubkey list
         let account_pubkeys: Vec<Pubkey> = instruction
             .accounts
             .iter()
             .filter_map(|&idx| accounts.get(idx as usize).copied())
             .collect();
 
-        // 使用 EventDispatcher 解析 instruction 事件
+        // Use EventDispatcher to parse instruction event
         let mut event = match EventDispatcher::dispatch_instruction(
             protocol.clone(),
             instruction_discriminator,
@@ -571,23 +571,23 @@ impl EventParser {
             None => return Ok(()),
         };
 
-        // 处理 inner instructions - 查找对应的 CPI log 进行 merge
-        // 当 inner_index 有值时，只查找索引大于当前 inner_index 的 CPI log
+        // Process inner instructions - find corresponding CPI log for merge
+        // When inner_index has a value, only search for CPI logs with index greater than current inner_index
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
             let current_inner_idx = inner_index.unwrap_or(-1) as i32;
             
-            // 并行执行两个任务: 解析 inner event 和提取 swap_data
+            // Execute two tasks in parallel: parse inner event and extract swap_data
             let (inner_event_result, swap_data_result) = std::thread::scope(|s| {
                 let inner_event_handle = s.spawn(|| {
                     for (idx, inner_instruction) in inner_instructions_ref.instructions.iter().enumerate() {
-                        // 只查找索引大于当前 inner_index 的 CPI log
+                        // Only search for CPI logs with index greater than current inner_index
                         if (idx as i32) <= current_inner_idx {
                             continue;
                         }
                         
                         let inner_data = &inner_instruction.instruction.data;
-                        // 检查长度（需要 16 字节的 discriminator）
+                        // Check length (needs 16 bytes for discriminator)
                         if inner_data.len() < 16 {
                             continue;
                         }
@@ -619,7 +619,7 @@ impl EventParser {
                     }
                 });
 
-                // 等待两个任务完成
+                // Wait for both tasks to complete
                 (inner_event_handle.join().unwrap(), swap_data_handle.join().unwrap())
             });
 
@@ -629,7 +629,7 @@ impl EventParser {
             }
         }
 
-        // 特殊处理: PumpFun MIGRATE 指令需要 inner instruction data
+        // Special handling: PumpFun MIGRATE instruction requires inner instruction data
         if matches!(protocol, Protocol::PumpFun) {
             const PUMPFUN_MIGRATE_IX: &[u8] = &[155, 234, 231, 146, 236, 158, 162, 30];
             if instruction_discriminator == PUMPFUN_MIGRATE_IX && inner_instruction_event.is_none()
@@ -638,12 +638,12 @@ impl EventParser {
             }
         }
 
-        // 合并事件
+        // Merge events
         if let Some(inner_instruction_event) = inner_instruction_event {
             merge(&mut event, inner_instruction_event);
         }
 
-        // 设置处理时间（使用高性能时钟）
+        // Set processing time (using high-performance clock)
         event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
         event = Self::process_event(event, bot_wallet);
         callback(&event);
@@ -663,7 +663,7 @@ impl EventParser {
         _event_type_filter: Option<&EventTypeFilter>,
         program_id: &Pubkey,
     ) -> bool {
-        // 使用 EventDispatcher 来匹配协议
+        // Use EventDispatcher to match protocol
         if let Some(protocol) = EventDispatcher::match_protocol_by_program_id(program_id) {
             protocols.contains(&protocol)
         } else if EventDispatcher::is_compute_budget_program(program_id) {
@@ -729,6 +729,13 @@ impl EventParser {
                     swap_data.to_amount = trade_info.base_amount_out;
                 }
                 DexEvent::PumpSwapBuyEvent(trade_info)
+            }
+            DexEvent::PumpSwapBuyExactQuoteInEvent(mut trade_info) => {
+                if let Some(swap_data) = trade_info.metadata.swap_data.as_mut() {
+                    swap_data.from_amount = trade_info.user_quote_amount_in;
+                    swap_data.to_amount = trade_info.base_amount_out;
+                }
+                DexEvent::PumpSwapBuyExactQuoteInEvent(trade_info)
             }
             DexEvent::PumpSwapSellEvent(mut trade_info) => {
                 if let Some(swap_data) = trade_info.metadata.swap_data.as_mut() {

@@ -24,10 +24,11 @@ pub struct AmmConfig {
     pub create_pool_fee: u64,
     pub protocol_owner: Pubkey,
     pub fund_owner: Pubkey,
-    pub padding: [u64; 16],
+    pub creator_fee_rate: u64,
+    pub padding: [u64; 15],
 }
 
-pub const AMM_CONFIG_SIZE: usize = 228;
+pub const AMM_CONFIG_SIZE: usize = 236;
 
 pub fn amm_config_decode(data: &[u8]) -> Option<AmmConfig> {
     if data.len() < AMM_CONFIG_SIZE {
@@ -81,10 +82,15 @@ pub struct PoolState {
     pub fund_fees_token1: u64,
     pub open_time: u64,
     pub recent_epoch: u64,
-    pub padding: [u64; 31],
+    pub creator_fee_on: u8,
+    pub enable_creator_fee: bool,
+    pub padding1: [u8; 6],
+    pub creator_fees_token0: u64,
+    pub creator_fees_token1: u64,
+    pub padding: [u64; 28],
 }
 
-pub const POOL_STATE_SIZE: usize = 629;
+pub const POOL_STATE_SIZE: usize = 589;
 
 pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
     if data.len() < POOL_STATE_SIZE {
