@@ -366,6 +366,7 @@ pub mod discriminators {
     pub const CREATE_TOKEN_IX: &[u8] = &[24, 30, 200, 40, 5, 28, 7, 119];
     pub const CREATE_V2_TOKEN_IX: &[u8] = &[214, 144, 76, 236, 95, 139, 49, 180];
     pub const BUY_IX: &[u8] = &[102, 6, 61, 18, 1, 218, 235, 234];
+    pub const BUY_EXACT_SOL_IN_IX: &[u8] = &[56, 252, 116, 8, 158, 223, 205, 95];
     pub const SELL_IX: &[u8] = &[51, 230, 133, 164, 1, 127, 131, 173];
     pub const MIGRATE_IX: &[u8] = &[155, 234, 231, 146, 236, 158, 162, 30];
 
