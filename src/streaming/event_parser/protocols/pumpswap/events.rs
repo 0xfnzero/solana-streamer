@@ -289,6 +289,7 @@ pub mod discriminators {
 
     // 指令鉴别器
     pub const BUY_IX: &[u8] = &[102, 6, 61, 18, 1, 218, 235, 234];
+    pub const BUY_EXACT_QUOTE_IN_IX: &[u8] = &[198, 46, 21, 82, 180, 217, 232, 112];
     pub const SELL_IX: &[u8] = &[51, 230, 133, 164, 1, 127, 131, 173];
     pub const CREATE_POOL_IX: &[u8] = &[233, 146, 209, 142, 207, 104, 64, 188];
     pub const DEPOSIT_IX: &[u8] = &[242, 35, 198, 137, 82, 225, 242, 182];

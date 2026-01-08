@@ -27,7 +27,7 @@ pub fn parse_pumpfun_instruction_data(
         discriminators::CREATE_V2_TOKEN_IX => {
             parse_create_v2_token_instruction(data, accounts, metadata)
         }
-        discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_IX | discriminators::BUY_EXACT_SOL_IN_IX => parse_buy_instruction(data, accounts, metadata),
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::MIGRATE_IX => parse_migrate_instruction(data, accounts, metadata),
         _ => None,

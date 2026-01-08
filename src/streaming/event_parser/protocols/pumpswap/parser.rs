@@ -24,7 +24,7 @@ pub fn parse_pumpswap_instruction_data(
     metadata: EventMetadata,
 ) -> Option<DexEvent> {
     match discriminator {
-        discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_IX | discriminators::BUY_EXACT_QUOTE_IN_IX => parse_buy_instruction(data, accounts, metadata),
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::CREATE_POOL_IX => {
             parse_create_pool_instruction(data, accounts, metadata)
