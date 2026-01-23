@@ -27,7 +27,8 @@ pub fn parse_pumpfun_instruction_data(
         discriminators::CREATE_V2_TOKEN_IX => {
             parse_create_v2_token_instruction(data, accounts, metadata)
         }
-        discriminators::BUY_IX | discriminators::BUY_EXACT_SOL_IN_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_EXACT_SOL_IN_IX => parse_buy_exact_sol_in_instruction(data, accounts, metadata),
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::MIGRATE_IX => parse_migrate_instruction(data, accounts, metadata),
         _ => None,
@@ -268,6 +269,49 @@ fn parse_buy_instruction(
         fee_program: accounts[15],
         max_sol_cost,
         amount,
+        is_buy: true,
+        ..Default::default()
+    }))
+}
+
+/// 解析 buy_exact_sol_in 指令事件
+/// 注意：参数顺序与 buy 指令不同
+/// buy_exact_sol_in: spendable_sol_in (SOL), min_tokens_out (token)
+/// buy: amount (token), max_sol_cost (SOL)
+fn parse_buy_exact_sol_in_instruction(
+    data: &[u8], accounts: &[Pubkey],
+    mut metadata: EventMetadata,
+) -> Option<DexEvent> {
+    metadata.event_type = EventType::PumpFunBuy;
+
+    if data.len() < 16 || accounts.len() < 16 {
+        return None;
+    }
+
+    // 注意：buy_exact_sol_in 的参数顺序是先 SOL 再 token
+    let spendable_sol_in = u64::from_le_bytes(data[0..8].try_into().unwrap());
+    let min_tokens_out = u64::from_le_bytes(data[8..16].try_into().unwrap());
+
+    Some(DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
+        metadata,
+        global: accounts[0],
+        fee_recipient: accounts[1],
+        mint: accounts[2],
+        bonding_curve: accounts[3],
+        associated_bonding_curve: accounts[4],
+        associated_user: accounts[5],
+        user: accounts[6],
+        system_program: accounts[7],
+        token_program: accounts[8],
+        creator_vault: accounts[9],
+        event_authority: accounts[10],
+        program: accounts[11],
+        global_volume_accumulator: accounts[12],
+        user_volume_accumulator: accounts[13],
+        fee_config: accounts[14],
+        fee_program: accounts[15],
+        max_sol_cost: spendable_sol_in,  // Map spendable_sol_in to max_sol_cost
+        amount: min_tokens_out,           // Map min_tokens_out to amount
         is_buy: true,
         ..Default::default()
     }))
