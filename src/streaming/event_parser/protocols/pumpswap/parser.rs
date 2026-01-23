@@ -24,7 +24,8 @@ pub fn parse_pumpswap_instruction_data(
     metadata: EventMetadata,
 ) -> Option<DexEvent> {
     match discriminator {
-        discriminators::BUY_IX | discriminators::BUY_EXACT_QUOTE_IN_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
+        discriminators::BUY_EXACT_QUOTE_IN_IX => parse_buy_exact_quote_in_instruction(data, accounts, metadata),
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::CREATE_POOL_IX => {
             parse_create_pool_instruction(data, accounts, metadata)
@@ -147,6 +148,47 @@ fn parse_buy_instruction(
         metadata,
         base_amount_out,
         max_quote_amount_in,
+        pool: accounts[0],
+        user: accounts[1],
+        base_mint: accounts[3],
+        quote_mint: accounts[4],
+        user_base_token_account: accounts[5],
+        user_quote_token_account: accounts[6],
+        pool_base_token_account: accounts[7],
+        pool_quote_token_account: accounts[8],
+        protocol_fee_recipient: accounts[9],
+        protocol_fee_recipient_token_account: accounts[10],
+        base_token_program: accounts[11],
+        quote_token_program: accounts[12],
+        coin_creator_vault_ata: accounts.get(17).copied().unwrap_or_default(),
+        coin_creator_vault_authority: accounts.get(18).copied().unwrap_or_default(),
+        ..Default::default()
+    }))
+}
+
+/// 解析 buy_exact_quote_in 指令事件
+/// 注意：参数顺序与 buy 指令不同
+/// buy_exact_quote_in: spendable_quote_in (SOL), min_base_amount_out (token)
+/// buy: base_amount_out (token), max_quote_amount_in (SOL)
+fn parse_buy_exact_quote_in_instruction(
+    data: &[u8],
+    accounts: &[Pubkey],
+    mut metadata: EventMetadata,
+) -> Option<DexEvent> {
+    metadata.event_type = EventType::PumpSwapBuy;
+
+    if data.len() < 16 || accounts.len() < 13 {
+        return None;
+    }
+
+    // 注意：buy_exact_quote_in 的参数顺序是先 quote (SOL) 再 base (token)
+    let spendable_quote_in = read_u64_le(data, 0)?;
+    let min_base_amount_out = read_u64_le(data, 8)?;
+
+    Some(DexEvent::PumpSwapBuyEvent(PumpSwapBuyEvent {
+        metadata,
+        base_amount_out: min_base_amount_out,
+        max_quote_amount_in: spendable_quote_in,
         pool: accounts[0],
         user: accounts[1],
         base_mint: accounts[3],

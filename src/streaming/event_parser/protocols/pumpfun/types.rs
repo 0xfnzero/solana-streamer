@@ -77,9 +77,10 @@ pub struct Global {
     pub whitelist_pda: Pubkey,
     pub reserved_fee_recipient: Pubkey,
     pub mayhem_mode_enabled: bool,
+    pub reserved_fee_recipients: [Pubkey; 7],
 }
 
-pub const GLOBAL_SIZE: usize = 1 + 32 * 2 + 8 * 5 + 32 + 1 + 8 * 2 + 32 * 7 + 32 * 2 + 1 + 32 * 2 + 1;
+pub const GLOBAL_SIZE: usize = 1 + 32 * 2 + 8 * 5 + 32 + 1 + 8 * 2 + 32 * 7 + 32 * 2 + 1 + 32 * 2 + 1 + 32 * 7;
 
 pub fn global_decode(data: &[u8]) -> Option<Global> {
     if data.len() < GLOBAL_SIZE {

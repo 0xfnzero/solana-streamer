@@ -23,9 +23,10 @@ pub struct GlobalConfig {
     pub whitelist_pda: Pubkey,
     pub reserved_fee_recipient: Pubkey,
     pub mayhem_mode_enabled: bool,
+    pub reserved_fee_recipients: [Pubkey; 7],
 }
 
-pub const GLOBAL_CONFIG_SIZE: usize = 32 + 8 + 8 + 1 + 32 * 8 + 8 + 32 + 32 + 32 + 1;
+pub const GLOBAL_CONFIG_SIZE: usize = 32 + 8 + 8 + 1 + 32 * 8 + 8 + 32 + 32 + 32 + 1 + 32 * 7;
 
 pub fn global_config_decode(data: &[u8]) -> Option<GlobalConfig> {
     if data.len() < GLOBAL_CONFIG_SIZE {

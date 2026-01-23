@@ -43,11 +43,30 @@ pub struct VestingParams {
     pub unlock_period: u64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub enum AmmFeeOn {
-    #[default]
     QuoteToken,
     BothToken,
+}
+
+impl Default for AmmFeeOn {
+    fn default() -> Self {
+        Self::QuoteToken
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[borsh(use_discriminant = true)]
+#[repr(u8)]
+pub enum AmmCreatorFeeOn {
+    QuoteToken = 0,
+    BothToken = 1,
+}
+
+impl Default for AmmCreatorFeeOn {
+    fn default() -> Self {
+        Self::QuoteToken
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -94,7 +113,7 @@ pub struct VestingSchedule {
     pub allocated_share_amount: u64,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PoolState {
     pub epoch: u64,
     pub auth_bump: u8,
@@ -120,10 +139,49 @@ pub struct PoolState {
     pub base_vault: Pubkey,
     pub quote_vault: Pubkey,
     pub creator: Pubkey,
-    pub padding: [u64; 8],
+    pub token_program_flag: u8,
+    pub amm_creator_fee_on: AmmCreatorFeeOn,
+    pub platform_vesting_share: u64,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u8; 54],
 }
 
-pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5;
+impl Default for PoolState {
+    fn default() -> Self {
+        Self {
+            epoch: 0,
+            auth_bump: 0,
+            status: 0,
+            base_decimals: 0,
+            quote_decimals: 0,
+            migrate_type: 0,
+            supply: 0,
+            total_base_sell: 0,
+            virtual_base: 0,
+            virtual_quote: 0,
+            real_base: 0,
+            real_quote: 0,
+            total_quote_fund_raising: 0,
+            quote_protocol_fee: 0,
+            platform_fee: 0,
+            migrate_fee: 0,
+            vesting_schedule: VestingSchedule::default(),
+            global_config: Pubkey::default(),
+            platform_config: Pubkey::default(),
+            base_mint: Pubkey::default(),
+            quote_mint: Pubkey::default(),
+            base_vault: Pubkey::default(),
+            quote_vault: Pubkey::default(),
+            creator: Pubkey::default(),
+            token_program_flag: 0,
+            amm_creator_fee_on: AmmCreatorFeeOn::default(),
+            platform_vesting_share: 0,
+            padding: [0u8; 54],
+        }
+    }
+}
+
+pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5 + 1 + 1 + 8 + 54;
 
 pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
     if data.len() < POOL_STATE_SIZE {
@@ -207,6 +265,40 @@ pub fn global_config_parser(
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct BondingCurveParam {
+    pub migrate_type: u8,
+    pub migrate_cpmm_fee_on: u8,
+    pub supply: u64,
+    pub total_base_sell: u64,
+    pub total_quote_fund_raising: u64,
+    pub total_locked_amount: u64,
+    pub cliff_period: u64,
+    pub unlock_period: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct PlatformCurveParam {
+    pub epoch: u64,
+    pub index: u8,
+    pub global_config: Pubkey,
+    pub bonding_curve_param: BondingCurveParam,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u64; 50],
+}
+
+impl Default for PlatformCurveParam {
+    fn default() -> Self {
+        Self {
+            epoch: 0,
+            index: 0,
+            global_config: Pubkey::default(),
+            bonding_curve_param: BondingCurveParam::default(),
+            padding: [0u64; 50],
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PlatformConfig {
     pub epoch: u64,
     pub platform_fee_wallet: Pubkey,
@@ -215,13 +307,49 @@ pub struct PlatformConfig {
     pub creator_scale: u64,
     pub burn_scale: u64,
     pub fee_rate: u64,
-    pub name: Vec<u8>,
-    pub web: Vec<u8>,
-    pub img: Vec<u8>,
-    pub padding: Vec<u8>,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub name: [u8; 64],
+    #[serde(with = "serde_big_array::BigArray")]
+    pub web: [u8; 256],
+    #[serde(with = "serde_big_array::BigArray")]
+    pub img: [u8; 256],
+    pub cpswap_config: Pubkey,
+    pub creator_fee_rate: u64,
+    pub transfer_fee_extension_auth: Pubkey,
+    pub platform_vesting_wallet: Pubkey,
+    pub platform_vesting_scale: u64,
+    pub platform_cp_creator: Pubkey,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u8; 108],
+    pub curve_params: Vec<PlatformCurveParam>,
 }
 
-pub const PLATFORM_CONFIG_SIZE: usize = 8 + 32 * 2 + 8 * 4 + 8 * 64 + 8 * 256 + 8 * 256 + 8 * 256;
+impl Default for PlatformConfig {
+    fn default() -> Self {
+        Self {
+            epoch: 0,
+            platform_fee_wallet: Pubkey::default(),
+            platform_nft_wallet: Pubkey::default(),
+            platform_scale: 0,
+            creator_scale: 0,
+            burn_scale: 0,
+            fee_rate: 0,
+            name: [0u8; 64],
+            web: [0u8; 256],
+            img: [0u8; 256],
+            cpswap_config: Pubkey::default(),
+            creator_fee_rate: 0,
+            transfer_fee_extension_auth: Pubkey::default(),
+            platform_vesting_wallet: Pubkey::default(),
+            platform_vesting_scale: 0,
+            platform_cp_creator: Pubkey::default(),
+            padding: [0u8; 108],
+            curve_params: Vec::new(),
+        }
+    }
+}
+
+pub const PLATFORM_CONFIG_SIZE: usize = 8 + 32 * 2 + 8 * 4 + 64 + 256 + 256 + 32 + 8 + 32 + 32 + 8 + 32 + 108;
 
 pub fn platform_config_decode(data: &[u8]) -> Option<PlatformConfig> {
     if data.len() < PLATFORM_CONFIG_SIZE {
