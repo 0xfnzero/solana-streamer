@@ -25,6 +25,9 @@ pub struct PumpFunCreateTokenEvent {
     pub token_program: Pubkey,
     #[borsh(skip)]
     pub is_mayhem_mode: bool,
+    /// Whether cashback is enabled (IDL CreateEvent.is_cashback_enabled)
+    #[borsh(skip)]
+    pub is_cashback_enabled: bool,
     #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]
@@ -49,6 +52,8 @@ pub struct PumpFunCreateV2TokenEvent {
     pub token_total_supply: u64,
     pub token_program: Pubkey,
     pub is_mayhem_mode: bool,
+    /// Whether cashback is enabled (IDL CreateEvent.is_cashback_enabled)
+    pub is_cashback_enabled: bool,
     #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]
@@ -58,7 +63,7 @@ pub struct PumpFunCreateV2TokenEvent {
 pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCreateV2TokenEvent> {
     let mut offset = 0;
 
-    // 解析 name 字符串: [长度(4字节 u32)][字符串内容]
+    // Parse name string: [length (4 bytes u32)][string bytes]
     if data.len() < offset + 4 {
         return None;
     }
@@ -70,7 +75,7 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
     let name = String::from_utf8(data[offset..offset + name_len].to_vec()).ok()?;
     offset += name_len;
 
-    // 解析 symbol 字符串
+    // Parse symbol string
     if data.len() < offset + 4 {
         return None;
     }
@@ -82,7 +87,7 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
     let symbol = String::from_utf8(data[offset..offset + symbol_len].to_vec()).ok()?;
     offset += symbol_len;
 
-    // 解析 uri 字符串
+    // Parse uri string
     if data.len() < offset + 4 {
         return None;
     }
@@ -94,7 +99,7 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
     let uri = String::from_utf8(data[offset..offset + uri_len].to_vec()).ok()?;
     offset += uri_len;
 
-    // 解析 Pubkey 字段 (每个32字节)
+    // Parse Pubkey fields (32 bytes each)
     if data.len() < offset + 32 {
         return None;
     }
@@ -119,7 +124,7 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
     let creator = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
     offset += 32;
 
-    // 解析数值字段
+    // Parse numeric fields
     if data.len() < offset + 8 {
         return None;
     }
@@ -150,13 +155,19 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
     let token_total_supply = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
     offset += 8;
 
-    // 如果数据长度足够,解析 V2 版本的额外字段: token_program (32字节) + is_mayhem_mode (1字节)
-    let (token_program, is_mayhem_mode) = if data.len() >= offset + 33 {
+    // If data length allows, parse V2 extra fields: token_program (32 bytes) + is_mayhem_mode (1 byte) + is_cashback_enabled (1 byte)
+    let (token_program, is_mayhem_mode, is_cashback_enabled) = if data.len() >= offset + 34 {
         let token_program = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-        let is_mayhem_mode = data[offset + 32] == 1;
-        (token_program, is_mayhem_mode)
+        let is_mayhem_mode = data[offset + 32] != 0;
+        let is_cashback_enabled = data[offset + 33] != 0;
+        (token_program, is_mayhem_mode, is_cashback_enabled)
+    } else if data.len() >= offset + 33 {
+        // Backward compat: only token_program + is_mayhem_mode, no is_cashback_enabled
+        let token_program = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
+        let is_mayhem_mode = data[offset + 32] != 0;
+        (token_program, is_mayhem_mode, false)
     } else {
-        (Pubkey::default(), false)
+        (Pubkey::default(), false, false)
     };
 
     Some(PumpFunCreateV2TokenEvent {
@@ -174,6 +185,7 @@ pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCr
         token_total_supply,
         token_program,
         is_mayhem_mode,
+        is_cashback_enabled,
         ..Default::default()
     })
 }
@@ -213,7 +225,7 @@ pub struct PumpFunTradeEvent {
     #[borsh(skip)]
     pub is_bot: bool,
     #[borsh(skip)]
-    pub is_dev_create_token_trade: bool, // 是否是dev创建token的交易
+    pub is_dev_create_token_trade: bool, // Whether this is a dev-created token trade
 
     #[borsh(skip)]
     pub global: Pubkey,
@@ -247,15 +259,64 @@ pub struct PumpFunTradeEvent {
     pub fee_config: Pubkey,
     #[borsh(skip)]
     pub fee_program: Pubkey,
+
+    // === IDL TradeEvent extension fields (aligned with sol-parser-sdk / pumpfun IDL) ===
+    #[borsh(skip)]
+    pub ix_name: String,
+    #[borsh(skip)]
+    pub mayhem_mode: bool,
+    #[borsh(skip)]
+    pub cashback_fee_basis_points: u64,
+    #[borsh(skip)]
+    pub cashback: u64,
+    /// Whether this is a cashback coin (cashback_fee_basis_points > 0)
+    #[borsh(skip)]
+    pub is_cashback_coin: bool,
 }
 
-pub const PUMPFUN_TRADE_EVENT_LOG_SIZE: usize = 250;
+/// Borsh byte length of TradeEvent fixed fields (IDL order; excludes ix_name and following variable part).
+/// Layout: mint(32)+sol_amount(8)+token_amount(8)+is_buy(1)+user(32)+timestamp(8)+virtual_sol(8)+virtual_token(8)+real_sol(8)+real_token(8)+fee_recipient(32)+fee_basis_points(8)+fee(8)+creator(32)+creator_fee_bps(8)+creator_fee(8)+track_volume(1)+total_unclaimed(8)+total_claimed(8)+current_sol_volume(8)+last_update_timestamp(8) = 274
+pub const PUMPFUN_TRADE_EVENT_LOG_SIZE: usize = 274;
 
+/// Decode TradeEvent log; if data.len() > 274 then parse ix_name, mayhem_mode, cashback (IDL-aligned).
 pub fn pumpfun_trade_event_log_decode(data: &[u8]) -> Option<PumpFunTradeEvent> {
     if data.len() < PUMPFUN_TRADE_EVENT_LOG_SIZE {
         return None;
     }
-    borsh::from_slice::<PumpFunTradeEvent>(&data[..PUMPFUN_TRADE_EVENT_LOG_SIZE]).ok()
+    let mut event = borsh::from_slice::<PumpFunTradeEvent>(&data[..PUMPFUN_TRADE_EVENT_LOG_SIZE]).ok()?;
+    let mut offset = PUMPFUN_TRADE_EVENT_LOG_SIZE;
+    if offset < data.len() {
+        let (ix_name, inc) = read_borsh_string(data, offset).unwrap_or((String::new(), 0));
+        offset += inc;
+        event.ix_name = ix_name;
+    }
+    if offset + 1 <= data.len() {
+        event.mayhem_mode = data[offset] != 0;
+        offset += 1;
+    }
+    if offset + 8 <= data.len() {
+        event.cashback_fee_basis_points = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
+        offset += 8;
+    }
+    if offset + 8 <= data.len() {
+        event.cashback = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
+    }
+    event.is_cashback_coin = event.cashback_fee_basis_points > 0;
+    Some(event)
+}
+
+#[inline]
+fn read_borsh_string(data: &[u8], start: usize) -> Option<(String, usize)> {
+    if start + 4 > data.len() {
+        return None;
+    }
+    let len = u32::from_le_bytes(data[start..start + 4].try_into().ok()?) as usize;
+    let start = start + 4;
+    if start + len > data.len() {
+        return None;
+    }
+    let s = String::from_utf8_lossy(&data[start..start + len]).to_string();
+    Some((s, 4 + len))
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -323,7 +384,7 @@ pub fn pumpfun_migrate_event_log_decode(data: &[u8]) -> Option<PumpFunMigrateEve
     borsh::from_slice::<PumpFunMigrateEvent>(&data[..PUMPFUN_MIGRATE_EVENT_LOG_SIZE]).ok()
 }
 
-/// 铸币曲线
+/// Bonding curve
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunBondingCurveAccountEvent {
     #[borsh(skip)]
@@ -336,7 +397,7 @@ pub struct PumpFunBondingCurveAccountEvent {
     pub bonding_curve: BondingCurve,
 }
 
-/// 全局配置
+/// Global config
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunGlobalAccountEvent {
     #[borsh(skip)]
@@ -349,9 +410,9 @@ pub struct PumpFunGlobalAccountEvent {
     pub global: Global,
 }
 
-/// 事件鉴别器常量
+/// Event discriminator constants
 pub mod discriminators {
-    // 事件鉴别器
+    // Event discriminators
     // pub const CREATE_TOKEN_EVENT: &str = "0xe445a52e51cb9a1d1b72a94ddeeb6376";
     pub const CREATE_TOKEN_EVENT: &[u8] =
         &[228, 69, 165, 46, 81, 203, 154, 29, 27, 114, 169, 77, 222, 235, 99, 118];
@@ -362,7 +423,7 @@ pub mod discriminators {
     pub const COMPLETE_PUMP_AMM_MIGRATION_EVENT: &[u8] =
         &[228, 69, 165, 46, 81, 203, 154, 29, 189, 233, 93, 185, 92, 148, 234, 148];
 
-    // 指令鉴别器
+    // Instruction discriminators
     pub const CREATE_TOKEN_IX: &[u8] = &[24, 30, 200, 40, 5, 28, 7, 119];
     pub const CREATE_V2_TOKEN_IX: &[u8] = &[214, 144, 76, 236, 95, 139, 49, 180];
     pub const BUY_IX: &[u8] = &[102, 6, 61, 18, 1, 218, 235, 234];
@@ -370,7 +431,7 @@ pub mod discriminators {
     pub const SELL_IX: &[u8] = &[51, 230, 133, 164, 1, 127, 131, 173];
     pub const MIGRATE_IX: &[u8] = &[155, 234, 231, 146, 236, 158, 162, 30];
 
-    // 账户鉴别器
+    // Account discriminators
     pub const BONDING_CURVE_ACCOUNT: &[u8] = &[23, 183, 248, 55, 96, 216, 172, 96];
     pub const GLOBAL_ACCOUNT: &[u8] = &[167, 232, 232, 177, 200, 108, 114, 127];
 }

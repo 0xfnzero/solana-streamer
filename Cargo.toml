@@ -21,7 +21,7 @@ solana-rpc-client-api = "3.1.4"
 solana-transaction-status = "3.1.4"
 solana-account-decoder = "3.1.4"
 solana-hash = "4.0.1"
-solana-entry = "3.1.4"
+solana-entry = { version = "3.1.4", features = ["agave-unstable-api"] }
 solana-rpc-client-nonce-utils = "3.1.4"
 solana-perf = "3.1.4"
 solana-metrics = "3.1.4"

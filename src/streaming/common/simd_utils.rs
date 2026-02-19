@@ -1,5 +1,4 @@
 use wide::*;
-use wide::CmpEq;
 
 /// SIMD-accelerated data parsing utilities
 pub struct SimdUtils;
