@@ -21,9 +21,10 @@ pub struct BondingCurve {
     pub complete: bool,
     pub creator: Pubkey,
     pub is_mayhem_mode: bool,
+    pub is_cashback_coin: bool,
 }
 
-pub const BONDING_CURVE_SIZE: usize = 8 * 5 + 1 + 32 + 1;
+pub const BONDING_CURVE_SIZE: usize = 8 * 5 + 1 + 32 + 1 + 1;
 
 pub fn bonding_curve_decode(data: &[u8]) -> Option<BondingCurve> {
     if data.len() < BONDING_CURVE_SIZE {
@@ -78,9 +79,10 @@ pub struct Global {
     pub reserved_fee_recipient: Pubkey,
     pub mayhem_mode_enabled: bool,
     pub reserved_fee_recipients: [Pubkey; 7],
+    pub is_cashback_enabled: bool,
 }
 
-pub const GLOBAL_SIZE: usize = 1 + 32 * 2 + 8 * 5 + 32 + 1 + 8 * 2 + 32 * 7 + 32 * 2 + 1 + 32 * 2 + 1 + 32 * 7;
+pub const GLOBAL_SIZE: usize = 1 + 32 * 2 + 8 * 5 + 32 + 1 + 8 * 2 + 32 * 7 + 32 * 2 + 1 + 32 * 2 + 1 + 32 * 7 + 1;
 
 pub fn global_decode(data: &[u8]) -> Option<Global> {
     if data.len() < GLOBAL_SIZE {

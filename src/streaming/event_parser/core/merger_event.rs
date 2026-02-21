@@ -21,6 +21,11 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.creator = cpie.creator;
                 e.creator_fee_basis_points = cpie.creator_fee_basis_points;
                 e.creator_fee = cpie.creator_fee;
+                e.track_volume = cpie.track_volume;
+                e.total_unclaimed_tokens = cpie.total_unclaimed_tokens;
+                e.total_claimed_tokens = cpie.total_claimed_tokens;
+                e.current_sol_volume = cpie.current_sol_volume;
+                e.last_update_timestamp = cpie.last_update_timestamp;
                 e.ix_name = cpie.ix_name.clone();
                 e.mayhem_mode = cpie.mayhem_mode;
                 e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;

@@ -32,6 +32,22 @@ pub struct PumpFunCreateTokenEvent {
     pub mint_authority: Pubkey,
     #[borsh(skip)]
     pub associated_bonding_curve: Pubkey,
+    #[borsh(skip)]
+    pub global: Pubkey,
+    #[borsh(skip)]
+    pub mpl_token_metadata: Pubkey,
+    #[borsh(skip)]
+    pub metadata_account: Pubkey,
+    #[borsh(skip)]
+    pub system_program: Pubkey,
+    #[borsh(skip)]
+    pub associated_token_program: Pubkey,
+    #[borsh(skip)]
+    pub rent: Pubkey,
+    #[borsh(skip)]
+    pub event_authority: Pubkey,
+    #[borsh(skip)]
+    pub program: Pubkey,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -58,6 +74,26 @@ pub struct PumpFunCreateV2TokenEvent {
     pub mint_authority: Pubkey,
     #[borsh(skip)]
     pub associated_bonding_curve: Pubkey,
+    #[borsh(skip)]
+    pub global: Pubkey,
+    #[borsh(skip)]
+    pub system_program: Pubkey,
+    #[borsh(skip)]
+    pub associated_token_program: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_program_id: Pubkey,
+    #[borsh(skip)]
+    pub global_params: Pubkey,
+    #[borsh(skip)]
+    pub sol_vault: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_state: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_token_vault: Pubkey,
+    #[borsh(skip)]
+    pub event_authority: Pubkey,
+    #[borsh(skip)]
+    pub program: Pubkey,
 }
 
 pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCreateV2TokenEvent> {
