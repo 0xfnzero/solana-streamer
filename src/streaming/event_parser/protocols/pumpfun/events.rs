@@ -275,10 +275,10 @@ pub struct PumpFunTradeEvent {
 }
 
 /// Borsh byte length of TradeEvent fixed fields (IDL order; excludes ix_name and following variable part).
-/// Layout: mint(32)+sol_amount(8)+token_amount(8)+is_buy(1)+user(32)+timestamp(8)+virtual_sol(8)+virtual_token(8)+real_sol(8)+real_token(8)+fee_recipient(32)+fee_basis_points(8)+fee(8)+creator(32)+creator_fee_bps(8)+creator_fee(8)+track_volume(1)+total_unclaimed(8)+total_claimed(8)+current_sol_volume(8)+last_update_timestamp(8) = 274
-pub const PUMPFUN_TRADE_EVENT_LOG_SIZE: usize = 274;
+/// Layout: mint(32)+sol_amount(8)+token_amount(8)+is_buy(1)+user(32)+timestamp(8)+virtual_sol(8)+virtual_token(8)+real_sol(8)+real_token(8)+fee_recipient(32)+fee_basis_points(8)+fee(8)+creator(32)+creator_fee_bps(8)+creator_fee(8)+track_volume(1)+total_unclaimed(8)+total_claimed(8)+current_sol_volume(8)+last_update_timestamp(8) = 250
+pub const PUMPFUN_TRADE_EVENT_LOG_SIZE: usize = 250;
 
-/// Decode TradeEvent log; if data.len() > 274 then parse ix_name, mayhem_mode, cashback (IDL-aligned).
+/// Decode TradeEvent log; if data.len() > 250 then parse ix_name, mayhem_mode, cashback (IDL-aligned).
 pub fn pumpfun_trade_event_log_decode(data: &[u8]) -> Option<PumpFunTradeEvent> {
     if data.len() < PUMPFUN_TRADE_EVENT_LOG_SIZE {
         return None;
