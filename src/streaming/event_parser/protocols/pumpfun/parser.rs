@@ -168,7 +168,16 @@ fn parse_create_token_instruction(
         mint_authority: accounts[1],
         bonding_curve: accounts[2],
         associated_bonding_curve: accounts[3],
+        global: accounts[4],
+        mpl_token_metadata: accounts[5],
+        metadata_account: accounts[6],
         user: accounts[7],
+        system_program: accounts[8],
+        token_program: accounts[9],
+        associated_token_program: accounts[10],
+        rent: accounts[11],
+        event_authority: accounts[12],
+        program: accounts[13],
         ..Default::default()
     }))
 }
@@ -231,7 +240,18 @@ fn parse_create_v2_token_instruction(
         mint_authority: accounts[1],
         bonding_curve: accounts[2],
         associated_bonding_curve: accounts[3],
-        user: accounts[7],
+        global: accounts[4],
+        user: accounts[5],
+        system_program: accounts[6],
+        token_program: accounts[7],
+        associated_token_program: accounts[8],
+        mayhem_program_id: accounts[9],
+        global_params: accounts[10],
+        sol_vault: accounts[11],
+        mayhem_state: accounts[12],
+        mayhem_token_vault: accounts[13],
+        event_authority: accounts[14],
+        program: accounts[15],
         ..Default::default()
     }))
 }
