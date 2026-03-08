@@ -50,6 +50,7 @@ pub struct PumpFunCreateTokenEvent {
     pub program: Pubkey,
 }
 
+/// CreateV2 事件：与 create_v2 指令 16 个账户一致（见 parser 注释）。
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunCreateV2TokenEvent {
     #[borsh(skip)]

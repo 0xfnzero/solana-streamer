@@ -188,10 +188,11 @@ fn parse_create_token_instruction(
 }
 
 /// 解析创建 V2 代币指令事件 (SPL-22 Token, Mayhem Mode)
-/// 账户: 0: mint, 1: mint_authority, 2: bonding_curve, 3: associated_bonding_curve, 4: global,
-/// 5: user, 6: system_program, 7: token_program, 8: associated_token_program, 9: mayhem_program_id,
-/// 10: global_params, 11: sol_vault, 12: mayhem_state, 13: mayhem_token_vault, 14: event_authority, 15: program.
-/// 共 16 个固定账户，不足时返回 None 避免越界。
+/// 与 IDL create_v2 及区块浏览器一致，共 16 个固定账户：
+///   0: mint, 1: mint_authority, 2: bonding_curve, 3: associated_bonding_curve, 4: global,
+///   5: user, 6: system_program, 7: token_program, 8: associated_token_program, 9: mayhem_program_id,
+///  10: global_params, 11: sol_vault, 12: mayhem_state, 13: mayhem_token_vault, 14: event_authority, 15: program.
+/// 不足 16 个账户时返回 None 避免越界。
 /// 注意：shredstream 路径仅传入 static_account_keys，若交易使用 Address Lookup Tables，
 /// 无法解析 loaded_addresses，部分账户会以 default 填充，导致 token_program/global 等错误。
 fn parse_create_v2_token_instruction(
@@ -199,12 +200,13 @@ fn parse_create_v2_token_instruction(
     accounts: &[Pubkey],
     mut metadata: EventMetadata,
 ) -> Option<DexEvent> {
-    metadata.event_type = EventType::PumpFunCreateV2Token;
-
     const CREATE_V2_MIN_ACCOUNTS: usize = 16;
-    if data.len() < 16 || accounts.len() < CREATE_V2_MIN_ACCOUNTS {
+    // Guard: avoid index out of bounds (e.g. ALT-loaded tx with fewer static accounts). See issue #63.
+    if accounts.len() < CREATE_V2_MIN_ACCOUNTS || data.len() < 16 {
         return None;
     }
+    metadata.event_type = EventType::PumpFunCreateV2Token;
+
     let mut offset = 0;
     if offset + 4 > data.len() {
         return None;
@@ -242,28 +244,30 @@ fn parse_create_v2_token_instruction(
         Pubkey::default()
     };
 
+    // Safe slice: already guaranteed accounts.len() >= 16 above; avoid any index panic (issue #63).
+    let acc = &accounts[0..CREATE_V2_MIN_ACCOUNTS];
     Some(DexEvent::PumpFunCreateV2TokenEvent(PumpFunCreateV2TokenEvent {
         metadata,
         name: name.to_string(),
         symbol: symbol.to_string(),
         uri: uri.to_string(),
         creator,
-        mint: accounts[0],
-        mint_authority: accounts[1],
-        bonding_curve: accounts[2],
-        associated_bonding_curve: accounts[3],
-        global: accounts[4],
-        user: accounts[5],
-        system_program: accounts[6],
-        token_program: accounts[7],
-        associated_token_program: accounts[8],
-        mayhem_program_id: accounts[9],
-        global_params: accounts[10],
-        sol_vault: accounts[11],
-        mayhem_state: accounts[12],
-        mayhem_token_vault: accounts[13],
-        event_authority: accounts[14],
-        program: accounts[15],
+        mint: acc[0],
+        mint_authority: acc[1],
+        bonding_curve: acc[2],
+        associated_bonding_curve: acc[3],
+        global: acc[4],
+        user: acc[5],
+        system_program: acc[6],
+        token_program: acc[7],
+        associated_token_program: acc[8],
+        mayhem_program_id: acc[9],
+        global_params: acc[10],
+        sol_vault: acc[11],
+        mayhem_state: acc[12],
+        mayhem_token_vault: acc[13],
+        event_authority: acc[14],
+        program: acc[15],
         ..Default::default()
     }))
 }
