@@ -407,7 +407,8 @@ impl EventParser {
         // 超低延迟：顺序执行，避免 thread::scope 的 spawn/join 开销
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
-            let current_inner_idx = inner_index.unwrap_or(-1) as i32;
+            let raw = inner_index.unwrap_or(-1);
+            let current_inner_idx = raw.clamp(i32::MIN as i64, i32::MAX as i64) as i32;
 
             for (idx, inner_instruction) in inner_instructions_ref.instructions.iter().enumerate() {
                 if (idx as i32) <= current_inner_idx {
@@ -566,8 +567,9 @@ impl EventParser {
         // 当 inner_index 有值时，只查找索引大于当前 inner_index 的 CPI log
         let mut inner_instruction_event: Option<DexEvent> = None;
         if let Some(inner_instructions_ref) = inner_instructions {
-            let current_inner_idx = inner_index.unwrap_or(-1) as i32;
-            
+            let raw = inner_index.unwrap_or(-1);
+            let current_inner_idx = raw.clamp(i32::MIN as i64, i32::MAX as i64) as i32;
+
             // 并行执行两个任务: 解析 inner event 和提取 swap_data
             let (inner_event_result, swap_data_result) = std::thread::scope(|s| {
                 let inner_event_handle = s.spawn(|| {
