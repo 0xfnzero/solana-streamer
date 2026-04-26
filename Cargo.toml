@@ -14,10 +14,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 solana-sdk = "3.0.0"
-solana-client = "3.1.9"
-solana-transaction-status = "3.1.9"
-solana-account-decoder = "3.1.9"
-solana-entry = { version = "3.1.9", features = ["agave-unstable-api"] }
+solana-client = "3.1.11"
+solana-transaction-status = "3.1.11"
+solana-account-decoder = "3.1.11"
+solana-entry = { version = "3.1.11", features = ["agave-unstable-api"] }
 borsh = { version = "1.6.0", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-big-array = "0.5.1"
@@ -36,7 +36,8 @@ prost-types = "0.14.3"
 crossbeam-queue = "0.3.12"
 spl-token = { version = "9.0.0", default-features = false, features = ["no-entrypoint"] }
 spl-token-2022 = { version = "10.0.0", default-features = false, features = ["no-entrypoint"] }
-# spl-token-2022 10.0.0 does not compile against spl-token-group-interface 0.7.2+ (E0308).
+# spl-token-2022 10.0.0 is incompatible with spl-token-group-interface 0.7.2+ (E0308).
+# Keep token-group-interface pinned to 0.7.1 until the upstream token-2022 bump is available.
 spl-token-group-interface = "=0.7.1"
 solana-commitment-config = { version = "3.1.1", features = ["serde"] }
 tonic-prost = "0.14.5"
