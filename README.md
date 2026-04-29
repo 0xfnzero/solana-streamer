@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="./Logo.png" alt="Solana Streamer Logo" width="400">
+    <h1>🌊 Solana Streamer</h1>
     <h3><em>Real-time event streaming from Solana DEX trading programs.</em></h3>
 </div>
 
