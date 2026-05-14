@@ -2,20 +2,21 @@
 //!
 //! Usage: cargo run --example pumpfun_trade_filter --release
 
-use solana_streamer_sdk::streaming::event_parser::common::types::EventType;
-use solana_streamer_sdk::streaming::event_parser::protocols::pumpfun::events::{PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent, PumpFunTradeEvent};
-use solana_streamer_sdk::streaming::event_parser::DexEvent;
-use solana_streamer_sdk::streaming::grpc::ClientConfig;
-use solana_streamer_sdk::streaming::yellowstone_grpc::{AccountFilter, TransactionFilter, YellowstoneGrpc};
-use solana_streamer_sdk::streaming::event_parser::Protocol;
 use solana_streamer_sdk::streaming::event_parser::common::filter::EventTypeFilter;
+use solana_streamer_sdk::streaming::event_parser::common::types::EventType;
+use solana_streamer_sdk::streaming::event_parser::protocols::pumpfun::events::{
+    PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent, PumpFunTradeEvent,
+};
 use solana_streamer_sdk::streaming::event_parser::protocols::pumpfun::parser::PUMPFUN_PROGRAM_ID;
+use solana_streamer_sdk::streaming::event_parser::DexEvent;
+use solana_streamer_sdk::streaming::event_parser::Protocol;
+use solana_streamer_sdk::streaming::grpc::ClientConfig;
+use solana_streamer_sdk::streaming::yellowstone_grpc::{
+    AccountFilter, TransactionFilter, YellowstoneGrpc,
+};
 
 fn now_micros() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros() as i64
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64
 }
 
 #[tokio::main]
@@ -28,7 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config.enable_metrics = true;
 
     let grpc = YellowstoneGrpc::new_with_config(
-        std::env::var("GRPC_ENDPOINT").unwrap_or_else(|_| "https://solana-yellowstone-grpc.publicnode.com:443".to_string()),
+        std::env::var("GRPC_ENDPOINT")
+            .unwrap_or_else(|_| "https://solana-yellowstone-grpc.publicnode.com:443".to_string()),
         std::env::var("GRPC_AUTH_TOKEN").ok(),
         config,
     )?;
@@ -50,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             EventType::PumpFunCreateToken,
             EventType::PumpFunCreateV2Token,
         ],
+        ..Default::default()
     });
 
     let callback = |event: DexEvent| {
@@ -84,13 +87,7 @@ fn print_trade(e: &PumpFunTradeEvent, now_us: i64) {
     let kind = if e.is_buy { "BUY" } else { "SELL" };
     println!(
         "│ {} | sig={:.8}.. | mint={:.8}.. | sol={} tok={} | user={:.8}.. | latency={} μs",
-        kind,
-        e.metadata.signature,
-        e.mint,
-        e.sol_amount,
-        e.token_amount,
-        e.user,
-        latency_us
+        kind, e.metadata.signature, e.mint, e.sol_amount, e.token_amount, e.user, latency_us
     );
 }
 
@@ -98,11 +95,7 @@ fn print_create_legacy(e: &PumpFunCreateTokenEvent, now_us: i64) {
     let latency_us = now_us - e.metadata.recv_us;
     println!(
         "│ CREATE | sig={:.8}.. | name={} symbol={} | mint={:.8}.. | latency={} μs",
-        e.metadata.signature,
-        e.name,
-        e.symbol,
-        e.mint,
-        latency_us
+        e.metadata.signature, e.name, e.symbol, e.mint, latency_us
     );
 }
 
@@ -110,10 +103,6 @@ fn print_create_v2(e: &PumpFunCreateV2TokenEvent, now_us: i64) {
     let latency_us = now_us - e.metadata.recv_us;
     println!(
         "│ CREATE_V2 | sig={:.8}.. | name={} symbol={} | mint={:.8}.. | latency={} μs",
-        e.metadata.signature,
-        e.name,
-        e.symbol,
-        e.mint,
-        latency_us
+        e.metadata.signature, e.name, e.symbol, e.mint, latency_us
     );
 }

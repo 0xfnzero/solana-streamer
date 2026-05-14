@@ -4,17 +4,17 @@ use crate::streaming::common::{
     SubscriptionHandle,
 };
 use crate::streaming::event_parser::common::filter::EventTypeFilter;
-use crate::streaming::event_parser::{Protocol, DexEvent};
+use crate::streaming::event_parser::{DexEvent, Protocol};
 use crate::streaming::grpc::pool::factory;
 use crate::streaming::grpc::{EventPretty, SubscriptionManager};
 use anyhow::anyhow;
-use std::time::{SystemTime, UNIX_EPOCH};
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
 use log::error;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use yellowstone_grpc_proto::geyser::{

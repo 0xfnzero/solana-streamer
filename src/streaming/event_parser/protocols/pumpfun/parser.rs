@@ -28,7 +28,9 @@ pub fn parse_pumpfun_instruction_data(
             parse_create_v2_token_instruction(data, accounts, metadata)
         }
         discriminators::BUY_IX => parse_buy_instruction(data, accounts, metadata),
-        discriminators::BUY_EXACT_SOL_IN_IX => parse_buy_exact_sol_in_instruction(data, accounts, metadata),
+        discriminators::BUY_EXACT_SOL_IN_IX => {
+            parse_buy_exact_sol_in_instruction(data, accounts, metadata)
+        }
         discriminators::SELL_IX => parse_sell_instruction(data, accounts, metadata),
         discriminators::MIGRATE_IX => parse_migrate_instruction(data, accounts, metadata),
         _ => None,
@@ -320,10 +322,11 @@ fn parse_buy_instruction(
 /// Same account layout as buy: 16 fixed + optional 17th (index 16).
 /// Args: spendable_sol_in (SOL), min_tokens_out (token).
 fn parse_buy_exact_sol_in_instruction(
-    data: &[u8], accounts: &[Pubkey],
+    data: &[u8],
+    accounts: &[Pubkey],
     mut metadata: EventMetadata,
 ) -> Option<DexEvent> {
-    metadata.event_type = EventType::PumpFunBuy;
+    metadata.event_type = EventType::PumpFunBuyExactSolIn;
 
     if data.len() < 16 || accounts.len() < 16 {
         return None;

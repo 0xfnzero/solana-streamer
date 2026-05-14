@@ -1,7 +1,5 @@
 use crate::streaming::event_parser::common::EventMetadata;
-use crate::{
-    streaming::event_parser::protocols::raydium_amm_v4::types::AmmInfo,
-};
+use crate::streaming::event_parser::protocols::raydium_amm_v4::types::AmmInfo;
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;

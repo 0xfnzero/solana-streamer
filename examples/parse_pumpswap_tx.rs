@@ -13,7 +13,8 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let default_sig = "3zsihbygW7hoKGtduAyDDFzp4E1eis8gaBzEzzNKr8ma39baffpFcphok9wHFgR3EauDe9vYYsVf4Puh5pZ6UJiS";
+    let default_sig =
+        "3zsihbygW7hoKGtduAyDDFzp4E1eis8gaBzEzzNKr8ma39baffpFcphok9wHFgR3EauDe9vYYsVf4Puh5pZ6UJiS";
     let tx_sig = std::env::var("TX_SIGNATURE").unwrap_or_else(|_| default_sig.to_string());
     let rpc_url = std::env::var("SOLANA_RPC_URL")
         .unwrap_or_else(|_| "https://api.mainnet-beta.solana.com".to_string());
@@ -30,11 +31,11 @@ async fn main() -> Result<()> {
 async fn parse_one_tx(signature_str: &str, rpc_url: &str) -> Result<()> {
     use prost_types::Timestamp;
     use solana_sdk::{
-        message::compiled_instruction::CompiledInstruction,
-        pubkey::Pubkey,
-        signature::Signature,
+        message::compiled_instruction::CompiledInstruction, pubkey::Pubkey, signature::Signature,
     };
-    use solana_transaction_status::{InnerInstruction, InnerInstructions, UiInstruction, UiTransactionEncoding};
+    use solana_transaction_status::{
+        InnerInstruction, InnerInstructions, UiInstruction, UiTransactionEncoding,
+    };
 
     let signature = Signature::from_str(signature_str)?;
     let client = solana_client::nonblocking::rpc_client::RpcClient::new(rpc_url.to_string());
@@ -61,8 +62,9 @@ async fn parse_one_tx(signature_str: &str, rpc_url: &str) -> Result<()> {
 
     let mut inner_instructions_vec: Vec<InnerInstructions> = Vec::new();
     if let Some(meta) = &transaction.transaction.meta {
-        if let solana_transaction_status::option_serializer::OptionSerializer::Some(ui_inner_insts) =
-            &meta.inner_instructions
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(
+            ui_inner_insts,
+        ) = &meta.inner_instructions
         {
             for ui_inner in ui_inner_insts {
                 let mut converted = Vec::new();
@@ -80,10 +82,8 @@ async fn parse_one_tx(signature_str: &str, rpc_url: &str) -> Result<()> {
                         }
                     }
                 }
-                inner_instructions_vec.push(InnerInstructions {
-                    index: ui_inner.index,
-                    instructions: converted,
-                });
+                inner_instructions_vec
+                    .push(InnerInstructions { index: ui_inner.index, instructions: converted });
             }
         }
     }
@@ -105,13 +105,10 @@ async fn parse_one_tx(signature_str: &str, rpc_url: &str) -> Result<()> {
     accounts.extend(address_table_lookups);
 
     let slot = transaction.slot;
-    let block_time = transaction
-        .block_time
-        .map(|t| Timestamp { seconds: t as i64, nanos: 0 });
-    let recv_us = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros() as i64;
+    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t as i64, nanos: 0 });
+    let recv_us =
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros()
+            as i64;
 
     let protocols = vec![
         Protocol::PumpFun,

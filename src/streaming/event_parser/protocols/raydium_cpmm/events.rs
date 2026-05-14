@@ -1,8 +1,6 @@
 use crate::streaming::event_parser::common::EventMetadata;
+use crate::streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig;
 use crate::streaming::event_parser::protocols::raydium_cpmm::types::PoolState;
-use crate::{
-    streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig,
-};
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
@@ -30,7 +28,6 @@ pub struct RaydiumCpmmSwapEvent {
     pub output_token_mint: Pubkey,
     pub observation_state: Pubkey,
 }
-
 
 /// 存款
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]

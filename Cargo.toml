@@ -12,20 +12,30 @@ readme = "README.md"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = ["sdk-parse-borsh"]
+sdk-parse-borsh = ["sol-parser-sdk/parse-borsh"]
+# If both parser backend features are enabled, sol-parser-sdk 0.4.4+ uses zero-copy.
+sdk-parse-zero-copy = ["sol-parser-sdk/parse-zero-copy"]
+sdk-perf-stats = ["sol-parser-sdk/perf-stats"]
+sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
+
 [dependencies]
+# Keep the streamer on the crates.io SDK while allowing local workspace patches by semver.
+sol-parser-sdk = { version = "0.4.4", default-features = false }
 solana-sdk = "3.0.0"
-solana-client = "3.1.11"
-solana-transaction-status = "3.1.11"
-solana-account-decoder = "3.1.11"
-solana-entry = { version = "3.1.11", features = ["agave-unstable-api"] }
+solana-client = "3.1.12"
+solana-transaction-status = "3.1.12"
+solana-account-decoder = "3.1.12"
+solana-entry = "3.0.0"
 borsh = { version = "1.6.0", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-big-array = "0.5.1"
 futures = "0.3.32"
 bincode = "1.3"
 anyhow = "1.0.102"
-yellowstone-grpc-client = {  version = "10.2.0" }
-yellowstone-grpc-proto = {  version = "10.1.1" }
+yellowstone-grpc-client = "12.1.0"
+yellowstone-grpc-proto = "12.1.0"
 tokio = { version = "1.50.0", features = ["full", "rt-multi-thread"]}
 tonic = { version = "0.14.5", features = ["transport"] }
 rustls = { version = "0.23.37", features = ["ring"], default-features = false }

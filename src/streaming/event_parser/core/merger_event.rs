@@ -1,4 +1,5 @@
 use crate::streaming::event_parser::DexEvent;
+use solana_sdk::pubkey::Pubkey;
 
 pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
     match instruction_event {
@@ -433,6 +434,249 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.total_amount_a = cpie.total_amount_a;
                 e.total_amount_b = cpie.total_amount_b;
                 e.pool_type = cpie.pool_type;
+            }
+            _ => {}
+        },
+
+        // Orca Whirlpool：外层指令粗字段 + CPI 日志精修
+        DexEvent::OrcaWhirlpoolSwapEvent(e) => match cpi_log_event {
+            DexEvent::OrcaWhirlpoolSwapEvent(cpie) => {
+                if cpie.whirlpool != Pubkey::default() {
+                    e.whirlpool = cpie.whirlpool;
+                }
+                if cpie.input_amount != 0 {
+                    e.input_amount = cpie.input_amount;
+                }
+                if cpie.output_amount != 0 {
+                    e.output_amount = cpie.output_amount;
+                }
+                e.a_to_b = cpie.a_to_b;
+                if cpie.pre_sqrt_price != 0 {
+                    e.pre_sqrt_price = cpie.pre_sqrt_price;
+                }
+                if cpie.post_sqrt_price != 0 {
+                    e.post_sqrt_price = cpie.post_sqrt_price;
+                }
+                if cpie.input_transfer_fee != 0 {
+                    e.input_transfer_fee = cpie.input_transfer_fee;
+                }
+                if cpie.output_transfer_fee != 0 {
+                    e.output_transfer_fee = cpie.output_transfer_fee;
+                }
+                if cpie.lp_fee != 0 {
+                    e.lp_fee = cpie.lp_fee;
+                }
+                if cpie.protocol_fee != 0 {
+                    e.protocol_fee = cpie.protocol_fee;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::OrcaWhirlpoolLiquidityIncreasedEvent(e) => match cpi_log_event {
+            DexEvent::OrcaWhirlpoolLiquidityIncreasedEvent(cpie) => {
+                if cpie.position != Pubkey::default() {
+                    e.position = cpie.position;
+                }
+                if cpie.tick_lower_index != 0 || cpie.tick_upper_index != 0 {
+                    e.tick_lower_index = cpie.tick_lower_index;
+                    e.tick_upper_index = cpie.tick_upper_index;
+                }
+                if cpie.token_a_amount != 0 {
+                    e.token_a_amount = cpie.token_a_amount;
+                }
+                if cpie.token_b_amount != 0 {
+                    e.token_b_amount = cpie.token_b_amount;
+                }
+                if cpie.liquidity != 0 {
+                    e.liquidity = cpie.liquidity;
+                }
+                if cpie.token_a_transfer_fee != 0 {
+                    e.token_a_transfer_fee = cpie.token_a_transfer_fee;
+                }
+                if cpie.token_b_transfer_fee != 0 {
+                    e.token_b_transfer_fee = cpie.token_b_transfer_fee;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::OrcaWhirlpoolLiquidityDecreasedEvent(e) => match cpi_log_event {
+            DexEvent::OrcaWhirlpoolLiquidityDecreasedEvent(cpie) => {
+                if cpie.position != Pubkey::default() {
+                    e.position = cpie.position;
+                }
+                if cpie.tick_lower_index != 0 || cpie.tick_upper_index != 0 {
+                    e.tick_lower_index = cpie.tick_lower_index;
+                    e.tick_upper_index = cpie.tick_upper_index;
+                }
+                if cpie.token_a_amount != 0 {
+                    e.token_a_amount = cpie.token_a_amount;
+                }
+                if cpie.token_b_amount != 0 {
+                    e.token_b_amount = cpie.token_b_amount;
+                }
+                if cpie.liquidity != 0 {
+                    e.liquidity = cpie.liquidity;
+                }
+                if cpie.token_a_transfer_fee != 0 {
+                    e.token_a_transfer_fee = cpie.token_a_transfer_fee;
+                }
+                if cpie.token_b_transfer_fee != 0 {
+                    e.token_b_transfer_fee = cpie.token_b_transfer_fee;
+                }
+            }
+            _ => {}
+        },
+
+        // Meteora Pools swap：外层 min_out 等与 CPI 实际结算合并
+        DexEvent::MeteoraPoolsSwapEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsSwapEvent(cpie) => {
+                if cpie.in_amount != 0 {
+                    e.in_amount = cpie.in_amount;
+                }
+                if cpie.out_amount != 0 {
+                    e.out_amount = cpie.out_amount;
+                }
+                if cpie.trade_fee != 0 {
+                    e.trade_fee = cpie.trade_fee;
+                }
+                if cpie.admin_fee != 0 {
+                    e.admin_fee = cpie.admin_fee;
+                }
+                if cpie.host_fee != 0 {
+                    e.host_fee = cpie.host_fee;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraPoolsAddLiquidityEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsAddLiquidityEvent(cpie) => {
+                if cpie.lp_mint_amount != 0 {
+                    e.lp_mint_amount = cpie.lp_mint_amount;
+                }
+                if cpie.token_a_amount != 0 {
+                    e.token_a_amount = cpie.token_a_amount;
+                }
+                if cpie.token_b_amount != 0 {
+                    e.token_b_amount = cpie.token_b_amount;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraPoolsRemoveLiquidityEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsRemoveLiquidityEvent(cpie) => {
+                if cpie.lp_unmint_amount != 0 {
+                    e.lp_unmint_amount = cpie.lp_unmint_amount;
+                }
+                if cpie.token_a_out_amount != 0 {
+                    e.token_a_out_amount = cpie.token_a_out_amount;
+                }
+                if cpie.token_b_out_amount != 0 {
+                    e.token_b_out_amount = cpie.token_b_out_amount;
+                }
+            }
+            _ => {}
+        },
+
+        // Meteora DLMM
+        DexEvent::MeteoraDlmmSwapEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraDlmmSwapEvent(cpie) => {
+                if cpie.pool != Pubkey::default() {
+                    e.pool = cpie.pool;
+                }
+                if cpie.from != Pubkey::default() {
+                    e.from = cpie.from;
+                }
+                if cpie.start_bin_id != 0 || cpie.end_bin_id != 0 {
+                    e.start_bin_id = cpie.start_bin_id;
+                    e.end_bin_id = cpie.end_bin_id;
+                }
+                if cpie.amount_out != 0 {
+                    e.amount_out = cpie.amount_out;
+                }
+                if cpie.amount_in != 0 {
+                    e.amount_in = cpie.amount_in;
+                }
+                e.swap_for_y = cpie.swap_for_y;
+                if cpie.fee != 0 {
+                    e.fee = cpie.fee;
+                }
+                if cpie.protocol_fee != 0 {
+                    e.protocol_fee = cpie.protocol_fee;
+                }
+                if cpie.fee_bps != 0 {
+                    e.fee_bps = cpie.fee_bps;
+                }
+                if cpie.host_fee != 0 {
+                    e.host_fee = cpie.host_fee;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraDlmmAddLiquidityEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraDlmmAddLiquidityEvent(cpie) => {
+                if cpie.active_bin_id != 0 {
+                    e.active_bin_id = cpie.active_bin_id;
+                }
+                e.amounts = cpie.amounts;
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraDlmmRemoveLiquidityEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraDlmmRemoveLiquidityEvent(cpie) => {
+                if cpie.active_bin_id != 0 {
+                    e.active_bin_id = cpie.active_bin_id;
+                }
+                e.amounts = cpie.amounts;
+            }
+            _ => {}
+        },
+
+        DexEvent::MeteoraPoolsBootstrapLiquidityEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsBootstrapLiquidityEvent(cpie) => {
+                if cpie.pool != Pubkey::default() {
+                    e.pool = cpie.pool;
+                }
+                if cpie.lp_mint_amount != 0 {
+                    e.lp_mint_amount = cpie.lp_mint_amount;
+                }
+                if cpie.token_a_amount != 0 {
+                    e.token_a_amount = cpie.token_a_amount;
+                }
+                if cpie.token_b_amount != 0 {
+                    e.token_b_amount = cpie.token_b_amount;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraPoolsPoolCreatedEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsPoolCreatedEvent(cpie) => {
+                if cpie.pool != Pubkey::default() {
+                    e.pool = cpie.pool;
+                }
+                if cpie.lp_mint != Pubkey::default() {
+                    e.lp_mint = cpie.lp_mint;
+                }
+                if cpie.token_a_mint != Pubkey::default() {
+                    e.token_a_mint = cpie.token_a_mint;
+                }
+                if cpie.token_b_mint != Pubkey::default() {
+                    e.token_b_mint = cpie.token_b_mint;
+                }
+                if cpie.pool_type != 0 {
+                    e.pool_type = cpie.pool_type;
+                }
+            }
+            _ => {}
+        },
+        DexEvent::MeteoraPoolsSetPoolFeesEvent(e) => match cpi_log_event {
+            DexEvent::MeteoraPoolsSetPoolFeesEvent(cpie) => {
+                if cpie.pool != Pubkey::default() {
+                    e.pool = cpie.pool;
+                }
+                e.trade_fee_numerator = cpie.trade_fee_numerator;
+                e.trade_fee_denominator = cpie.trade_fee_denominator;
+                e.owner_trade_fee_numerator = cpie.owner_trade_fee_numerator;
+                e.owner_trade_fee_denominator = cpie.owner_trade_fee_denominator;
             }
             _ => {}
         },

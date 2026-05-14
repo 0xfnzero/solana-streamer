@@ -2,6 +2,12 @@
 
 与 gRPC 订阅相比，shredstream 路径存在以下限制和解析差异，使用时请注意。
 
+## gRPC（Yellowstone）说明
+
+当订阅返回的交易带有完整 `meta`（日志、loaded addresses、inner instructions）时，DEX 相关事件在内部由 **sol-parser-sdk** 解析（与 upstream 相同的 logs + instructions 与 log/ix 去重；streamer 使用 **顺序**解析路径以降低单笔延迟），再映射为本 crate 的 `DexEvent`（对外 API 不变）；Compute Budget 仍单独走原有指令路径，且在 DEX 事件派发 **之后** 运行，以便 Swap 等事件更早送达回调。
+
+ShredStream 路径仍为下面的原始交易解析限制，不使用上述日志管线。
+
 ## 1. 数据源差异
 
 | 数据 | gRPC | Shredstream |

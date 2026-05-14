@@ -374,6 +374,68 @@ pub struct MeteoraDammV2InitializePoolWithDynamicConfigEvent {
     pub config: Pubkey,
 }
 
+/// DAMM v2 Add Liquidity（parser-sdk / CPI 日志字段对齐）
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2AddLiquidityEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub token_a_amount: u64,
+    pub token_b_amount: u64,
+    #[borsh(skip)]
+    pub liquidity_delta: u128,
+    #[borsh(skip)]
+    pub token_a_amount_threshold: u64,
+    #[borsh(skip)]
+    pub token_b_amount_threshold: u64,
+    #[borsh(skip)]
+    pub total_amount_a: u64,
+    #[borsh(skip)]
+    pub total_amount_b: u64,
+}
+
+/// DAMM v2 Remove Liquidity
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2RemoveLiquidityEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub token_a_amount: u64,
+    pub token_b_amount: u64,
+    #[borsh(skip)]
+    pub liquidity_delta: u128,
+    #[borsh(skip)]
+    pub token_a_amount_threshold: u64,
+    #[borsh(skip)]
+    pub token_b_amount_threshold: u64,
+}
+
+/// DAMM v2 Create Position
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2CreatePositionEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub owner: Pubkey,
+    pub position: Pubkey,
+    pub position_nft_mint: Pubkey,
+}
+
+/// DAMM v2 Close Position
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2ClosePositionEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub owner: Pubkey,
+    pub position: Pubkey,
+    pub position_nft_mint: Pubkey,
+}
+
 /// Event discriminators
 pub mod discriminators {
     // Instruction discriminators

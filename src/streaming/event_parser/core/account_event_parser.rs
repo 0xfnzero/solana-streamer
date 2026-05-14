@@ -92,7 +92,7 @@ impl AccountEventParser {
                     ) {
                         // 应用事件类型过滤
                         if let Some(filter) = event_type_filter {
-                            if filter.include.contains(&event.metadata().event_type) {
+                            if filter.passes_event_type(&event.metadata().event_type) {
                                 return Some(event);
                             }
                             // 不匹配过滤器，继续尝试其他解析方式
@@ -120,7 +120,7 @@ impl AccountEventParser {
         // 尝试解析 Nonce 账户
         if let Some(event) = Self::parse_nonce_account_event(&account, metadata.clone()) {
             if let Some(filter) = event_type_filter {
-                if filter.include.contains(&event.metadata().event_type) {
+                if filter.passes_event_type(&event.metadata().event_type) {
                     return Some(event);
                 }
             } else {
@@ -131,7 +131,7 @@ impl AccountEventParser {
         // 尝试解析 Token 账户
         if let Some(event) = Self::parse_token_account_event(&account, metadata) {
             if let Some(filter) = event_type_filter {
-                if filter.include.contains(&event.metadata().event_type) {
+                if filter.passes_event_type(&event.metadata().event_type) {
                     return Some(event);
                 }
             } else {
@@ -156,6 +156,8 @@ impl AccountEventParser {
         // Spl Token Mint
         if account.data.len() >= Mint::LEN {
             if let Ok(mint) = Mint::unpack_from_slice(&account.data) {
+                let mut metadata = metadata.clone();
+                metadata.event_type = EventType::TokenInfo;
                 let mut event = TokenInfoEvent {
                     metadata,
                     pubkey,
@@ -174,6 +176,8 @@ impl AccountEventParser {
         // Spl Token2022 Mint
         if account.data.len() >= Account2022::LEN {
             if let Ok(mint) = StateWithExtensions::<Mint2022>::unpack(&account.data) {
+                let mut metadata = metadata.clone();
+                metadata.event_type = EventType::TokenInfo;
                 let mut event = TokenInfoEvent {
                     metadata,
                     pubkey,

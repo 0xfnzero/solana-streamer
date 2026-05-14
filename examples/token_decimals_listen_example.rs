@@ -50,7 +50,8 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
         AccountFilter { account: vec![account_to_listen], owner: vec![], filters: vec![] };
 
     // Event filtering
-    let event_type_filter = Some(EventTypeFilter { include: vec![EventType::TokenAccount] });
+    let event_type_filter =
+        Some(EventTypeFilter { include: vec![EventType::TokenAccount], ..Default::default() });
 
     println!("Starting to listen for events, press Ctrl+C to stop...");
     println!("Starting subscription...");

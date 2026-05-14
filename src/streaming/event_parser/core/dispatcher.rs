@@ -1,6 +1,9 @@
-//! 中心事件解析调度器
+//! 事件路由入口（类比 sol-parser-sdk 的 `instr`，区分「原生字节解析」与「sdk 事件对齐」）。
 //!
-//! 根据协议类型路由到对应的解析函数，替代原有的静态 CONFIGS 数组架构
+//! ## 代码去哪找
+//! - **`protocols/<协议>/parser.rs`** — Yellowstone / shred 路径下的顶层与 inner 指令解析（手写）。
+//! - **`streaming/parser_sdk_bridge/`** — `sol-parser-sdk::DexEvent` → streamer `DexEvent` 字段映射。
+//! - **`protocols/sol_parser_forward/native.rs`** — Orca / Meteora Pools & DLMM：调用 sdk `instr` 后再走 bridge。
 //!
 //! ## 设计原则
 //! - **单一职责**: 每个函数只负责一件事（路由、解析、合并分离）
@@ -11,9 +14,10 @@ use crate::streaming::event_parser::{
     common::EventMetadata,
     core::common_event_parser::{CommonEventParser, COMPUTE_BUDGET_PROGRAM_ID},
     protocols::{
-        bonk::parser as bonk, meteora_damm_v2::parser as meteora_damm_v2, pumpfun::parser as pumpfun,
-        pumpswap::parser as pumpswap, raydium_amm_v4::parser as raydium_amm_v4,
-        raydium_clmm::parser as raydium_clmm, raydium_cpmm::parser as raydium_cpmm,
+        bonk::parser as bonk, meteora_damm_v2::parser as meteora_damm_v2,
+        pumpfun::parser as pumpfun, pumpswap::parser as pumpswap,
+        raydium_amm_v4::parser as raydium_amm_v4, raydium_clmm::parser as raydium_clmm,
+        raydium_cpmm::parser as raydium_cpmm, sol_parser_forward,
     },
     DexEvent, Protocol,
 };
@@ -54,9 +58,21 @@ impl EventDispatcher {
             Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
             Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
             Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
+            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
+            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
+            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
         };
 
         match protocol {
+            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => {
+                sol_parser_forward::native::dispatch_instruction(
+                    protocol.clone(),
+                    instruction_discriminator,
+                    instruction_data,
+                    accounts,
+                    &metadata,
+                )
+            }
             Protocol::PumpFun => pumpfun::parse_pumpfun_instruction_data(
                 instruction_discriminator,
                 instruction_data,
@@ -129,9 +145,20 @@ impl EventDispatcher {
             Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
             Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
             Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
+            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
+            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
+            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
         };
 
         match protocol {
+            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => {
+                sol_parser_forward::native::dispatch_inner_instruction(
+                    protocol.clone(),
+                    inner_instruction_discriminator,
+                    inner_instruction_data,
+                    &metadata,
+                )
+            }
             Protocol::PumpFun => pumpfun::parse_pumpfun_inner_instruction_data(
                 inner_instruction_discriminator,
                 inner_instruction_data,
@@ -162,11 +189,13 @@ impl EventDispatcher {
                 inner_instruction_data,
                 metadata,
             ),
-            Protocol::MeteoraDammV2 => meteora_damm_v2::parse_meteora_damm_v2_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
+            Protocol::MeteoraDammV2 => {
+                meteora_damm_v2::parse_meteora_damm_v2_inner_instruction_data(
+                    inner_instruction_discriminator,
+                    inner_instruction_data,
+                    metadata,
+                )
+            }
         }
     }
 
@@ -187,6 +216,12 @@ impl EventDispatcher {
             Some(Protocol::RaydiumAmmV4)
         } else if program_id == &meteora_damm_v2::METEORA_DAMM_V2_PROGRAM_ID {
             Some(Protocol::MeteoraDammV2)
+        } else if program_id == &sol_parser_forward::ORCA_WHIRLPOOL_PROGRAM_ID {
+            Some(Protocol::OrcaWhirlpool)
+        } else if program_id == &sol_parser_forward::METEORA_POOLS_PROGRAM_ID {
+            Some(Protocol::MeteoraPools)
+        } else if program_id == &sol_parser_forward::METEORA_DLMM_PROGRAM_ID {
+            Some(Protocol::MeteoraDlmm)
         } else {
             None
         }
@@ -225,6 +260,9 @@ impl EventDispatcher {
             Protocol::RaydiumClmm => raydium_clmm::RAYDIUM_CLMM_PROGRAM_ID,
             Protocol::RaydiumAmmV4 => raydium_amm_v4::RAYDIUM_AMM_V4_PROGRAM_ID,
             Protocol::MeteoraDammV2 => meteora_damm_v2::METEORA_DAMM_V2_PROGRAM_ID,
+            Protocol::OrcaWhirlpool => sol_parser_forward::ORCA_WHIRLPOOL_PROGRAM_ID,
+            Protocol::MeteoraPools => sol_parser_forward::METEORA_POOLS_PROGRAM_ID,
+            Protocol::MeteoraDlmm => sol_parser_forward::METEORA_DLMM_PROGRAM_ID,
         }
     }
 
@@ -261,9 +299,13 @@ impl EventDispatcher {
             Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
             Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
             Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
+            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
+            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
+            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
         };
 
         match protocol {
+            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => None,
             Protocol::PumpFun => {
                 pumpfun::parse_pumpfun_account_data(discriminator, account, metadata)
             }

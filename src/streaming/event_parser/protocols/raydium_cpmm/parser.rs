@@ -23,9 +23,7 @@ pub fn parse_raydium_cpmm_instruction_data(
     metadata: EventMetadata,
 ) -> Option<DexEvent> {
     match discriminator {
-        discriminators::SWAP_BASE_IN => {
-            parse_swap_base_input_instruction(data, accounts, metadata)
-        }
+        discriminators::SWAP_BASE_IN => parse_swap_base_input_instruction(data, accounts, metadata),
         discriminators::SWAP_BASE_OUT => {
             parse_swap_base_output_instruction(data, accounts, metadata)
         }
@@ -47,7 +45,6 @@ pub fn parse_raydium_cpmm_inner_instruction_data(
     None
 }
 
-
 /// 解析 Raydium CPMM 账户数据
 ///
 /// 根据判别器路由到具体的账户解析函数
@@ -58,15 +55,18 @@ pub fn parse_raydium_cpmm_account_data(
 ) -> Option<crate::streaming::event_parser::DexEvent> {
     match discriminator {
         discriminators::AMM_CONFIG => {
-            crate::streaming::event_parser::protocols::raydium_cpmm::types::amm_config_parser(account, metadata)
+            crate::streaming::event_parser::protocols::raydium_cpmm::types::amm_config_parser(
+                account, metadata,
+            )
         }
         discriminators::POOL_STATE => {
-            crate::streaming::event_parser::protocols::raydium_cpmm::types::pool_state_parser(account, metadata)
+            crate::streaming::event_parser::protocols::raydium_cpmm::types::pool_state_parser(
+                account, metadata,
+            )
         }
         _ => None,
     }
 }
-
 
 /// 解析提款指令事件
 fn parse_withdraw_instruction(

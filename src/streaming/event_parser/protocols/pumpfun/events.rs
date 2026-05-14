@@ -323,7 +323,8 @@ pub fn pumpfun_trade_event_log_decode(data: &[u8]) -> Option<PumpFunTradeEvent> 
     if data.len() < PUMPFUN_TRADE_EVENT_LOG_SIZE {
         return None;
     }
-    let mut event = borsh::from_slice::<PumpFunTradeEvent>(&data[..PUMPFUN_TRADE_EVENT_LOG_SIZE]).ok()?;
+    let mut event =
+        borsh::from_slice::<PumpFunTradeEvent>(&data[..PUMPFUN_TRADE_EVENT_LOG_SIZE]).ok()?;
     let mut offset = PUMPFUN_TRADE_EVENT_LOG_SIZE;
     if offset < data.len() {
         let (ix_name, inc) = read_borsh_string(data, offset).unwrap_or((String::new(), 0));
@@ -335,7 +336,8 @@ pub fn pumpfun_trade_event_log_decode(data: &[u8]) -> Option<PumpFunTradeEvent> 
         offset += 1;
     }
     if offset + 8 <= data.len() {
-        event.cashback_fee_basis_points = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
+        event.cashback_fee_basis_points =
+            u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
         offset += 8;
     }
     if offset + 8 <= data.len() {
@@ -413,6 +415,138 @@ pub struct PumpFunMigrateEvent {
     pub event_authority: Pubkey,
     #[borsh(skip)]
     pub program: Pubkey,
+}
+
+// ---------- pump-fees IDL: `idls/pump_fees.json` (Program `pfeeUx...`) ----------
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesShareholder {
+    pub address: Pubkey,
+    pub share_bps: u16,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PumpFeesConfigStatus {
+    Paused,
+    Active,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesFees {
+    pub lp_fee_bps: u64,
+    pub protocol_fee_bps: u64,
+    pub creator_fee_bps: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesFeeTier {
+    pub market_cap_lamports_threshold: u128,
+    pub fees: PumpFeesFees,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesCreateFeeSharingConfigEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub bonding_curve: Pubkey,
+    pub pool: Option<Pubkey>,
+    pub sharing_config: Pubkey,
+    pub admin: Pubkey,
+    pub initial_shareholders: Vec<PumpFeesShareholder>,
+    pub status: PumpFeesConfigStatus,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesInitializeFeeConfigEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub admin: Pubkey,
+    pub fee_config: Pubkey,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesResetFeeSharingConfigEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub sharing_config: Pubkey,
+    pub old_admin: Pubkey,
+    pub old_shareholders: Vec<PumpFeesShareholder>,
+    pub new_admin: Pubkey,
+    pub new_shareholders: Vec<PumpFeesShareholder>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesRevokeFeeSharingAuthorityEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub sharing_config: Pubkey,
+    pub admin: Pubkey,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesTransferFeeSharingAuthorityEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub sharing_config: Pubkey,
+    pub old_admin: Pubkey,
+    pub new_admin: Pubkey,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesUpdateAdminEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub old_admin: Pubkey,
+    pub new_admin: Pubkey,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesUpdateFeeConfigEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub admin: Pubkey,
+    pub fee_config: Pubkey,
+    pub fee_tiers: Vec<PumpFeesFeeTier>,
+    pub flat_fees: PumpFeesFees,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesUpdateFeeSharesEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub sharing_config: Pubkey,
+    pub admin: Pubkey,
+    #[serde(default)]
+    pub bonding_curve: Pubkey,
+    #[serde(default)]
+    pub pump_creator_vault: Pubkey,
+    pub new_shareholders: Vec<PumpFeesShareholder>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFeesUpsertFeeTiersEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub admin: Pubkey,
+    pub fee_config: Pubkey,
+    pub fee_tiers: Vec<PumpFeesFeeTier>,
+    pub offset: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunMigrateBondingCurveCreatorEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub bonding_curve: Pubkey,
+    pub sharing_config: Pubkey,
+    pub old_creator: Pubkey,
+    pub new_creator: Pubkey,
 }
 
 pub const PUMPFUN_MIGRATE_EVENT_LOG_SIZE: usize = 160;

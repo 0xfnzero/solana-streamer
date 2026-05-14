@@ -93,7 +93,8 @@ pub fn pump_swap_buy_event_log_decode(data: &[u8]) -> Option<PumpSwapBuyEvent> {
     let user_base_token_account = Pubkey::new_from_array(data.get(176..208)?.try_into().ok()?);
     let user_quote_token_account = Pubkey::new_from_array(data.get(208..240)?.try_into().ok()?);
     let protocol_fee_recipient = Pubkey::new_from_array(data.get(240..272)?.try_into().ok()?);
-    let protocol_fee_recipient_token_account = Pubkey::new_from_array(data.get(272..304)?.try_into().ok()?);
+    let protocol_fee_recipient_token_account =
+        Pubkey::new_from_array(data.get(272..304)?.try_into().ok()?);
     let coin_creator = Pubkey::new_from_array(data.get(304..336)?.try_into().ok()?);
     let coin_creator_fee_basis_points = read_u64_le(data, 336)?;
     let coin_creator_fee = read_u64_le(data, 344)?;
@@ -243,11 +244,13 @@ pub fn pump_swap_sell_event_log_decode(data: &[u8]) -> Option<PumpSwapSellEvent>
     let user_base_token_account = Pubkey::new_from_array(data.get(176..208)?.try_into().ok()?);
     let user_quote_token_account = Pubkey::new_from_array(data.get(208..240)?.try_into().ok()?);
     let protocol_fee_recipient = Pubkey::new_from_array(data.get(240..272)?.try_into().ok()?);
-    let protocol_fee_recipient_token_account = Pubkey::new_from_array(data.get(272..304)?.try_into().ok()?);
+    let protocol_fee_recipient_token_account =
+        Pubkey::new_from_array(data.get(272..304)?.try_into().ok()?);
     let coin_creator = Pubkey::new_from_array(data.get(304..336)?.try_into().ok()?);
     let coin_creator_fee_basis_points = read_u64_le(data, 336)?;
     let coin_creator_fee = read_u64_le(data, 344)?;
-    let (cashback_fee_basis_points, cashback) = if data.len() >= PUMP_SWAP_SELL_EVENT_WITH_CASHBACK {
+    let (cashback_fee_basis_points, cashback) = if data.len() >= PUMP_SWAP_SELL_EVENT_WITH_CASHBACK
+    {
         (read_u64_le(data, 352)?, read_u64_le(data, 360)?)
     } else {
         (0, 0)

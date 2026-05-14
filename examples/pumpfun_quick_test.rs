@@ -3,11 +3,13 @@
 //! Usage: cargo run --example pumpfun_quick_test --release
 
 use solana_streamer_sdk::streaming::event_parser::common::types::EventType;
-use solana_streamer_sdk::streaming::event_parser::DexEvent;
-use solana_streamer_sdk::streaming::grpc::ClientConfig;
-use solana_streamer_sdk::streaming::yellowstone_grpc::{AccountFilter, TransactionFilter, YellowstoneGrpc};
-use solana_streamer_sdk::streaming::event_parser::Protocol;
 use solana_streamer_sdk::streaming::event_parser::protocols::pumpfun::parser::PUMPFUN_PROGRAM_ID;
+use solana_streamer_sdk::streaming::event_parser::DexEvent;
+use solana_streamer_sdk::streaming::event_parser::Protocol;
+use solana_streamer_sdk::streaming::grpc::ClientConfig;
+use solana_streamer_sdk::streaming::yellowstone_grpc::{
+    AccountFilter, TransactionFilter, YellowstoneGrpc,
+};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 #[tokio::main]
@@ -20,7 +22,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config.enable_metrics = true;
 
     let grpc = YellowstoneGrpc::new_with_config(
-        std::env::var("GRPC_ENDPOINT").unwrap_or_else(|_| "https://solana-yellowstone-grpc.publicnode.com:443".to_string()),
+        std::env::var("GRPC_ENDPOINT")
+            .unwrap_or_else(|_| "https://solana-yellowstone-grpc.publicnode.com:443".to_string()),
         std::env::var("GRPC_AUTH_TOKEN").ok(),
         config,
     )?;

@@ -349,7 +349,8 @@ impl Default for PlatformConfig {
     }
 }
 
-pub const PLATFORM_CONFIG_SIZE: usize = 8 + 32 * 2 + 8 * 4 + 64 + 256 + 256 + 32 + 8 + 32 + 32 + 8 + 32 + 108;
+pub const PLATFORM_CONFIG_SIZE: usize =
+    8 + 32 * 2 + 8 * 4 + 64 + 256 + 256 + 32 + 8 + 32 + 32 + 8 + 32 + 108;
 
 pub fn platform_config_decode(data: &[u8]) -> Option<PlatformConfig> {
     if data.len() < PLATFORM_CONFIG_SIZE {

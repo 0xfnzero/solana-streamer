@@ -25,12 +25,14 @@ impl HighPerformanceClock {
         // 通过多次采样来减少初始化误差
         let mut best_offset = i64::MAX;
         let mut best_instant = Instant::now();
-        let mut best_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as i64;
+        let mut best_timestamp =
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as i64;
 
         // 进行3次采样，选择延迟最小的
         for _ in 0..3 {
             let instant_before = Instant::now();
-            let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as i64;
+            let timestamp =
+                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as i64;
             let instant_after = Instant::now();
 
             let sample_latency = instant_after.duration_since(instant_before).as_nanos() as i64;
@@ -113,8 +115,7 @@ impl Default for HighPerformanceClock {
 }
 
 /// 全局高性能时钟实例
-static HIGH_PERF_CLOCK: std::sync::OnceLock<HighPerformanceClock> =
-    std::sync::OnceLock::new();
+static HIGH_PERF_CLOCK: std::sync::OnceLock<HighPerformanceClock> = std::sync::OnceLock::new();
 
 /// 获取全局高性能时钟实例（最简单的实现）
 #[inline(always)]

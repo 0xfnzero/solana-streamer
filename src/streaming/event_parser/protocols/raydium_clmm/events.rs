@@ -1,8 +1,6 @@
 use crate::streaming::event_parser::common::EventMetadata;
+use crate::streaming::event_parser::protocols::raydium_clmm::types::AmmConfig;
 use crate::streaming::event_parser::protocols::raydium_clmm::types::{PoolState, TickArrayState};
-use crate::{
-    streaming::event_parser::protocols::raydium_clmm::types::AmmConfig,
-};
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
@@ -26,7 +24,6 @@ pub struct RaydiumClmmSwapEvent {
     pub tick_array: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
 }
-
 
 /// 交易v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,6 +85,16 @@ pub struct RaydiumClmmDecreaseLiquidityV2Event {
     pub vault0_mint: Pubkey,
     pub vault1_mint: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
+}
+
+/// 收取流动性费用（与 `sol-parser-sdk` 日志事件字段对齐的精简版）
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmCollectFeeEvent {
+    pub metadata: EventMetadata,
+    pub pool_state: Pubkey,
+    pub position_nft_mint: Pubkey,
+    pub amount_0: u64,
+    pub amount_1: u64,
 }
 
 /// 创建池

@@ -12,7 +12,8 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let default_sig = "5curEt85cQhAK6R9pntSJ4fmYCiPEG22NjZyGrnGSbNwAkHJMN25T9Efp1n9Tf9vGXhnDXMQYrCNpoRHQTMcZ1s9";
+    let default_sig =
+        "5curEt85cQhAK6R9pntSJ4fmYCiPEG22NjZyGrnGSbNwAkHJMN25T9Efp1n9Tf9vGXhnDXMQYrCNpoRHQTMcZ1s9";
     let tx_sig = std::env::var("TX_SIGNATURE").unwrap_or_else(|_| default_sig.to_string());
     let rpc_url = std::env::var("SOLANA_RPC_URL")
         .unwrap_or_else(|_| "https://api.mainnet-beta.solana.com".to_string());
@@ -48,13 +49,18 @@ async fn main() -> Result<()> {
     if let Some(ref meta) = transaction.transaction.meta {
         println!("\n=== Transaction Meta ===");
         println!("Fee: {}", meta.fee);
-        if let solana_transaction_status::option_serializer::OptionSerializer::Some(units) = &meta.compute_units_consumed {
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(units) =
+            &meta.compute_units_consumed
+        {
             println!("Compute units: {}", units);
         }
-        if let solana_transaction_status::option_serializer::OptionSerializer::Some(logs) = &meta.log_messages {
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(logs) =
+            &meta.log_messages
+        {
             println!("\n=== Logs ({} lines) ===", logs.len());
             for (i, log) in logs.iter().enumerate() {
-                if log.contains("Program 6EF8") || log.contains("invoke") || log.contains("success") {
+                if log.contains("Program 6EF8") || log.contains("invoke") || log.contains("success")
+                {
                     println!("  {}: {}", i, log);
                 }
             }
@@ -76,8 +82,9 @@ async fn main() -> Result<()> {
 
     let mut inner_instructions_vec: Vec<InnerInstructions> = Vec::new();
     if let Some(meta) = &transaction.transaction.meta {
-        if let solana_transaction_status::option_serializer::OptionSerializer::Some(ui_inner_insts) =
-            &meta.inner_instructions
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(
+            ui_inner_insts,
+        ) = &meta.inner_instructions
         {
             for ui_inner in ui_inner_insts {
                 let mut converted = Vec::new();
@@ -95,10 +102,8 @@ async fn main() -> Result<()> {
                         }
                     }
                 }
-                inner_instructions_vec.push(InnerInstructions {
-                    index: ui_inner.index,
-                    instructions: converted,
-                });
+                inner_instructions_vec
+                    .push(InnerInstructions { index: ui_inner.index, instructions: converted });
             }
         }
     }
@@ -120,13 +125,10 @@ async fn main() -> Result<()> {
     accounts.extend(address_table_lookups);
 
     let slot = transaction.slot;
-    let block_time = transaction
-        .block_time
-        .map(|t| Timestamp { seconds: t as i64, nanos: 0 });
-    let recv_us = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros() as i64;
+    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t as i64, nanos: 0 });
+    let recv_us =
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros()
+            as i64;
 
     let protocols = vec![
         Protocol::PumpFun,

@@ -103,4 +103,3 @@ impl Default for TransactionPretty {
         }
     }
 }
-

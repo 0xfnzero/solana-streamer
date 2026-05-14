@@ -13,12 +13,7 @@ pub struct BlockMetaEvent {
 }
 
 impl BlockMetaEvent {
-    pub fn new(
-        slot: u64,
-        block_hash: String,
-        block_time_ms: i64,
-        recv_us: i64,
-    ) -> Self {
+    pub fn new(slot: u64, block_hash: String, block_time_ms: i64, recv_us: i64) -> Self {
         let metadata = EventMetadata::new(
             Signature::default(),
             slot,

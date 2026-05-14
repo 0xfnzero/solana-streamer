@@ -1,10 +1,9 @@
-use std::sync::{Arc, Mutex};
+use solana_sdk::transaction::VersionedTransaction;
 use std::collections::VecDeque;
 use std::ops::DerefMut;
-use solana_sdk::transaction::VersionedTransaction;
+use std::sync::{Arc, Mutex};
 
 use super::TransactionWithSlot;
-
 
 /// TransactionWithSlot 对象池
 pub struct TransactionWithSlotPool {
@@ -31,10 +30,10 @@ impl TransactionWithSlotPool {
             None => Box::new(TransactionWithSlot::default()),
         };
 
-        PooledTransactionWithSlot { 
-            transaction, 
-            pool: Arc::clone(&self.pool), 
-            max_size: self.max_size 
+        PooledTransactionWithSlot {
+            transaction,
+            pool: Arc::clone(&self.pool),
+            max_size: self.max_size,
         }
     }
 }

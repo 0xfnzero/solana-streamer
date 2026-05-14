@@ -60,7 +60,6 @@ pub fn parse_raydium_clmm_inner_instruction_data(
     None
 }
 
-
 /// 解析 Raydium CLMM 账户数据
 ///
 /// 根据判别器路由到具体的账户解析函数
@@ -71,13 +70,19 @@ pub fn parse_raydium_clmm_account_data(
 ) -> Option<crate::streaming::event_parser::DexEvent> {
     match discriminator {
         discriminators::AMM_CONFIG => {
-            crate::streaming::event_parser::protocols::raydium_clmm::types::amm_config_parser(account, metadata)
+            crate::streaming::event_parser::protocols::raydium_clmm::types::amm_config_parser(
+                account, metadata,
+            )
         }
         discriminators::POOL_STATE => {
-            crate::streaming::event_parser::protocols::raydium_clmm::types::pool_state_parser(account, metadata)
+            crate::streaming::event_parser::protocols::raydium_clmm::types::pool_state_parser(
+                account, metadata,
+            )
         }
         discriminators::TICK_ARRAY_STATE => {
-            crate::streaming::event_parser::protocols::raydium_clmm::types::tick_array_state_parser(account, metadata)
+            crate::streaming::event_parser::protocols::raydium_clmm::types::tick_array_state_parser(
+                account, metadata,
+            )
         }
         _ => None,
     }

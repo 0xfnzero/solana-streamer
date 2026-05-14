@@ -1,10 +1,10 @@
+use crate::common::AnyResult;
+use crate::streaming::common::constants::{
+    DEFAULT_CONNECT_TIMEOUT, DEFAULT_MAX_DECODING_MESSAGE_SIZE, DEFAULT_REQUEST_TIMEOUT,
+};
 use std::time::Duration;
 use tonic::transport::channel::ClientTlsConfig;
 use yellowstone_grpc_client::{GeyserGrpcClient, Interceptor};
-use crate::common::AnyResult;
-use crate::streaming::common::constants::{
-    DEFAULT_CONNECT_TIMEOUT, DEFAULT_REQUEST_TIMEOUT, DEFAULT_MAX_DECODING_MESSAGE_SIZE
-};
 
 /// gRPC连接池 - 简化版本
 pub struct GrpcConnectionPool {
@@ -14,10 +14,7 @@ pub struct GrpcConnectionPool {
 
 impl GrpcConnectionPool {
     pub fn new(endpoint: String, x_token: Option<String>) -> Self {
-        Self {
-            endpoint,
-            x_token,
-        }
+        Self { endpoint, x_token }
     }
 
     pub async fn create_connection(&self) -> AnyResult<GeyserGrpcClient<impl Interceptor>> {

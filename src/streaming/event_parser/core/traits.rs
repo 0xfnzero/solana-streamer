@@ -13,6 +13,16 @@ use crate::streaming::event_parser::protocols::pumpswap::events::*;
 use crate::streaming::event_parser::protocols::raydium_amm_v4::events::*;
 use crate::streaming::event_parser::protocols::raydium_clmm::events::*;
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::*;
+use crate::streaming::event_parser::protocols::sol_parser_forward::events::{
+    MeteoraDlmmAddLiquidityEvent, MeteoraDlmmClaimFeeEvent, MeteoraDlmmClosePositionEvent,
+    MeteoraDlmmCreatePositionEvent, MeteoraDlmmInitializeBinArrayEvent,
+    MeteoraDlmmInitializePoolEvent, MeteoraDlmmRemoveLiquidityEvent, MeteoraDlmmSwapEvent,
+    MeteoraPoolsAddLiquidityEvent, MeteoraPoolsBootstrapLiquidityEvent,
+    MeteoraPoolsPoolCreatedEvent, MeteoraPoolsRemoveLiquidityEvent, MeteoraPoolsSetPoolFeesEvent,
+    MeteoraPoolsSwapEvent, OrcaWhirlpoolLiquidityDecreasedEvent,
+    OrcaWhirlpoolLiquidityIncreasedEvent, OrcaWhirlpoolPoolInitializedEvent,
+    OrcaWhirlpoolSwapEvent, ParserSdkErrorEvent,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -33,6 +43,16 @@ pub enum DexEvent {
     PumpFunCreateV2TokenEvent(PumpFunCreateV2TokenEvent),
     PumpFunTradeEvent(PumpFunTradeEvent),
     PumpFunMigrateEvent(PumpFunMigrateEvent),
+    PumpFeesCreateFeeSharingConfigEvent(PumpFeesCreateFeeSharingConfigEvent),
+    PumpFeesInitializeFeeConfigEvent(PumpFeesInitializeFeeConfigEvent),
+    PumpFeesResetFeeSharingConfigEvent(PumpFeesResetFeeSharingConfigEvent),
+    PumpFeesRevokeFeeSharingAuthorityEvent(PumpFeesRevokeFeeSharingAuthorityEvent),
+    PumpFeesTransferFeeSharingAuthorityEvent(PumpFeesTransferFeeSharingAuthorityEvent),
+    PumpFeesUpdateAdminEvent(PumpFeesUpdateAdminEvent),
+    PumpFeesUpdateFeeConfigEvent(PumpFeesUpdateFeeConfigEvent),
+    PumpFeesUpdateFeeSharesEvent(PumpFeesUpdateFeeSharesEvent),
+    PumpFeesUpsertFeeTiersEvent(PumpFeesUpsertFeeTiersEvent),
+    PumpFunMigrateBondingCurveCreatorEvent(PumpFunMigrateBondingCurveCreatorEvent),
     PumpFunBondingCurveAccountEvent(PumpFunBondingCurveAccountEvent),
     PumpFunGlobalAccountEvent(PumpFunGlobalAccountEvent),
 
@@ -59,6 +79,7 @@ pub enum DexEvent {
     RaydiumClmmClosePositionEvent(RaydiumClmmClosePositionEvent),
     RaydiumClmmIncreaseLiquidityV2Event(RaydiumClmmIncreaseLiquidityV2Event),
     RaydiumClmmDecreaseLiquidityV2Event(RaydiumClmmDecreaseLiquidityV2Event),
+    RaydiumClmmCollectFeeEvent(RaydiumClmmCollectFeeEvent),
     RaydiumClmmCreatePoolEvent(RaydiumClmmCreatePoolEvent),
     RaydiumClmmOpenPositionWithToken22NftEvent(RaydiumClmmOpenPositionWithToken22NftEvent),
     RaydiumClmmOpenPositionV2Event(RaydiumClmmOpenPositionV2Event),
@@ -79,7 +100,35 @@ pub enum DexEvent {
     MeteoraDammV2Swap2Event(MeteoraDammV2Swap2Event),
     MeteoraDammV2InitializePoolEvent(MeteoraDammV2InitializePoolEvent),
     MeteoraDammV2InitializeCustomizablePoolEvent(MeteoraDammV2InitializeCustomizablePoolEvent),
-    MeteoraDammV2InitializePoolWithDynamicConfigEvent(MeteoraDammV2InitializePoolWithDynamicConfigEvent),
+    MeteoraDammV2InitializePoolWithDynamicConfigEvent(
+        MeteoraDammV2InitializePoolWithDynamicConfigEvent,
+    ),
+
+    MeteoraDammV2AddLiquidityEvent(MeteoraDammV2AddLiquidityEvent),
+    MeteoraDammV2RemoveLiquidityEvent(MeteoraDammV2RemoveLiquidityEvent),
+    MeteoraDammV2CreatePositionEvent(MeteoraDammV2CreatePositionEvent),
+    MeteoraDammV2ClosePositionEvent(MeteoraDammV2ClosePositionEvent),
+
+    OrcaWhirlpoolSwapEvent(OrcaWhirlpoolSwapEvent),
+    OrcaWhirlpoolLiquidityIncreasedEvent(OrcaWhirlpoolLiquidityIncreasedEvent),
+    OrcaWhirlpoolLiquidityDecreasedEvent(OrcaWhirlpoolLiquidityDecreasedEvent),
+    OrcaWhirlpoolPoolInitializedEvent(OrcaWhirlpoolPoolInitializedEvent),
+
+    MeteoraPoolsSwapEvent(MeteoraPoolsSwapEvent),
+    MeteoraPoolsAddLiquidityEvent(MeteoraPoolsAddLiquidityEvent),
+    MeteoraPoolsRemoveLiquidityEvent(MeteoraPoolsRemoveLiquidityEvent),
+    MeteoraPoolsBootstrapLiquidityEvent(MeteoraPoolsBootstrapLiquidityEvent),
+    MeteoraPoolsPoolCreatedEvent(MeteoraPoolsPoolCreatedEvent),
+    MeteoraPoolsSetPoolFeesEvent(MeteoraPoolsSetPoolFeesEvent),
+
+    MeteoraDlmmSwapEvent(MeteoraDlmmSwapEvent),
+    MeteoraDlmmAddLiquidityEvent(MeteoraDlmmAddLiquidityEvent),
+    MeteoraDlmmRemoveLiquidityEvent(MeteoraDlmmRemoveLiquidityEvent),
+    MeteoraDlmmInitializePoolEvent(MeteoraDlmmInitializePoolEvent),
+    MeteoraDlmmInitializeBinArrayEvent(MeteoraDlmmInitializeBinArrayEvent),
+    MeteoraDlmmCreatePositionEvent(MeteoraDlmmCreatePositionEvent),
+    MeteoraDlmmClosePositionEvent(MeteoraDlmmClosePositionEvent),
+    MeteoraDlmmClaimFeeEvent(MeteoraDlmmClaimFeeEvent),
 
     // Common events
     TokenAccountEvent(TokenAccountEvent),
@@ -88,6 +137,7 @@ pub enum DexEvent {
     BlockMetaEvent(BlockMetaEvent),
     SetComputeUnitLimitEvent(SetComputeUnitLimitEvent),
     SetComputeUnitPriceEvent(SetComputeUnitPriceEvent),
+    ParserSdkErrorEvent(ParserSdkErrorEvent),
 }
 
 /// Macro to generate metadata accessors for all DexEvent variants
@@ -123,6 +173,16 @@ impl_dex_event_metadata!(
     PumpFunCreateV2TokenEvent,
     PumpFunTradeEvent,
     PumpFunMigrateEvent,
+    PumpFeesCreateFeeSharingConfigEvent,
+    PumpFeesInitializeFeeConfigEvent,
+    PumpFeesResetFeeSharingConfigEvent,
+    PumpFeesRevokeFeeSharingAuthorityEvent,
+    PumpFeesTransferFeeSharingAuthorityEvent,
+    PumpFeesUpdateAdminEvent,
+    PumpFeesUpdateFeeConfigEvent,
+    PumpFeesUpdateFeeSharesEvent,
+    PumpFeesUpsertFeeTiersEvent,
+    PumpFunMigrateBondingCurveCreatorEvent,
     PumpFunBondingCurveAccountEvent,
     PumpFunGlobalAccountEvent,
     // PumpSwap events
@@ -146,6 +206,7 @@ impl_dex_event_metadata!(
     RaydiumClmmClosePositionEvent,
     RaydiumClmmIncreaseLiquidityV2Event,
     RaydiumClmmDecreaseLiquidityV2Event,
+    RaydiumClmmCollectFeeEvent,
     RaydiumClmmCreatePoolEvent,
     RaydiumClmmOpenPositionWithToken22NftEvent,
     RaydiumClmmOpenPositionV2Event,
@@ -165,6 +226,28 @@ impl_dex_event_metadata!(
     MeteoraDammV2InitializePoolEvent,
     MeteoraDammV2InitializeCustomizablePoolEvent,
     MeteoraDammV2InitializePoolWithDynamicConfigEvent,
+    MeteoraDammV2AddLiquidityEvent,
+    MeteoraDammV2RemoveLiquidityEvent,
+    MeteoraDammV2CreatePositionEvent,
+    MeteoraDammV2ClosePositionEvent,
+    OrcaWhirlpoolSwapEvent,
+    OrcaWhirlpoolLiquidityIncreasedEvent,
+    OrcaWhirlpoolLiquidityDecreasedEvent,
+    OrcaWhirlpoolPoolInitializedEvent,
+    MeteoraPoolsSwapEvent,
+    MeteoraPoolsAddLiquidityEvent,
+    MeteoraPoolsRemoveLiquidityEvent,
+    MeteoraPoolsBootstrapLiquidityEvent,
+    MeteoraPoolsPoolCreatedEvent,
+    MeteoraPoolsSetPoolFeesEvent,
+    MeteoraDlmmSwapEvent,
+    MeteoraDlmmAddLiquidityEvent,
+    MeteoraDlmmRemoveLiquidityEvent,
+    MeteoraDlmmInitializePoolEvent,
+    MeteoraDlmmInitializeBinArrayEvent,
+    MeteoraDlmmCreatePositionEvent,
+    MeteoraDlmmClosePositionEvent,
+    MeteoraDlmmClaimFeeEvent,
     // Common events
     TokenAccountEvent,
     NonceAccountEvent,
@@ -172,4 +255,5 @@ impl_dex_event_metadata!(
     BlockMetaEvent,
     SetComputeUnitLimitEvent,
     SetComputeUnitPriceEvent,
+    ParserSdkErrorEvent,
 );

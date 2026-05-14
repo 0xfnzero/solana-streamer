@@ -25,24 +25,14 @@ pub fn parse_bonk_instruction_data(
     metadata: EventMetadata,
 ) -> Option<DexEvent> {
     match discriminator {
-        discriminators::BUY_EXACT_IN => {
-            parse_buy_exact_in_instruction(data, accounts, metadata)
-        }
-        discriminators::BUY_EXACT_OUT => {
-            parse_buy_exact_out_instruction(data, accounts, metadata)
-        }
-        discriminators::SELL_EXACT_IN => {
-            parse_sell_exact_in_instruction(data, accounts, metadata)
-        }
+        discriminators::BUY_EXACT_IN => parse_buy_exact_in_instruction(data, accounts, metadata),
+        discriminators::BUY_EXACT_OUT => parse_buy_exact_out_instruction(data, accounts, metadata),
+        discriminators::SELL_EXACT_IN => parse_sell_exact_in_instruction(data, accounts, metadata),
         discriminators::SELL_EXACT_OUT => {
             parse_sell_exact_out_instruction(data, accounts, metadata)
         }
-        discriminators::INITIALIZE => {
-            parse_initialize_instruction(data, accounts, metadata)
-        }
-        discriminators::INITIALIZE_V2 => {
-            parse_initialize_v2_instruction(data, accounts, metadata)
-        }
+        discriminators::INITIALIZE => parse_initialize_instruction(data, accounts, metadata),
+        discriminators::INITIALIZE_V2 => parse_initialize_v2_instruction(data, accounts, metadata),
         discriminators::INITIALIZE_WITH_TOKEN_2022 => {
             parse_initialize_with_token_2022_instruction(data, accounts, metadata)
         }
@@ -65,12 +55,8 @@ pub fn parse_bonk_inner_instruction_data(
     metadata: EventMetadata,
 ) -> Option<DexEvent> {
     match discriminator {
-        discriminators::TRADE_EVENT => {
-            parse_trade_inner_instruction(data, metadata)
-        }
-        discriminators::POOL_CREATE_EVENT => {
-            parse_pool_create_inner_instruction(data, metadata)
-        }
+        discriminators::TRADE_EVENT => parse_trade_inner_instruction(data, metadata),
+        discriminators::POOL_CREATE_EVENT => parse_pool_create_inner_instruction(data, metadata),
         _ => None,
     }
 }
@@ -85,23 +71,26 @@ pub fn parse_bonk_account_data(
 ) -> Option<crate::streaming::event_parser::DexEvent> {
     match discriminator {
         discriminators::POOL_STATE_ACCOUNT => {
-            crate::streaming::event_parser::protocols::bonk::types::pool_state_parser(account, metadata)
+            crate::streaming::event_parser::protocols::bonk::types::pool_state_parser(
+                account, metadata,
+            )
         }
         discriminators::GLOBAL_CONFIG_ACCOUNT => {
-            crate::streaming::event_parser::protocols::bonk::types::global_config_parser(account, metadata)
+            crate::streaming::event_parser::protocols::bonk::types::global_config_parser(
+                account, metadata,
+            )
         }
         discriminators::PLATFORM_CONFIG_ACCOUNT => {
-            crate::streaming::event_parser::protocols::bonk::types::platform_config_parser(account, metadata)
+            crate::streaming::event_parser::protocols::bonk::types::platform_config_parser(
+                account, metadata,
+            )
         }
         _ => None,
     }
 }
 
 /// Parse pool creation event
-fn parse_pool_create_inner_instruction(
-    data: &[u8],
-    metadata: EventMetadata,
-) -> Option<DexEvent> {
+fn parse_pool_create_inner_instruction(data: &[u8], metadata: EventMetadata) -> Option<DexEvent> {
     // Note: event_type will be set by the instruction parser, not here
     // Because different initialize instructions have different event types
     if let Some(event) = bonk_pool_create_event_log_decode(data) {

@@ -51,12 +51,24 @@ pub enum ProtocolType {
     RaydiumClmm,
     RaydiumAmmV4,
     MeteoraDammV2,
+    OrcaWhirlpool,
+    MeteoraPools,
+    MeteoraDlmm,
     Common,
 }
 
 /// Event type enumeration
 #[derive(
-    Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+    Debug,
+    Clone,
+    Default,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    BorshSerialize,
+    BorshDeserialize,
 )]
 pub enum EventType {
     // PumpSwap events
@@ -71,8 +83,19 @@ pub enum EventType {
     PumpFunCreateToken,
     PumpFunCreateV2Token,
     PumpFunBuy,
+    PumpFunBuyExactSolIn,
     PumpFunSell,
     PumpFunMigrate,
+    PumpFeesCreateFeeSharingConfig,
+    PumpFeesInitializeFeeConfig,
+    PumpFeesResetFeeSharingConfig,
+    PumpFeesRevokeFeeSharingAuthority,
+    PumpFeesTransferFeeSharingAuthority,
+    PumpFeesUpdateAdmin,
+    PumpFeesUpdateFeeConfig,
+    PumpFeesUpdateFeeShares,
+    PumpFeesUpsertFeeTiers,
+    PumpFunMigrateBondingCurveCreator,
 
     // Bonk events
     BonkBuyExactIn,
@@ -101,6 +124,7 @@ pub enum EventType {
     RaydiumClmmCreatePool,
     RaydiumClmmOpenPositionWithToken22Nft,
     RaydiumClmmOpenPositionV2,
+    RaydiumClmmCollectFee,
 
     // Raydium AMM V4 events
     RaydiumAmmV4SwapBaseIn,
@@ -116,6 +140,34 @@ pub enum EventType {
     MeteoraDammV2InitializePool,
     MeteoraDammV2InitializeCustomizablePool,
     MeteoraDammV2InitializePoolWithDynamicConfig,
+    MeteoraDammV2CreatePosition,
+    MeteoraDammV2ClosePosition,
+    MeteoraDammV2AddLiquidity,
+    MeteoraDammV2RemoveLiquidity,
+
+    // Orca Whirlpool
+    OrcaWhirlpoolSwap,
+    OrcaWhirlpoolLiquidityIncreased,
+    OrcaWhirlpoolLiquidityDecreased,
+    OrcaWhirlpoolPoolInitialized,
+
+    // Meteora Pools
+    MeteoraPoolsSwap,
+    MeteoraPoolsAddLiquidity,
+    MeteoraPoolsRemoveLiquidity,
+    MeteoraPoolsBootstrapLiquidity,
+    MeteoraPoolsPoolCreated,
+    MeteoraPoolsSetPoolFees,
+
+    // Meteora DLMM
+    MeteoraDlmmSwap,
+    MeteoraDlmmAddLiquidity,
+    MeteoraDlmmRemoveLiquidity,
+    MeteoraDlmmInitializePool,
+    MeteoraDlmmInitializeBinArray,
+    MeteoraDlmmCreatePosition,
+    MeteoraDlmmClosePosition,
+    MeteoraDlmmClaimFee,
 
     // Account events
     AccountRaydiumAmmV4AmmInfo,
@@ -135,11 +187,13 @@ pub enum EventType {
 
     NonceAccount,
     TokenAccount,
+    TokenInfo,
 
     // Common events
     BlockMeta,
     SetComputeUnitLimit,
     SetComputeUnitPrice,
+    ParserSdkError,
     Unknown,
 }
 
@@ -159,6 +213,7 @@ pub const ACCOUNT_EVENT_TYPES: &[EventType] = &[
     EventType::AccountRaydiumCpmmAmmConfig,
     EventType::AccountRaydiumCpmmPoolState,
     EventType::TokenAccount,
+    EventType::TokenInfo,
     EventType::NonceAccount,
 ];
 pub const BLOCK_EVENT_TYPES: &[EventType] = &[EventType::BlockMeta];
@@ -240,13 +295,10 @@ impl EventMetadata {
     }
 }
 
-static SOL_MINT: std::sync::LazyLock<Pubkey> =
-    std::sync::LazyLock::new(spl_token::native_mint::id);
-static SYSTEM_PROGRAMS: std::sync::LazyLock<[Pubkey; 3]> = std::sync::LazyLock::new(|| [
-    spl_token::id(),
-    spl_token_2022::id(),
-    solana_sdk::pubkey!("11111111111111111111111111111111"),
-]);
+static SOL_MINT: std::sync::LazyLock<Pubkey> = std::sync::LazyLock::new(spl_token::native_mint::id);
+static SYSTEM_PROGRAMS: std::sync::LazyLock<[Pubkey; 3]> = std::sync::LazyLock::new(|| {
+    [spl_token::id(), spl_token_2022::id(), solana_sdk::pubkey!("11111111111111111111111111111111")]
+});
 
 /// Trait abstracting over different inner-instruction types for swap data extraction
 pub trait InnerInstructionLike {
@@ -282,11 +334,16 @@ impl InnerInstructionLike for yellowstone_grpc_proto::prelude::InnerInstruction 
 }
 
 /// Extract event context (mint/token account/vault info) from a DexEvent
-fn extract_swap_context(event: &DexEvent) -> (
+fn extract_swap_context(
+    event: &DexEvent,
+) -> (
     SwapData,
-    Option<Pubkey>, Option<Pubkey>,
-    Option<Pubkey>, Option<Pubkey>,
-    Option<Pubkey>, Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
 ) {
     let mut swap_data = SwapData::default();
     let mut from_mint: Option<Pubkey> = None;

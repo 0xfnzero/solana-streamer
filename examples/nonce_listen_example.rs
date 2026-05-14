@@ -41,7 +41,9 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
         TransactionFilter { account_include, account_exclude, account_required };
 
     let nonce_account = std::env::var("NONCE_ACCOUNT").unwrap_or_else(|_| {
-        eprintln!("Usage: NONCE_ACCOUNT=<pubkey> cargo run --example nonce_listen_example --release");
+        eprintln!(
+            "Usage: NONCE_ACCOUNT=<pubkey> cargo run --example nonce_listen_example --release"
+        );
         std::process::exit(1);
     });
     // Listen to account data belonging to owner programs -> account event monitoring
@@ -49,7 +51,8 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
         AccountFilter { account: vec![nonce_account.clone()], owner: vec![], filters: vec![] };
 
     // Event filtering
-    let event_type_filter = Some(EventTypeFilter { include: vec![EventType::NonceAccount] });
+    let event_type_filter =
+        Some(EventTypeFilter { include: vec![EventType::NonceAccount], ..Default::default() });
 
     println!("Starting to listen for events, press Ctrl+C to stop...");
     println!("Starting subscription...");

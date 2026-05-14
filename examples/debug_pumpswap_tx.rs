@@ -61,8 +61,9 @@ async fn main() -> Result<()> {
 
     let mut inner_instructions_vec: Vec<InnerInstructions> = Vec::new();
     if let Some(meta) = &transaction.transaction.meta {
-        if let solana_transaction_status::option_serializer::OptionSerializer::Some(ui_inner_insts) =
-            &meta.inner_instructions
+        if let solana_transaction_status::option_serializer::OptionSerializer::Some(
+            ui_inner_insts,
+        ) = &meta.inner_instructions
         {
             for ui_inner in ui_inner_insts {
                 let mut converted = Vec::new();
@@ -80,10 +81,8 @@ async fn main() -> Result<()> {
                         }
                     }
                 }
-                inner_instructions_vec.push(InnerInstructions {
-                    index: ui_inner.index,
-                    instructions: converted,
-                });
+                inner_instructions_vec
+                    .push(InnerInstructions { index: ui_inner.index, instructions: converted });
             }
         }
     }
@@ -105,13 +104,10 @@ async fn main() -> Result<()> {
     accounts.extend(address_table_lookups);
 
     let slot = transaction.slot;
-    let block_time = transaction
-        .block_time
-        .map(|t| Timestamp { seconds: t as i64, nanos: 0 });
-    let recv_us = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_micros() as i64;
+    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t as i64, nanos: 0 });
+    let recv_us =
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros()
+            as i64;
 
     let protocols = vec![
         Protocol::PumpFun,
