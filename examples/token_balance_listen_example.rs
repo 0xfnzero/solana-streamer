@@ -17,10 +17,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
     println!("Subscribing to Yellowstone gRPC events...");
-    // Create low-latency configuration
+    // Create low-latency configuration.
     let mut config: ClientConfig = ClientConfig::default();
-    // Enable performance monitoring, has performance overhead, disabled by default
-    config.enable_metrics = true;
+    // Metrics add overhead; enable explicitly with STREAMER_ENABLE_METRICS=1.
+    config.enable_metrics = std::env::var("STREAMER_ENABLE_METRICS").as_deref() == Ok("1");
     let grpc = YellowstoneGrpc::new_with_config(
         "https://solana-yellowstone-grpc.publicnode.com:443".to_string(),
         None,
@@ -47,8 +47,7 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
         AccountFilter { account: vec![account_to_listen], owner: vec![], filters: vec![] };
 
     // Event filtering
-    let event_type_filter =
-        Some(EventTypeFilter { include: vec![EventType::TokenAccount], ..Default::default() });
+    let event_type_filter = Some(EventTypeFilter::include_only(vec![EventType::TokenAccount]));
 
     println!("Starting to listen for events, press Ctrl+C to stop...");
     println!("Starting subscription...");
@@ -64,7 +63,7 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    // 支持 stop 方法，测试代码 -  异步1000秒之后停止
+    // Demo safety stop: stop automatically after 1000 seconds.
     let grpc_clone = grpc.clone();
     tokio::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_secs(1000)).await;

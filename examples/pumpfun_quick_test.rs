@@ -19,7 +19,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Quick Test - Subscribing to PumpFun events...");
 
     let mut config = ClientConfig::default();
-    config.enable_metrics = true;
+    // Metrics add overhead; enable explicitly with STREAMER_ENABLE_METRICS=1.
+    config.enable_metrics = std::env::var("STREAMER_ENABLE_METRICS").as_deref() == Ok("1");
 
     let grpc = YellowstoneGrpc::new_with_config(
         std::env::var("GRPC_ENDPOINT")

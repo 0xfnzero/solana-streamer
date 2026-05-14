@@ -50,15 +50,12 @@ async fn main() -> Result<()> {
     };
 
     let account_filter = AccountFilter { account: vec![], owner: vec![], filters: vec![] };
-    let trade_event_filter = EventTypeFilter {
-        include: vec![
-            EventType::PumpFunBuy,
-            EventType::PumpFunSell,
-            EventType::RaydiumCpmmSwapBaseInput,
-            EventType::RaydiumCpmmSwapBaseOutput,
-        ],
-        ..Default::default()
-    };
+    let trade_event_filter = EventTypeFilter::include_only(vec![
+        EventType::PumpFunBuy,
+        EventType::PumpFunSell,
+        EventType::RaydiumCpmmSwapBaseInput,
+        EventType::RaydiumCpmmSwapBaseOutput,
+    ]);
 
     if let Err(e) = client
         .subscribe_events_immediate(

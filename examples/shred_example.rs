@@ -1,4 +1,5 @@
 use solana_streamer_sdk::streaming::{
+    event_parser::common::{filter::EventTypeFilter, EventType},
     event_parser::{DexEvent, Protocol},
     shred::StreamClientConfig,
     ShredStreamGrpc,
@@ -14,34 +15,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn test_shreds() -> Result<(), Box<dyn std::error::Error>> {
     println!("Subscribing to ShredStream events...");
 
-    // Create low-latency configuration
+    // Create low-latency configuration.
     let mut config = StreamClientConfig::default();
-    // Enable performance monitoring, has performance overhead, disabled by default
-    config.enable_metrics = true;
+    // Metrics add overhead; enable explicitly with STREAMER_ENABLE_METRICS=1.
+    config.enable_metrics = std::env::var("STREAMER_ENABLE_METRICS").as_deref() == Ok("1");
     let shred_stream =
         ShredStreamGrpc::new_with_config("http://127.0.0.1:10800".to_string(), config).await?;
 
     let callback = create_event_callback();
-    let protocols = vec![
-        Protocol::PumpFun,
-        Protocol::PumpSwap,
-        Protocol::Bonk,
-        Protocol::RaydiumCpmm,
-        Protocol::RaydiumClmm,
-        Protocol::RaydiumAmmV4,
-    ];
+    let protocols = vec![Protocol::PumpFun];
 
-    // Event filtering
-    // No event filtering, includes all events
-    let event_type_filter = None;
-    // Only include PumpSwapBuy events and PumpSwapSell events
-    // let event_type_filter =
-    //     EventTypeFilter { include: vec![EventType::PumpSwapBuy, EventType::PumpSwapSell] };
+    // ShredStream uses the sol-parser-sdk ShredStream hot path. Keep filters narrow for
+    // latency-sensitive bots; use None to receive every event the SDK ShredStream path emits.
+    let event_type_filter = Some(EventTypeFilter::include_only(vec![
+        EventType::PumpFunBuy,
+        EventType::PumpFunSell,
+        EventType::PumpFunCreateToken,
+        EventType::PumpFunCreateV2Token,
+    ]));
 
     println!("Listening for events, press Ctrl+C to stop...");
     shred_stream.shredstream_subscribe(protocols, None, event_type_filter, callback).await?;
 
-    // 支持 stop 方法，测试代码 - 异步1000秒之后停止
+    // Demo safety stop: stop automatically after 1000 seconds.
     let shred_clone = shred_stream.clone();
     tokio::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_secs(1000)).await;

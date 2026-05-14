@@ -1,10 +1,11 @@
-//! RPC 单笔解析示例：
-//! - **默认**：本地 ix 路径（便于打印完整日志等）。
-//! - **对齐 sol-parser-sdk**：`SOL_PARSER_SDK_RPC=1` 时对同一笔 RPC 响应使用 `parse_encoded_rpc_transaction_as_streamer_events`。
+//! Single RPC transaction parse example:
+//! - Default: SDK-backed parsing through `parse_encoded_rpc_transaction_as_streamer_events`.
+//! - Debug compare: set `STREAMER_LOCAL_IX=1` to run the local instruction path.
 //!
-//! 亦可直接使用 crate 根的 `fetch_rpc_transaction_as_streamer_events_async`（单独 RPC 拉取 + 对齐解析）。
+//! You can also call `fetch_rpc_transaction_as_streamer_events_async` from the crate root
+//! when you want the helper to fetch and parse by signature.
 //!
-//! 环境变量：`SOLANA_RPC_URL`（可选，默认 mainnet 公共 RPC）。
+//! Environment: `SOLANA_RPC_URL` (optional, defaults to the public mainnet RPC).
 
 use anyhow::Result;
 use solana_commitment_config::CommitmentConfig;
@@ -20,9 +21,9 @@ fn rpc_url_from_env() -> String {
         .unwrap_or_else(|_| "https://api.mainnet-beta.solana.com".to_string())
 }
 
-fn use_sol_parser_sdk_rpc_path() -> bool {
+fn use_local_ix_path() -> bool {
     matches!(
-        std::env::var("SOL_PARSER_SDK_RPC").as_deref(),
+        std::env::var("STREAMER_LOCAL_IX").as_deref(),
         Ok("1") | Ok("true") | Ok("yes") | Ok("TRUE") | Ok("YES")
     )
 }
@@ -55,7 +56,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// 本地版本化消息 + inner ix 路径（与订阅管线中的「无 sdk」解析相近）。
+/// Local versioned-message + inner-instruction path, kept for parser debugging.
 async fn parse_local_ix_path(
     transaction: &solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
     signature: solana_sdk::signature::Signature,
@@ -66,7 +67,7 @@ async fn parse_local_ix_path(
     use solana_sdk::{message::compiled_instruction::CompiledInstruction, pubkey::Pubkey};
     use solana_transaction_status::{InnerInstruction, InnerInstructions, UiInstruction};
 
-    println!("\n--- Parsed events (本地 ix 路径) ---\n");
+    println!("\n--- Parsed events (STREAMER_LOCAL_IX=1, local instruction path) ---\n");
 
     let versioned_tx = match transaction.transaction.transaction.decode() {
         Some(tx) => tx,
@@ -237,8 +238,10 @@ async fn get_single_transaction_details(signature_str: &str) -> Result<()> {
                 Protocol::MeteoraDlmm,
             ];
 
-            if use_sol_parser_sdk_rpc_path() {
-                println!("\n--- Parsed events (SOL_PARSER_SDK_RPC=1, sol-parser-sdk 对齐) ---\n");
+            if use_local_ix_path() {
+                parse_local_ix_path(&transaction, signature, recv_us, &protocols).await?;
+            } else {
+                println!("\n--- Parsed events (default SDK-backed RPC path) ---\n");
                 match parse_encoded_rpc_transaction_as_streamer_events(
                     &transaction,
                     recv_us,
@@ -251,19 +254,14 @@ async fn get_single_transaction_details(signature_str: &str) -> Result<()> {
                             println!("{:?}\n", ev);
                         }
                     }
-                    Err(e) => println!("SDK-aligned parse error: {}", e),
+                    Err(e) => println!("SDK-backed parse error: {}", e),
                 }
-            } else {
-                parse_local_ix_path(&transaction, signature, recv_us, &protocols).await?;
             }
         }
         Err(e) => {
             println!("Failed to get transaction: {}", e);
         }
     }
-
-    println!("Press Ctrl+C to exit example...");
-    tokio::signal::ctrl_c().await?;
 
     Ok(())
 }
