@@ -4,7 +4,7 @@
 </div>
 
 <p align="center">
-    <strong>一个轻量级的 Rust 库，为 PumpFun、PumpSwap、Bonk 和 Raydium 协议提供高效的事件解析和订阅功能。</strong>
+    <strong>一个基于 sol-parser-sdk 的轻量级 Rust 流式封装库，提供低延迟订阅能力，并保持面向 Bot 用户的稳定 API。</strong>
 </p>
 
 <p align="center">
@@ -67,6 +67,7 @@
 
 ### 核心功能
 - **实时事件流**: 订阅多个 Solana DEX 协议的实时交易事件
+- **SDK 底层解析核心**: 交易、RPC、账户和 ShredStream 解析都优先复用 `sol-parser-sdk`
 - **Yellowstone gRPC 支持**: 使用 Yellowstone gRPC 进行高性能事件订阅
 - **ShredStream 支持**: 使用 ShredStream 协议进行替代事件流传输
 - **统一事件接口**: 在所有支持的协议中保持一致的事件处理
@@ -78,6 +79,10 @@
 - **Raydium CPMM**: Raydium 集中池做市商事件
 - **Raydium CLMM**: Raydium 集中流动性做市商事件
 - **Raydium AMM V4**: Raydium 自动做市商 V4 事件
+- **Meteora DAMM v2**: Meteora DAMM v2 交易和流动性事件
+- **Orca Whirlpool**: Orca Whirlpool 交易和流动性事件
+- **Meteora Pools**: Meteora Pools 交易、流动性、启动流动性和费用事件
+- **Meteora DLMM**: Meteora DLMM 交易、流动性、池、bin array 和费用事件
 
 ### 高级功能
 - **事件解析系统**: 自动解析和分类协议特定事件
@@ -87,6 +92,8 @@
 - **多重过滤器支持**: 在单个订阅中支持多个交易和账户过滤器
 - **高级账户过滤**: 使用 memcmp 过滤器进行精确的账户数据匹配和监控
 - **Token2022 支持**: 增强对 SPL Token 2022 的支持，包含扩展状态解析
+- **RPC 交易解析**: 可解析已获取的 RPC 交易，也可按签名拉取并转换为 streamer 事件
+- **高级 SDK 互操作**: 通过 `parser_sdk` 或 `sdk_bridge::raw` 直接访问底层 `sol-parser-sdk`
 
 ### 性能与优化
 - **高性能**: 针对低延迟事件处理进行优化
@@ -114,17 +121,40 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.3.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.0" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.3.0"
+solana-streamer-sdk = "1.4.0"
 ```
 
+解析后端 feature：
+
+```toml
+# 默认：sol-parser-sdk parse-borsh 后端
+solana-streamer-sdk = "1.4.0"
+
+# 面向低延迟 Bot 的 zero-copy 解析后端
+solana-streamer-sdk = { version = "1.4.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+```
+
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.4+` 会优先使用 zero-copy 后端。
+
 ## 🔄 迁移指南
+
+### 升级到 v1.4.0
+
+v1.4.0 将 streamer 的解析热路径迁移到 `sol-parser-sdk 0.4.4`，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
+
+新增可选能力：
+
+- `solana_streamer_sdk::parser_sdk` 重新导出原始 `sol-parser-sdk` crate。
+- `solana_streamer_sdk::sdk_bridge` 可将原始 SDK 事件适配回 streamer `DexEvent`。
+- `fetch_rpc_transaction_as_streamer_events` 和 `parse_encoded_rpc_transaction_as_streamer_events` 可将 RPC 交易解析为 streamer 事件。
+- `sdk-parse-zero-copy` 可启用 SDK zero-copy 解析后端。
 
 ### 从 v0.5.x 迁移到 v1.x.x
 
@@ -217,9 +247,13 @@ use solana_streamer_sdk::streaming::event_parser::common::{filter::EventTypeFilt
 let event_type_filter = None;
 
 // 过滤特定事件类型 - 只接收 PumpSwap 买入/卖出事件
-let event_type_filter = Some(EventTypeFilter { 
-    include: vec![EventType::PumpSwapBuy, EventType::PumpSwapSell] 
-});
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpSwapBuy,
+    EventType::PumpSwapSell,
+]));
+
+// 排除高频噪声事件，保留其他所有事件
+let event_type_filter = Some(EventTypeFilter::exclude_only(vec![EventType::BlockMeta]));
 ```
 
 #### 性能影响
@@ -234,33 +268,33 @@ let event_type_filter = Some(EventTypeFilter {
 
 **交易机器人（专注交易事件）**
 ```rust
-let event_type_filter = Some(EventTypeFilter { 
-    include: vec![
-        EventType::PumpSwapBuy,
-        EventType::PumpSwapSell,
-        EventType::PumpFunTrade,
-        EventType::RaydiumCpmmSwap,
-        EventType::RaydiumClmmSwap,
-        EventType::RaydiumAmmV4Swap,
-        .....
-    ] 
-});
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpSwapBuy,
+    EventType::PumpSwapSell,
+    EventType::PumpFunBuy,
+    EventType::PumpFunSell,
+    EventType::RaydiumCpmmSwapBaseInput,
+    EventType::RaydiumClmmSwap,
+    EventType::RaydiumAmmV4SwapBaseIn,
+    EventType::OrcaWhirlpoolSwap,
+    EventType::MeteoraDlmmSwap,
+]));
 ```
 
 **池监控（专注流动性事件）**
 ```rust
-let event_type_filter = Some(EventTypeFilter { 
-    include: vec![
-        EventType::PumpSwapCreatePool,
-        EventType::PumpSwapDeposit,
-        EventType::PumpSwapWithdraw,
-        EventType::RaydiumCpmmInitialize,
-        EventType::RaydiumCpmmDeposit,
-        EventType::RaydiumCpmmWithdraw,
-        EventType::RaydiumClmmCreatePool,
-        ......
-    ] 
-});
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpSwapCreatePool,
+    EventType::PumpSwapDeposit,
+    EventType::PumpSwapWithdraw,
+    EventType::RaydiumCpmmInitialize,
+    EventType::RaydiumCpmmDeposit,
+    EventType::RaydiumCpmmWithdraw,
+    EventType::RaydiumClmmCreatePool,
+    EventType::MeteoraDammV2AddLiquidity,
+    EventType::MeteoraPoolsAddLiquidity,
+    EventType::MeteoraDlmmAddLiquidity,
+]));
 ```
 
 ## 动态订阅管理
@@ -298,6 +332,11 @@ grpc.update_subscription(
 - **Raydium CPMM**: Raydium 集中池做市商协议
 - **Raydium CLMM**: Raydium 集中流动性做市商协议
 - **Raydium AMM V4**: Raydium 自动做市商 V4 协议
+- **Meteora DAMM v2**: Meteora DAMM v2 协议
+- **Orca Whirlpool**: Orca Whirlpool 协议
+- **Meteora Pools**: Meteora Pools 协议
+- **Meteora DLMM**: Meteora 动态流动性做市商协议
+- **通用事件**: Token 账户、Token 元信息、Nonce 账户、区块元数据和 ComputeBudget 事件
 
 ## 🌐 事件流服务
 
@@ -310,13 +349,13 @@ grpc.update_subscription(
 
 - **DexEvent 枚举**: 包含所有协议事件的类型安全枚举
 - **Protocol Enum**: 轻松识别事件来源
-- **Event Factory**: 自动事件解析和分类
+- **SDK 桥接层**: 将 `sol-parser-sdk::DexEvent` 适配为 streamer `DexEvent`
 
 ### 事件解析系统
 
-- **协议特定解析器**: 每个支持协议的专用解析器
-- **事件工厂**: 集中式事件创建和解析
-- **可扩展设计**: 易于添加新协议和事件类型
+- **sol-parser-sdk 优先**: Yellowstone gRPC、RPC 交易解析、账户解析和 SDK ShredStream 集成都优先使用 SDK 实现
+- **ComputeBudget 本地补充**: 本地指令解析保留用于 ComputeBudget 事件和无 meta 交易 fallback
+- **可扩展桥接层**: `streaming::sdk_bridge` 暴露原始 SDK 能力，但不强迫已有 Bot 改回调 API
 
 ### 流基础设施
 
@@ -333,15 +372,19 @@ src/
 ├── streaming/        # 事件流系统
 │   ├── event_parser/ # 事件解析系统
 │   │   ├── common/   # 通用事件解析工具
-│   │   ├── core/     # 核心解析特征和接口
+│   │   ├── core/     # gRPC 和 compiled transaction 解析入口
 │   │   ├── protocols/# 协议特定解析器
 │   │   │   ├── bonk/ # Bonk 事件解析
+│   │   │   ├── meteora_damm_v2/ # Meteora DAMM v2 事件解析
 │   │   │   ├── pumpfun/ # PumpFun 事件解析
 │   │   │   ├── pumpswap/ # PumpSwap 事件解析
 │   │   │   ├── raydium_amm_v4/ # Raydium AMM V4 事件解析
+│   │   │   ├── raydium_clmm/ # Raydium CLMM 事件解析
 │   │   │   ├── raydium_cpmm/ # Raydium CPMM 事件解析
-│   │   │   └── raydium_clmm/ # Raydium CLMM 事件解析
-│   │   └── factory.rs # 解析器工厂
+│   │   │   └── sol_parser_forward/ # SDK 转发协议事件封装
+│   ├── parser_sdk_bridge/ # sol-parser-sdk 事件适配层
+│   ├── rpc_parse.rs # RPC 交易解析 helper
+│   ├── sdk_bridge.rs # 公开的高级 SDK 互操作模块
 │   ├── shred_stream.rs # ShredStream 客户端
 │   ├── yellowstone_grpc.rs # Yellowstone gRPC 客户端
 │   └── yellowstone_sub_system.rs # Yellowstone 子系统
