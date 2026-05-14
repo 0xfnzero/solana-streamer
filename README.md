@@ -40,6 +40,12 @@
     <a href="https://discord.gg/vuazbGkqQE">Discord</a>
 </p>
 
+> ☕ **Support This Project**
+>
+> This SDK is completely free and open source. However, maintaining and continuously updating it requires significant AI computing resources and token consumption. If this SDK helps with your development, consider making a monthly SOL donation — any amount is appreciated and helps keep this project alive!
+>
+> **Donation Wallet:** `6oW7AXz1yRb57pYSxysuXnMs2aR1ha5rzGzReZ1MjPV8`
+
 ---
 
 ## Table of Contents
