@@ -6,7 +6,9 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::common::AnyResult;
 use crate::streaming::common::{MetricsEventType, MetricsManager, SubscriptionHandle};
-use crate::streaming::event_parser::common::filter::EventTypeFilter;
+use crate::streaming::event_parser::common::filter::{
+    build_sdk_shred_parse_event_filter, EventTypeFilter,
+};
 use crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since;
 use crate::streaming::event_parser::{DexEvent, Protocol};
 use crate::streaming::parser_sdk_bridge::adapt_parser_event;
@@ -34,9 +36,11 @@ impl ShredStreamGrpc {
             metrics_handle = MetricsManager::global().start_auto_monitoring().await;
         }
 
+        let sdk_parse_filter =
+            build_sdk_shred_parse_event_filter(&protocols, event_type_filter.as_ref());
         let queue = self
             .sdk_shredstream_client
-            .subscribe()
+            .subscribe_with_filter(sdk_parse_filter)
             .await
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 

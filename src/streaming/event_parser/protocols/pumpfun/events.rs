@@ -97,136 +97,6 @@ pub struct PumpFunCreateV2TokenEvent {
     pub program: Pubkey,
 }
 
-pub fn pumpfun_create_v2_token_event_log_decode(data: &[u8]) -> Option<PumpFunCreateV2TokenEvent> {
-    let mut offset = 0;
-
-    // Parse name string: [length (4 bytes u32)][string bytes]
-    if data.len() < offset + 4 {
-        return None;
-    }
-    let name_len = u32::from_le_bytes(data[offset..offset + 4].try_into().ok()?) as usize;
-    offset += 4;
-    if data.len() < offset + name_len {
-        return None;
-    }
-    let name = String::from_utf8(data[offset..offset + name_len].to_vec()).ok()?;
-    offset += name_len;
-
-    // Parse symbol string
-    if data.len() < offset + 4 {
-        return None;
-    }
-    let symbol_len = u32::from_le_bytes(data[offset..offset + 4].try_into().ok()?) as usize;
-    offset += 4;
-    if data.len() < offset + symbol_len {
-        return None;
-    }
-    let symbol = String::from_utf8(data[offset..offset + symbol_len].to_vec()).ok()?;
-    offset += symbol_len;
-
-    // Parse uri string
-    if data.len() < offset + 4 {
-        return None;
-    }
-    let uri_len = u32::from_le_bytes(data[offset..offset + 4].try_into().ok()?) as usize;
-    offset += 4;
-    if data.len() < offset + uri_len {
-        return None;
-    }
-    let uri = String::from_utf8(data[offset..offset + uri_len].to_vec()).ok()?;
-    offset += uri_len;
-
-    // Parse Pubkey fields (32 bytes each)
-    if data.len() < offset + 32 {
-        return None;
-    }
-    let mint = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-    offset += 32;
-
-    if data.len() < offset + 32 {
-        return None;
-    }
-    let bonding_curve = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-    offset += 32;
-
-    if data.len() < offset + 32 {
-        return None;
-    }
-    let user = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-    offset += 32;
-
-    if data.len() < offset + 32 {
-        return None;
-    }
-    let creator = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-    offset += 32;
-
-    // Parse numeric fields
-    if data.len() < offset + 8 {
-        return None;
-    }
-    let timestamp = i64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    offset += 8;
-
-    if data.len() < offset + 8 {
-        return None;
-    }
-    let virtual_token_reserves = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    offset += 8;
-
-    if data.len() < offset + 8 {
-        return None;
-    }
-    let virtual_sol_reserves = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    offset += 8;
-
-    if data.len() < offset + 8 {
-        return None;
-    }
-    let real_token_reserves = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    offset += 8;
-
-    if data.len() < offset + 8 {
-        return None;
-    }
-    let token_total_supply = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    offset += 8;
-
-    // If data length allows, parse V2 extra fields: token_program (32 bytes) + is_mayhem_mode (1 byte) + is_cashback_enabled (1 byte)
-    let (token_program, is_mayhem_mode, is_cashback_enabled) = if data.len() >= offset + 34 {
-        let token_program = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-        let is_mayhem_mode = data[offset + 32] != 0;
-        let is_cashback_enabled = data[offset + 33] != 0;
-        (token_program, is_mayhem_mode, is_cashback_enabled)
-    } else if data.len() >= offset + 33 {
-        // Backward compat: only token_program + is_mayhem_mode, no is_cashback_enabled
-        let token_program = Pubkey::new_from_array(data[offset..offset + 32].try_into().ok()?);
-        let is_mayhem_mode = data[offset + 32] != 0;
-        (token_program, is_mayhem_mode, false)
-    } else {
-        (Pubkey::default(), false, false)
-    };
-
-    Some(PumpFunCreateV2TokenEvent {
-        name,
-        symbol,
-        uri,
-        mint,
-        bonding_curve,
-        user,
-        creator,
-        timestamp,
-        virtual_token_reserves,
-        virtual_sol_reserves,
-        real_token_reserves,
-        token_total_supply,
-        token_program,
-        is_mayhem_mode,
-        is_cashback_enabled,
-        ..Default::default()
-    })
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunTradeEvent {
     #[borsh(skip)]
@@ -317,49 +187,6 @@ pub struct PumpFunTradeEvent {
 /// Borsh byte length of TradeEvent fixed fields (IDL order; excludes ix_name and following variable part).
 /// Layout: mint(32)+sol_amount(8)+token_amount(8)+is_buy(1)+user(32)+timestamp(8)+virtual_sol(8)+virtual_token(8)+real_sol(8)+real_token(8)+fee_recipient(32)+fee_basis_points(8)+fee(8)+creator(32)+creator_fee_bps(8)+creator_fee(8)+track_volume(1)+total_unclaimed(8)+total_claimed(8)+current_sol_volume(8)+last_update_timestamp(8) = 250
 pub const PUMPFUN_TRADE_EVENT_LOG_SIZE: usize = 250;
-
-/// Decode TradeEvent log; if data.len() > 250 then parse ix_name, mayhem_mode, cashback (IDL-aligned).
-pub fn pumpfun_trade_event_log_decode(data: &[u8]) -> Option<PumpFunTradeEvent> {
-    if data.len() < PUMPFUN_TRADE_EVENT_LOG_SIZE {
-        return None;
-    }
-    let mut event =
-        borsh::from_slice::<PumpFunTradeEvent>(&data[..PUMPFUN_TRADE_EVENT_LOG_SIZE]).ok()?;
-    let mut offset = PUMPFUN_TRADE_EVENT_LOG_SIZE;
-    if offset < data.len() {
-        let (ix_name, inc) = read_borsh_string(data, offset).unwrap_or((String::new(), 0));
-        offset += inc;
-        event.ix_name = ix_name;
-    }
-    if offset + 1 <= data.len() {
-        event.mayhem_mode = data[offset] != 0;
-        offset += 1;
-    }
-    if offset + 8 <= data.len() {
-        event.cashback_fee_basis_points =
-            u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-        offset += 8;
-    }
-    if offset + 8 <= data.len() {
-        event.cashback = u64::from_le_bytes(data[offset..offset + 8].try_into().ok()?);
-    }
-    event.is_cashback_coin = event.cashback_fee_basis_points > 0;
-    Some(event)
-}
-
-#[inline]
-fn read_borsh_string(data: &[u8], start: usize) -> Option<(String, usize)> {
-    if start + 4 > data.len() {
-        return None;
-    }
-    let len = u32::from_le_bytes(data[start..start + 4].try_into().ok()?) as usize;
-    let start = start + 4;
-    if start + len > data.len() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&data[start..start + len]).to_string();
-    Some((s, 4 + len))
-}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunMigrateEvent {
@@ -550,13 +377,6 @@ pub struct PumpFunMigrateBondingCurveCreatorEvent {
 }
 
 pub const PUMPFUN_MIGRATE_EVENT_LOG_SIZE: usize = 160;
-
-pub fn pumpfun_migrate_event_log_decode(data: &[u8]) -> Option<PumpFunMigrateEvent> {
-    if data.len() < PUMPFUN_MIGRATE_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PumpFunMigrateEvent>(&data[..PUMPFUN_MIGRATE_EVENT_LOG_SIZE]).ok()
-}
 
 /// Bonding curve
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]

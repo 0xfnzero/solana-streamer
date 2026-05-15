@@ -463,17 +463,3 @@ pub mod discriminators {
 
 /// Decode swap event from CPI log
 pub const METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE: usize = 180;
-pub fn meteora_damm_v2_swap_event_decode(data: &[u8]) -> Option<MeteoraDammV2SwapEvent> {
-    if data.len() < METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<MeteoraDammV2SwapEvent>(&data[..METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE]).ok()
-}
-
-/// Decode initialize pool event from CPI log
-/// Note: discriminator (16 bytes) is already removed by the caller
-pub fn meteora_damm_v2_initialize_pool_event_decode(
-    data: &[u8],
-) -> Option<MeteoraDammV2InitializePoolEvent> {
-    borsh::from_slice::<MeteoraDammV2InitializePoolEvent>(&data).ok()
-}

@@ -1,29 +1,12 @@
-//! Protocol filtering and event enrichment for PumpFun / PumpSwap / Bonk / bot flags.
+//! Event enrichment for PumpFun / PumpSwap / Bonk / bot flags.
 use crate::streaming::event_parser::{
-    common::filter::{filter_includes_compute_budget_types, EventTypeFilter},
-    core::dispatcher::EventDispatcher,
     core::global_state::{
         add_bonk_dev_address, add_dev_address, is_bonk_dev_address_in_signature,
         is_dev_address_in_signature,
     },
-    DexEvent, Protocol,
+    DexEvent,
 };
 use solana_sdk::pubkey::Pubkey;
-
-pub(super) fn should_handle(
-    protocols: &[Protocol],
-    event_type_filter: Option<&EventTypeFilter>,
-    program_id: &Pubkey,
-) -> bool {
-    if EventDispatcher::is_compute_budget_program(program_id) {
-        return filter_includes_compute_budget_types(event_type_filter);
-    }
-    if let Some(protocol) = EventDispatcher::match_protocol_by_program_id(program_id) {
-        protocols.contains(&protocol)
-    } else {
-        false
-    }
-}
 
 // ================================================================================================
 // Event Post-Processing

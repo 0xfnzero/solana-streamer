@@ -1,15 +1,16 @@
 use crate::common::AnyResult;
 use crate::streaming::common::MetricsEventType;
 use crate::streaming::event_parser::common::filter::{
-    build_sdk_parse_event_filter, passes_event_type_filter, EventTypeFilter,
+    build_sdk_parse_event_filter, build_sdk_shred_parse_event_filter, passes_event_type_filter,
+    EventTypeFilter,
 };
 use crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since;
 use crate::streaming::event_parser::core::common_event_parser::CommonEventParser;
-use crate::streaming::event_parser::core::event_parser::EventParser;
 use crate::streaming::event_parser::{core::traits::DexEvent, Protocol};
 use crate::streaming::grpc::{EventPretty, MetricsManager};
 use crate::streaming::parser_sdk_bridge::{
-    adapt_parser_events_list, parse_account_event_for_streamer, AccountParseResult,
+    adapt_parser_event, adapt_parser_events_list, parse_account_event_for_streamer,
+    AccountParseResult,
 };
 use crate::streaming::shred::TransactionWithSlot;
 use sol_parser_sdk::grpc::parse_subscribe_update_transaction_low_latency;
@@ -156,25 +157,29 @@ pub async fn process_shred_transaction(
     let recv_us = transaction_with_slot.recv_us;
 
     let adapter_callback = create_metrics_callback(callback);
-    // Shred only exposes static account keys and no inner instructions; see
-    // docs/SHREDSTREAM_LIMITATIONS.md for the expected parser limits.
-    let accounts = tx.message.static_account_keys();
-
-    EventParser::parse_instruction_events_from_versioned_transaction(
-        protocols,
-        event_type_filter,
+    let sdk_parse_filter = build_sdk_shred_parse_event_filter(protocols, event_type_filter);
+    let mut sdk_events = Vec::with_capacity(4);
+    sol_parser_sdk::shredstream::parse_transaction_dex_events_with_filter(
         &tx,
         signature,
-        Some(slot),
-        None, // shred has no block_time
+        slot,
+        tx_index.unwrap_or(0),
         recv_us,
-        accounts,
-        &[],
-        bot_wallet,
-        tx_index,
-        adapter_callback,
-    )
-    .await?;
+        sdk_parse_filter.as_ref(),
+        &mut sdk_events,
+    );
+
+    for sdk_event in sdk_events {
+        if let Some(mut event) =
+            adapt_parser_event(sdk_event, None, recv_us, protocols, event_type_filter)
+        {
+            event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
+            event = crate::streaming::event_parser::core::event_parser::helpers::process_event(
+                event, bot_wallet,
+            );
+            adapter_callback(event);
+        }
+    }
 
     Ok(())
 }

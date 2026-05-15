@@ -81,7 +81,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesCreateFeeSharingConfig,
                 pump_fees_program(),
             );
@@ -94,7 +94,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesInitializeFeeConfig,
                 pump_fees_program(),
             );
@@ -107,7 +107,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesResetFeeSharingConfig,
                 pump_fees_program(),
             );
@@ -120,7 +120,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesRevokeFeeSharingAuthority,
                 pump_fees_program(),
             );
@@ -133,7 +133,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesTransferFeeSharingAuthority,
                 pump_fees_program(),
             );
@@ -146,7 +146,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesUpdateAdmin,
                 pump_fees_program(),
             );
@@ -157,7 +157,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesUpdateFeeConfig,
                 pump_fees_program(),
             );
@@ -170,7 +170,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesUpdateFeeShares,
                 pump_fees_program(),
             );
@@ -183,7 +183,7 @@ pub(crate) fn convert_parser_event(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::PumpFun,
+                ProtocolType::PumpFees,
                 EventType::PumpFeesUpsertFeeTiers,
                 pump_fees_program(),
             );
@@ -309,12 +309,17 @@ pub(crate) fn convert_parser_event(
         }
 
         PbDexEvent::RaydiumCpmmSwap(e) => {
+            let event_type = if e.base_input {
+                EventType::RaydiumCpmmSwapBaseInput
+            } else {
+                EventType::RaydiumCpmmSwapBaseOutput
+            };
             let meta = adapt_pm(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
                 ProtocolType::RaydiumCpmm,
-                EventType::RaydiumCpmmSwapBaseInput,
+                event_type,
                 raydium_cpmm_program(),
             );
             Some(DexEvent::RaydiumCpmmSwapEvent(raydium_cpmm_swap_from_parser(e, meta)))
@@ -457,12 +462,17 @@ pub(crate) fn convert_parser_event(
         }
 
         PbDexEvent::RaydiumAmmV4Swap(e) => {
+            let event_type = if e.max_amount_in != 0 || (e.amount_out != 0 && e.amount_in == 0) {
+                EventType::RaydiumAmmV4SwapBaseOut
+            } else {
+                EventType::RaydiumAmmV4SwapBaseIn
+            };
             let meta = adapt_pm(
                 e.metadata.clone(),
                 bt,
                 recv_wall_us,
                 ProtocolType::RaydiumAmmV4,
-                EventType::RaydiumAmmV4SwapBaseIn,
+                event_type,
                 raydium_amm_v4_program(),
             );
             Some(DexEvent::RaydiumAmmV4SwapEvent(raydium_amm_v4_swap_from_parser(e, meta)))

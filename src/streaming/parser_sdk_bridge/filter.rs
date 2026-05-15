@@ -43,6 +43,15 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::PumpFun, DexEvent::PumpFunMigrateBondingCurveCreatorEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunBondingCurveAccountEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunGlobalAccountEvent(_)) => true,
+        (Protocol::PumpFees, DexEvent::PumpFeesCreateFeeSharingConfigEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesInitializeFeeConfigEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesResetFeeSharingConfigEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesRevokeFeeSharingAuthorityEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesTransferFeeSharingAuthorityEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesUpdateAdminEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesUpdateFeeConfigEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesUpdateFeeSharesEvent(_))
+        | (Protocol::PumpFees, DexEvent::PumpFeesUpsertFeeTiersEvent(_)) => true,
         (Protocol::PumpSwap, DexEvent::PumpSwapBuyEvent(_))
         | (Protocol::PumpSwap, DexEvent::PumpSwapSellEvent(_))
         | (Protocol::PumpSwap, DexEvent::PumpSwapCreatePoolEvent(_))
@@ -56,7 +65,14 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::Bonk, DexEvent::BonkMigrateToCpswapEvent(_))
         | (Protocol::Bonk, DexEvent::BonkPoolStateAccountEvent(_))
         | (Protocol::Bonk, DexEvent::BonkGlobalConfigAccountEvent(_))
-        | (Protocol::Bonk, DexEvent::BonkPlatformConfigAccountEvent(_)) => true,
+        | (Protocol::Bonk, DexEvent::BonkPlatformConfigAccountEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkTradeEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkPoolCreateEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkMigrateToAmmEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkMigrateToCpswapEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkPoolStateAccountEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkGlobalConfigAccountEvent(_))
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkPlatformConfigAccountEvent(_)) => true,
         (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmSwapEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmDepositEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmWithdrawEvent(_))

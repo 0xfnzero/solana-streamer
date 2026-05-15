@@ -1,331 +1,193 @@
-//! 事件路由入口（类比 sol-parser-sdk 的 `instr`，区分「原生字节解析」与「sdk 事件对齐」）。
+//! SDK-backed event dispatcher kept for compatibility with older streamer APIs.
 //!
-//! ## 代码去哪找
-//! - **`protocols/<协议>/parser.rs`** — Yellowstone / shred 路径下的顶层与 inner 指令解析（手写）。
-//! - **`streaming/parser_sdk_bridge/`** — `sol-parser-sdk::DexEvent` → streamer `DexEvent` 字段映射。
-//! - **`protocols/sol_parser_forward/native.rs`** — Orca / Meteora Pools & DLMM：调用 sdk `instr` 后再走 bridge。
-//!
-//! ## 设计原则
-//! - **单一职责**: 每个函数只负责一件事（路由、解析、合并分离）
-//! - **灵活性**: 调用方可以选择是否合并，或自定义合并逻辑
-//! - **可测试性**: 每个函数都可以独立测试
+//! Streamer no longer owns protocol parsers here. The dispatcher only adapts
+//! streamer metadata and routes to `sol-parser-sdk` parsers, then converts SDK
+//! events back to streamer `DexEvent`.
 
-use crate::streaming::event_parser::{
-    common::EventMetadata,
-    core::common_event_parser::{CommonEventParser, COMPUTE_BUDGET_PROGRAM_ID},
-    protocols::{
-        bonk::parser as bonk, meteora_damm_v2::parser as meteora_damm_v2,
-        pumpfun::parser as pumpfun, pumpswap::parser as pumpswap,
-        raydium_amm_v4::parser as raydium_amm_v4, raydium_clmm::parser as raydium_clmm,
-        raydium_cpmm::parser as raydium_cpmm, sol_parser_forward,
-    },
-    DexEvent, Protocol,
+use crate::streaming::event_parser::{common::EventMetadata, DexEvent, Protocol};
+use crate::streaming::parser_sdk_bridge::{
+    block_timestamp_from_stream_meta, convert_parser_event, fuse_streamer_ix_ctx,
+    parse_sdk_account_event,
+};
+use sol_parser_sdk::core::events::EventMetadata as PbEventMetadata;
+use sol_parser_sdk::instr::{
+    all_inner, program_ids, pump_amm_inner, pump_inner, raydium_clmm_inner,
 };
 use solana_sdk::pubkey::Pubkey;
 
-/// 中心事件解析调度器
-///
-/// 负责将解析请求路由到对应协议的解析函数
 pub struct EventDispatcher;
 
 impl EventDispatcher {
-    /// 解析 instruction 事件（只解析，不合并）
-    ///
-    /// # 参数
-    /// - `protocol`: 协议类型
-    /// - `instruction_discriminator`: 指令判别器 (8 bytes)
-    /// - `instruction_data`: 指令数据
-    /// - `accounts`: 账户公钥列表
-    /// - `metadata`: 事件元数据
-    ///
-    /// # 返回
-    /// 解析成功返回 `Some(DexEvent)`，否则返回 `None`
     #[inline]
     pub fn dispatch_instruction(
         protocol: Protocol,
         instruction_discriminator: &[u8],
         instruction_data: &[u8],
         accounts: &[Pubkey],
-        mut metadata: EventMetadata,
+        metadata: EventMetadata,
     ) -> Option<DexEvent> {
-        // 根据协议类型设置 metadata.protocol
-        use crate::streaming::event_parser::common::ProtocolType;
-        metadata.protocol = match protocol {
-            Protocol::PumpFun => ProtocolType::PumpFun,
-            Protocol::PumpSwap => ProtocolType::PumpSwap,
-            Protocol::Bonk => ProtocolType::Bonk,
-            Protocol::RaydiumCpmm => ProtocolType::RaydiumCpmm,
-            Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
-            Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
-            Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
-            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
-            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
-            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
-        };
+        let mut full = Vec::with_capacity(instruction_discriminator.len() + instruction_data.len());
+        full.extend_from_slice(instruction_discriminator);
+        full.extend_from_slice(instruction_data);
 
-        match protocol {
-            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => {
-                sol_parser_forward::native::dispatch_instruction(
-                    protocol.clone(),
-                    instruction_discriminator,
-                    instruction_data,
-                    accounts,
-                    &metadata,
-                )
-            }
-            Protocol::PumpFun => pumpfun::parse_pumpfun_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::PumpSwap => pumpswap::parse_pumpswap_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::Bonk => bonk::parse_bonk_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::RaydiumCpmm => raydium_cpmm::parse_raydium_cpmm_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::RaydiumClmm => raydium_clmm::parse_raydium_clmm_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::RaydiumAmmV4 => raydium_amm_v4::parse_raydium_amm_v4_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-            Protocol::MeteoraDammV2 => meteora_damm_v2::parse_meteora_damm_v2_instruction_data(
-                instruction_discriminator,
-                instruction_data,
-                accounts,
-                metadata,
-            ),
-        }
+        let program_id = Self::get_program_id(protocol);
+        let pb = sol_parser_sdk::instr::parse_instruction_unified(
+            &full,
+            accounts,
+            metadata.signature,
+            metadata.slot,
+            metadata.tx_index.unwrap_or(0),
+            Some(metadata.block_time_ms.saturating_mul(1000)),
+            metadata.recv_us,
+            None,
+            &program_id,
+        )?;
+
+        let ts = block_timestamp_from_stream_meta(&metadata);
+        let ev = convert_parser_event(pb, Some(&ts), metadata.recv_us)?;
+        Some(fuse_streamer_ix_ctx(ev, &metadata))
     }
 
-    /// 解析 inner instruction 事件（只解析，不合并）
-    ///
-    /// # 参数
-    /// - `protocol`: 协议类型
-    /// - `inner_instruction_discriminator`: 内联指令判别器 (16 bytes)
-    /// - `inner_instruction_data`: 内联指令数据
-    /// - `metadata`: 事件元数据
-    ///
-    /// # 返回
-    /// 解析成功返回 `Some(DexEvent)`，否则返回 `None`
     #[inline]
     pub fn dispatch_inner_instruction(
         protocol: Protocol,
         inner_instruction_discriminator: &[u8],
         inner_instruction_data: &[u8],
-        mut metadata: EventMetadata,
+        metadata: EventMetadata,
     ) -> Option<DexEvent> {
-        // 根据协议类型设置 metadata.protocol
-        use crate::streaming::event_parser::common::ProtocolType;
-        metadata.protocol = match protocol {
-            Protocol::PumpFun => ProtocolType::PumpFun,
-            Protocol::PumpSwap => ProtocolType::PumpSwap,
-            Protocol::Bonk => ProtocolType::Bonk,
-            Protocol::RaydiumCpmm => ProtocolType::RaydiumCpmm,
-            Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
-            Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
-            Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
-            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
-            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
-            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
-        };
+        let disc: [u8; 16] = inner_instruction_discriminator.try_into().ok()?;
+        let pm = pb_meta_from_streamer(&metadata);
 
-        match protocol {
-            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => {
-                sol_parser_forward::native::dispatch_inner_instruction(
-                    protocol.clone(),
-                    inner_instruction_discriminator,
-                    inner_instruction_data,
-                    &metadata,
-                )
+        let pb = match protocol {
+            Protocol::PumpFun => pump_inner::parse_pumpfun_inner_instruction(
+                &disc,
+                inner_instruction_data,
+                pm,
+                false,
+            ),
+            Protocol::PumpSwap => {
+                pump_amm_inner::parse_pumpswap_inner_instruction(&disc, inner_instruction_data, pm)
             }
-            Protocol::PumpFun => pumpfun::parse_pumpfun_inner_instruction_data(
-                inner_instruction_discriminator,
+            Protocol::PumpFees => all_inner::pump_fees::parse(&disc, inner_instruction_data, pm),
+            Protocol::Bonk | Protocol::RaydiumLaunchpad => {
+                all_inner::bonk::parse(&disc, inner_instruction_data, pm)
+            }
+            Protocol::RaydiumCpmm => {
+                all_inner::raydium_cpmm::parse(&disc, inner_instruction_data, pm)
+            }
+            Protocol::RaydiumClmm => raydium_clmm_inner::parse_raydium_clmm_inner_instruction(
+                &disc,
                 inner_instruction_data,
-                metadata,
+                pm,
             ),
-            Protocol::PumpSwap => pumpswap::parse_pumpswap_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
-            Protocol::Bonk => bonk::parse_bonk_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
-            Protocol::RaydiumCpmm => raydium_cpmm::parse_raydium_cpmm_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
-            Protocol::RaydiumClmm => raydium_clmm::parse_raydium_clmm_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
-            Protocol::RaydiumAmmV4 => raydium_amm_v4::parse_raydium_amm_v4_inner_instruction_data(
-                inner_instruction_discriminator,
-                inner_instruction_data,
-                metadata,
-            ),
+            Protocol::RaydiumAmmV4 => {
+                all_inner::raydium_amm::parse(&disc, inner_instruction_data, pm)
+            }
             Protocol::MeteoraDammV2 => {
-                meteora_damm_v2::parse_meteora_damm_v2_inner_instruction_data(
-                    inner_instruction_discriminator,
-                    inner_instruction_data,
-                    metadata,
-                )
+                all_inner::meteora_damm::parse(&disc, inner_instruction_data, pm)
             }
-        }
+            Protocol::OrcaWhirlpool => all_inner::orca::parse(&disc, inner_instruction_data, pm),
+            Protocol::MeteoraPools => {
+                all_inner::meteora_amm::parse(&disc, inner_instruction_data, pm)
+            }
+            Protocol::MeteoraDlmm => {
+                all_inner::meteora_dlmm::parse(&disc, inner_instruction_data, pm)
+            }
+        }?;
+
+        let ts = block_timestamp_from_stream_meta(&metadata);
+        let ev = convert_parser_event(pb, Some(&ts), metadata.recv_us)?;
+        Some(fuse_streamer_ix_ctx(ev, &metadata))
     }
 
-    /// 通过 program_id 匹配协议类型
     #[inline]
     pub fn match_protocol_by_program_id(program_id: &Pubkey) -> Option<Protocol> {
-        if program_id == &pumpfun::PUMPFUN_PROGRAM_ID {
+        if program_id == &program_ids::PUMPFUN_PROGRAM_ID {
             Some(Protocol::PumpFun)
-        } else if program_id == &pumpswap::PUMPSWAP_PROGRAM_ID {
+        } else if program_id == &program_ids::PUMP_FEES_PROGRAM_ID {
+            Some(Protocol::PumpFees)
+        } else if program_id == &program_ids::PUMPSWAP_PROGRAM_ID {
             Some(Protocol::PumpSwap)
-        } else if program_id == &bonk::BONK_PROGRAM_ID {
+        } else if program_id == &program_ids::BONK_PROGRAM_ID {
             Some(Protocol::Bonk)
-        } else if program_id == &raydium_cpmm::RAYDIUM_CPMM_PROGRAM_ID {
+        } else if program_id == &program_ids::RAYDIUM_CPMM_PROGRAM_ID {
             Some(Protocol::RaydiumCpmm)
-        } else if program_id == &raydium_clmm::RAYDIUM_CLMM_PROGRAM_ID {
+        } else if program_id == &program_ids::RAYDIUM_CLMM_PROGRAM_ID {
             Some(Protocol::RaydiumClmm)
-        } else if program_id == &raydium_amm_v4::RAYDIUM_AMM_V4_PROGRAM_ID {
+        } else if program_id == &program_ids::RAYDIUM_AMM_V4_PROGRAM_ID {
             Some(Protocol::RaydiumAmmV4)
-        } else if program_id == &meteora_damm_v2::METEORA_DAMM_V2_PROGRAM_ID {
+        } else if program_id == &program_ids::METEORA_DAMM_V2_PROGRAM_ID {
             Some(Protocol::MeteoraDammV2)
-        } else if program_id == &sol_parser_forward::ORCA_WHIRLPOOL_PROGRAM_ID {
+        } else if program_id == &program_ids::ORCA_WHIRLPOOL_PROGRAM_ID {
             Some(Protocol::OrcaWhirlpool)
-        } else if program_id == &sol_parser_forward::METEORA_POOLS_PROGRAM_ID {
+        } else if program_id == &program_ids::METEORA_POOLS_PROGRAM_ID {
             Some(Protocol::MeteoraPools)
-        } else if program_id == &sol_parser_forward::METEORA_DLMM_PROGRAM_ID {
+        } else if program_id == &program_ids::METEORA_DLMM_PROGRAM_ID {
             Some(Protocol::MeteoraDlmm)
         } else {
             None
         }
     }
 
-    /// 检查是否为 Compute Budget Program
     #[inline]
     pub fn is_compute_budget_program(program_id: &Pubkey) -> bool {
-        program_id == &COMPUTE_BUDGET_PROGRAM_ID
+        program_id == &solana_sdk::pubkey!("ComputeBudget111111111111111111111111111111")
     }
 
-    /// 解析 Compute Budget 指令
-    ///
-    /// # 参数
-    /// - `instruction_data`: 指令数据
-    /// - `metadata`: 事件元数据
-    ///
-    /// # 返回
-    /// 解析成功返回 `Some(DexEvent)`，否则返回 `None`
     #[inline]
     pub fn dispatch_compute_budget_instruction(
-        instruction_data: &[u8],
-        metadata: EventMetadata,
+        _instruction_data: &[u8],
+        _metadata: EventMetadata,
     ) -> Option<DexEvent> {
-        CommonEventParser::parse_compute_budget_instruction(instruction_data, metadata)
+        None
     }
 
-    /// 获取指定协议的 program_id
     #[inline]
     pub fn get_program_id(protocol: Protocol) -> Pubkey {
         match protocol {
-            Protocol::PumpFun => pumpfun::PUMPFUN_PROGRAM_ID,
-            Protocol::PumpSwap => pumpswap::PUMPSWAP_PROGRAM_ID,
-            Protocol::Bonk => bonk::BONK_PROGRAM_ID,
-            Protocol::RaydiumCpmm => raydium_cpmm::RAYDIUM_CPMM_PROGRAM_ID,
-            Protocol::RaydiumClmm => raydium_clmm::RAYDIUM_CLMM_PROGRAM_ID,
-            Protocol::RaydiumAmmV4 => raydium_amm_v4::RAYDIUM_AMM_V4_PROGRAM_ID,
-            Protocol::MeteoraDammV2 => meteora_damm_v2::METEORA_DAMM_V2_PROGRAM_ID,
-            Protocol::OrcaWhirlpool => sol_parser_forward::ORCA_WHIRLPOOL_PROGRAM_ID,
-            Protocol::MeteoraPools => sol_parser_forward::METEORA_POOLS_PROGRAM_ID,
-            Protocol::MeteoraDlmm => sol_parser_forward::METEORA_DLMM_PROGRAM_ID,
+            Protocol::PumpFun => program_ids::PUMPFUN_PROGRAM_ID,
+            Protocol::PumpFees => program_ids::PUMP_FEES_PROGRAM_ID,
+            Protocol::PumpSwap => program_ids::PUMPSWAP_PROGRAM_ID,
+            Protocol::Bonk | Protocol::RaydiumLaunchpad => program_ids::BONK_PROGRAM_ID,
+            Protocol::RaydiumCpmm => program_ids::RAYDIUM_CPMM_PROGRAM_ID,
+            Protocol::RaydiumClmm => program_ids::RAYDIUM_CLMM_PROGRAM_ID,
+            Protocol::RaydiumAmmV4 => program_ids::RAYDIUM_AMM_V4_PROGRAM_ID,
+            Protocol::MeteoraDammV2 => program_ids::METEORA_DAMM_V2_PROGRAM_ID,
+            Protocol::OrcaWhirlpool => program_ids::ORCA_WHIRLPOOL_PROGRAM_ID,
+            Protocol::MeteoraPools => program_ids::METEORA_POOLS_PROGRAM_ID,
+            Protocol::MeteoraDlmm => program_ids::METEORA_DLMM_PROGRAM_ID,
         }
     }
 
-    /// 批量获取 program_ids
     pub fn get_program_ids(protocols: &[Protocol]) -> Vec<Pubkey> {
-        protocols.iter().map(|p| Self::get_program_id(p.clone())).collect()
+        let mut ids = Vec::with_capacity(protocols.len());
+        for protocol in protocols {
+            let id = Self::get_program_id(protocol.clone());
+            if !ids.contains(&id) {
+                ids.push(id);
+            }
+        }
+        ids
     }
 
-    /// 解析账户数据
-    ///
-    /// 根据账户的 discriminator 路由到对应协议的账户解析函数
-    ///
-    /// # 参数
-    /// - `protocol`: 协议类型
-    /// - `discriminator`: 账户判别器
-    /// - `account`: 账户信息
-    /// - `metadata`: 事件元数据
-    ///
-    /// # 返回
-    /// 解析成功返回 `Some(DexEvent)`，否则返回 `None`
     pub fn dispatch_account(
         protocol: Protocol,
-        discriminator: &[u8],
+        _discriminator: &[u8],
         account: &crate::streaming::grpc::AccountPretty,
-        mut metadata: crate::streaming::event_parser::common::EventMetadata,
+        _metadata: EventMetadata,
     ) -> Option<DexEvent> {
-        // 根据协议类型设置 metadata.protocol
-        use crate::streaming::event_parser::common::ProtocolType;
-        metadata.protocol = match protocol {
-            Protocol::PumpFun => ProtocolType::PumpFun,
-            Protocol::PumpSwap => ProtocolType::PumpSwap,
-            Protocol::Bonk => ProtocolType::Bonk,
-            Protocol::RaydiumCpmm => ProtocolType::RaydiumCpmm,
-            Protocol::RaydiumClmm => ProtocolType::RaydiumClmm,
-            Protocol::RaydiumAmmV4 => ProtocolType::RaydiumAmmV4,
-            Protocol::MeteoraDammV2 => ProtocolType::MeteoraDammV2,
-            Protocol::OrcaWhirlpool => ProtocolType::OrcaWhirlpool,
-            Protocol::MeteoraPools => ProtocolType::MeteoraPools,
-            Protocol::MeteoraDlmm => ProtocolType::MeteoraDlmm,
-        };
+        parse_sdk_account_event(account, &[protocol], None)
+    }
+}
 
-        match protocol {
-            Protocol::OrcaWhirlpool | Protocol::MeteoraPools | Protocol::MeteoraDlmm => None,
-            Protocol::PumpFun => {
-                pumpfun::parse_pumpfun_account_data(discriminator, account, metadata)
-            }
-            Protocol::PumpSwap => {
-                pumpswap::parse_pumpswap_account_data(discriminator, account, metadata)
-            }
-            Protocol::Bonk => bonk::parse_bonk_account_data(discriminator, account, metadata),
-            Protocol::RaydiumCpmm => {
-                raydium_cpmm::parse_raydium_cpmm_account_data(discriminator, account, metadata)
-            }
-            Protocol::RaydiumClmm => {
-                raydium_clmm::parse_raydium_clmm_account_data(discriminator, account, metadata)
-            }
-            Protocol::RaydiumAmmV4 => {
-                raydium_amm_v4::parse_raydium_amm_v4_account_data(discriminator, account, metadata)
-            }
-            Protocol::MeteoraDammV2 => {
-                // Meteora DAMM 目前不需要解析账户数据，返回 None
-                None
-            }
-        }
+#[inline]
+fn pb_meta_from_streamer(sm: &EventMetadata) -> PbEventMetadata {
+    PbEventMetadata {
+        signature: sm.signature,
+        slot: sm.slot,
+        tx_index: sm.tx_index.unwrap_or(0),
+        block_time_us: sm.block_time_ms.saturating_mul(1000),
+        grpc_recv_us: sm.recv_us,
+        recent_blockhash: sm.recent_blockhash.clone(),
     }
 }

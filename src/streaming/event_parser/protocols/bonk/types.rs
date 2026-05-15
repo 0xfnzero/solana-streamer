@@ -2,17 +2,6 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::streaming::{
-    event_parser::{
-        common::{EventMetadata, EventType},
-        protocols::bonk::{
-            BonkGlobalConfigAccountEvent, BonkPlatformConfigAccountEvent, BonkPoolStateAccountEvent,
-        },
-        DexEvent,
-    },
-    grpc::AccountPretty,
-};
-
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub enum TradeDirection {
     #[default]
@@ -182,34 +171,6 @@ impl Default for PoolState {
 }
 
 pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5 + 1 + 1 + 8 + 54;
-
-pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
-    if data.len() < POOL_STATE_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PoolState>(&data[..POOL_STATE_SIZE]).ok()
-}
-
-pub fn pool_state_parser(account: &AccountPretty, mut metadata: EventMetadata) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountBonkPoolState;
-
-    if account.data.len() < POOL_STATE_SIZE + 8 {
-        return None;
-    }
-    if let Some(pool_state) = pool_state_decode(&account.data[8..POOL_STATE_SIZE + 8]) {
-        Some(DexEvent::BonkPoolStateAccountEvent(BonkPoolStateAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            pool_state,
-        }))
-    } else {
-        None
-    }
-}
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct GlobalConfig {
     pub epoch: u64,
@@ -232,37 +193,6 @@ pub struct GlobalConfig {
 }
 
 pub const GLOBAL_CONFIG_SIZE: usize = 8 + 1 + 2 + 8 * 8 + 32 * 5 + 8 * 16;
-
-pub fn global_config_decode(data: &[u8]) -> Option<GlobalConfig> {
-    if data.len() < GLOBAL_CONFIG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<GlobalConfig>(&data[..GLOBAL_CONFIG_SIZE]).ok()
-}
-
-pub fn global_config_parser(
-    account: &AccountPretty,
-    mut metadata: EventMetadata,
-) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountBonkGlobalConfig;
-
-    if account.data.len() < GLOBAL_CONFIG_SIZE + 8 {
-        return None;
-    }
-    if let Some(global_config) = global_config_decode(&account.data[8..GLOBAL_CONFIG_SIZE + 8]) {
-        Some(DexEvent::BonkGlobalConfigAccountEvent(BonkGlobalConfigAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            global_config,
-        }))
-    } else {
-        None
-    }
-}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BondingCurveParam {
@@ -351,36 +281,3 @@ impl Default for PlatformConfig {
 
 pub const PLATFORM_CONFIG_SIZE: usize =
     8 + 32 * 2 + 8 * 4 + 64 + 256 + 256 + 32 + 8 + 32 + 32 + 8 + 32 + 108;
-
-pub fn platform_config_decode(data: &[u8]) -> Option<PlatformConfig> {
-    if data.len() < PLATFORM_CONFIG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PlatformConfig>(&data[..PLATFORM_CONFIG_SIZE]).ok()
-}
-
-pub fn platform_config_parser(
-    account: &AccountPretty,
-    mut metadata: EventMetadata,
-) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountBonkPlatformConfig;
-
-    if account.data.len() < PLATFORM_CONFIG_SIZE + 8 {
-        return None;
-    }
-    if let Some(platform_config) =
-        platform_config_decode(&account.data[8..PLATFORM_CONFIG_SIZE + 8])
-    {
-        Some(DexEvent::BonkPlatformConfigAccountEvent(BonkPlatformConfigAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            platform_config,
-        }))
-    } else {
-        None
-    }
-}
