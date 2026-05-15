@@ -12,8 +12,12 @@ use crate::streaming::grpc::AccountPretty;
 
 pub use sol_parser_sdk as raw;
 
+pub type SdkClientConfig = sol_parser_sdk::grpc::types::ClientConfig;
 pub type SdkDexEvent = sol_parser_sdk::DexEvent;
+pub type SdkEventType = sol_parser_sdk::grpc::types::EventType;
 pub type SdkEventTypeFilter = sol_parser_sdk::grpc::types::EventTypeFilter;
+pub type SdkOrderMode = sol_parser_sdk::grpc::types::OrderMode;
+pub type SdkProtocol = sol_parser_sdk::grpc::types::Protocol;
 
 pub fn event_type_filter_to_sdk(filter: Option<&EventTypeFilter>) -> Option<SdkEventTypeFilter> {
     build_sdk_parse_event_filter(filter)

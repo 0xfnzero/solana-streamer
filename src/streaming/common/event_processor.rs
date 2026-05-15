@@ -1,16 +1,21 @@
 use crate::common::AnyResult;
 use crate::streaming::common::MetricsEventType;
-use crate::streaming::event_parser::common::filter::{passes_event_type_filter, EventTypeFilter};
+use crate::streaming::event_parser::common::filter::{
+    build_sdk_parse_event_filter, passes_event_type_filter, EventTypeFilter,
+};
 use crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since;
-use crate::streaming::event_parser::core::account_event_parser::AccountEventParser;
 use crate::streaming::event_parser::core::common_event_parser::CommonEventParser;
 use crate::streaming::event_parser::core::event_parser::EventParser;
 use crate::streaming::event_parser::{core::traits::DexEvent, Protocol};
 use crate::streaming::grpc::{EventPretty, MetricsManager};
-use crate::streaming::parser_sdk_bridge::{parse_account_event_for_streamer, AccountParseResult};
+use crate::streaming::parser_sdk_bridge::{
+    adapt_parser_events_list, parse_account_event_for_streamer, AccountParseResult,
+};
 use crate::streaming::shred::TransactionWithSlot;
+use sol_parser_sdk::grpc::parse_subscribe_update_transaction_low_latency;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
+use yellowstone_grpc_proto::geyser::SubscribeUpdateTransaction;
 
 /// Wrap the user callback and update transaction metrics after delivery.
 #[inline]
@@ -56,46 +61,45 @@ pub async fn process_grpc_transaction(
                     return Ok(());
                 }
                 AccountParseResult::Filtered => return Ok(()),
-                AccountParseResult::Unsupported => {}
-            }
-
-            let account_event = AccountEventParser::parse_account_event(
-                protocols,
-                account_pretty,
-                event_type_filter,
-            );
-
-            if let Some(event) = account_event {
-                let processing_time_us = event.metadata().handle_us as f64;
-                callback(event);
-                update_metrics(MetricsEventType::Account, 1, processing_time_us);
+                AccountParseResult::Unsupported => return Ok(()),
             }
         }
         EventPretty::Transaction(transaction_pretty) => {
             MetricsManager::global().add_tx_process_count();
 
             let slot = transaction_pretty.slot;
-            let signature = transaction_pretty.signature;
             let block_time = transaction_pretty.block_time;
             let recv_us = transaction_pretty.recv_us;
-            let tx_index = transaction_pretty.tx_index;
             let grpc_tx = transaction_pretty.grpc_tx;
-
             let adapter_callback = create_metrics_callback(callback.clone());
-
-            EventParser::parse_grpc_transaction(
+            let block_time_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
+            let update = SubscribeUpdateTransaction {
+                slot,
+                transaction: Some(grpc_tx),
+                ..Default::default()
+            };
+            let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
+            let sdk_events = parse_subscribe_update_transaction_low_latency(
+                &update,
+                recv_us,
+                block_time_us,
+                sdk_parse_filter.as_ref(),
+            );
+            let events = adapt_parser_events_list(
+                sdk_events,
+                block_time.as_ref(),
+                recv_us,
                 protocols,
                 event_type_filter,
-                grpc_tx,
-                signature,
-                Some(slot),
-                block_time,
-                recv_us,
-                bot_wallet,
-                tx_index,
-                adapter_callback,
-            )
-            .await?;
+            );
+
+            for mut event in events {
+                event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
+                event = crate::streaming::event_parser::core::event_parser::helpers::process_event(
+                    event, bot_wallet,
+                );
+                adapter_callback(event);
+            }
         }
         EventPretty::BlockMeta(block_meta_pretty) => {
             MetricsManager::global().add_block_meta_process_count();
