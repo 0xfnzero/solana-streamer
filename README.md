@@ -75,8 +75,9 @@
 
 ### Multi-Protocol Support
 - **PumpFun**: Meme coin trading platform events
+- **Pump Fees**: Pump fee-sharing configuration events
 - **PumpSwap**: PumpFun's swap protocol events
-- **Bonk**: Token launch platform events (letsbonk.fun)
+- **Raydium Launchpad / Bonk**: Token launch platform events (letsbonk.fun / LaunchLab)
 - **Raydium CPMM**: Raydium's Concentrated Pool Market Maker events
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker events
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 events
@@ -122,33 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.4" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.0"
+solana-streamer-sdk = "1.4.4"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.0"
+solana-streamer-sdk = "1.4.4"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.4+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.9+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v1.4.0
+### Upgrading to v1.4.4
 
-Version 1.4.0 moves the streamer parsing hot path onto `sol-parser-sdk 0.4.4` while preserving the existing subscription and callback API. Existing bots can usually upgrade by changing only the crate version.
+Version 1.4.4 uses `sol-parser-sdk 0.4.9` from crates.io for all supported protocol parsing across Yellowstone gRPC, ShredStream, RPC transaction parsing, and account parsing while preserving the existing subscription and callback API. Existing bots can usually upgrade by changing only the crate version.
 
 New optional capabilities:
 
@@ -189,7 +190,7 @@ let callback = |event: DexEvent| {
 You can customize client configuration:
 
 ```rust
-use solana_streamer_sdk::streaming::grpc::ClientConfig;
+use solana_streamer_sdk::streaming::{grpc::ClientConfig, YellowstoneGrpc};
 
 // Use default configuration
 let grpc = YellowstoneGrpc::new(endpoint, token)?;
@@ -208,6 +209,69 @@ let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 - `connection.connect_timeout`: Connection timeout in seconds (default: 10)
 - `connection.request_timeout`: Request timeout in seconds (default: 60)
 - `connection.max_decoding_message_size`: Maximum message size in bytes (default: 10MB)
+
+### Minimal gRPC Subscription
+
+```rust
+use solana_streamer_sdk::streaming::{
+    event_parser::{
+        common::{filter::EventTypeFilter, EventType},
+        core::EventDispatcher,
+        DexEvent, Protocol,
+    },
+    yellowstone_grpc::{AccountFilter, TransactionFilter},
+    YellowstoneGrpc,
+};
+
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+let protocols = vec![
+    Protocol::PumpFun,
+    Protocol::PumpFees,
+    Protocol::PumpSwap,
+    Protocol::RaydiumLaunchpad,
+    Protocol::RaydiumCpmm,
+    Protocol::RaydiumClmm,
+    Protocol::RaydiumAmmV4,
+    Protocol::OrcaWhirlpool,
+    Protocol::MeteoraPools,
+    Protocol::MeteoraDammV2,
+    Protocol::MeteoraDlmm,
+];
+
+let program_ids = EventDispatcher::get_program_ids(&protocols)
+    .into_iter()
+    .map(|pubkey| pubkey.to_string())
+    .collect::<Vec<_>>();
+
+let transaction_filter = TransactionFilter {
+    account_include: program_ids.clone(),
+    account_exclude: vec![],
+    account_required: vec![],
+};
+let account_filter = AccountFilter { account: vec![], owner: program_ids, filters: vec![] };
+
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::PumpSwapBuy,
+    EventType::BonkBuyExactIn,
+    EventType::RaydiumCpmmSwapBaseInput,
+    EventType::MeteoraDlmmSwap,
+]));
+
+grpc.subscribe_events_immediate(
+    protocols,
+    None,
+    vec![transaction_filter],
+    vec![account_filter],
+    event_type_filter,
+    None,
+    |event: DexEvent| {
+        println!("{:?}", event.metadata().event_type);
+    },
+)
+.await?;
+```
 
 ## 📚 Usage Examples
 
@@ -270,14 +334,21 @@ Event filtering can provide significant performance improvements:
 **Trading Bot (Focus on Trade Events)**
 ```rust
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::PumpFunBuyExactSolIn,
+    EventType::PumpFunSell,
     EventType::PumpSwapBuy,
     EventType::PumpSwapSell,
-    EventType::PumpFunBuy,
-    EventType::PumpFunSell,
+    EventType::BonkBuyExactIn,
+    EventType::BonkSellExactIn,
     EventType::RaydiumCpmmSwapBaseInput,
+    EventType::RaydiumCpmmSwapBaseOutput,
     EventType::RaydiumClmmSwap,
     EventType::RaydiumAmmV4SwapBaseIn,
+    EventType::RaydiumAmmV4SwapBaseOut,
     EventType::OrcaWhirlpoolSwap,
+    EventType::MeteoraPoolsSwap,
+    EventType::MeteoraDammV2Swap,
     EventType::MeteoraDlmmSwap,
 ]));
 ```
@@ -285,6 +356,7 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 **Pool Monitoring (Focus on Liquidity Events)**
 ```rust
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFeesUpdateFeeShares,
     EventType::PumpSwapCreatePool,
     EventType::PumpSwapDeposit,
     EventType::PumpSwapWithdraw,
@@ -292,6 +364,8 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::RaydiumCpmmDeposit,
     EventType::RaydiumCpmmWithdraw,
     EventType::RaydiumClmmCreatePool,
+    EventType::OrcaWhirlpoolPoolInitialized,
+    EventType::MeteoraPoolsPoolCreated,
     EventType::MeteoraDammV2AddLiquidity,
     EventType::MeteoraPoolsAddLiquidity,
     EventType::MeteoraDlmmAddLiquidity,
@@ -328,8 +402,9 @@ Note: Multiple subscription attempts on the same client return an error.
 ## 🔧 Supported Protocols
 
 - **PumpFun**: Primary meme coin trading platform
+- **Pump Fees**: Pump fee-sharing configuration events
 - **PumpSwap**: PumpFun's swap protocol
-- **Bonk**: Token launch platform (letsbonk.fun)
+- **Raydium Launchpad / Bonk**: Token launch platform (letsbonk.fun / LaunchLab)
 - **Raydium CPMM**: Raydium's Concentrated Pool Market Maker protocol
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker protocol
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 protocol
@@ -354,8 +429,8 @@ Note: Multiple subscription attempts on the same client return an error.
 
 ### Event Parsing System
 
-- **sol-parser-sdk First**: Yellowstone gRPC, RPC transaction parsing, account parsing, and SDK ShredStream integration use the SDK implementation first
-- **ComputeBudget Local Pass**: The local instruction pass is retained for ComputeBudget events and no-meta fallback cases
+- **sol-parser-sdk Facade**: Yellowstone gRPC, ShredStream, RPC transaction parsing, and account parsing delegate protocol parsing to `sol-parser-sdk`
+- **Local Non-DEX Pass**: Local handling is limited to streamer infrastructure and non-DEX compatibility cases such as ComputeBudget metadata
 - **Extensible Bridge**: `streaming::sdk_bridge` exposes raw SDK access without forcing existing bots to change callbacks
 
 ### Streaming Infrastructure
@@ -371,17 +446,10 @@ src/
 ├── common/           # Common functionality and types
 ├── protos/           # Protocol buffer definitions
 ├── streaming/        # Event streaming system
-│   ├── event_parser/ # Event parsing system
-│   │   ├── common/   # Common event parsing tools
-│   │   ├── core/     # gRPC and compiled transaction parser entry points
-│   │   ├── protocols/# Protocol-specific parsers
-│   │   │   ├── bonk/ # Bonk event parsing
-│   │   │   ├── meteora_damm_v2/ # Meteora DAMM v2 event parsing
-│   │   │   ├── pumpfun/ # PumpFun event parsing
-│   │   │   ├── pumpswap/ # PumpSwap event parsing
-│   │   │   ├── raydium_amm_v4/ # Raydium AMM V4 event parsing
-│   │   │   ├── raydium_clmm/ # Raydium CLMM event parsing
-│   │   │   ├── raydium_cpmm/ # Raydium CPMM event parsing
+│   ├── event_parser/ # Streamer-compatible event facade over sol-parser-sdk
+│   │   ├── common/   # Public event metadata and filter types
+│   │   ├── core/     # SDK dispatch entry points and compatibility wrappers
+│   │   ├── protocols/# Streamer event types and legacy module paths
 │   │   │   └── sol_parser_forward/ # SDK-forwarded protocol event wrappers
 │   ├── parser_sdk_bridge/ # sol-parser-sdk event adapter
 │   ├── rpc_parse.rs # RPC transaction parsing helpers

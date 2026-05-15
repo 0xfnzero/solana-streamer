@@ -74,8 +74,9 @@
 
 ### 多协议支持
 - **PumpFun**: 迷因币交易平台事件
+- **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议事件
-- **Bonk**: 代币发布平台事件 (letsbonk.fun)
+- **Raydium Launchpad / Bonk**: 代币发射平台事件 (letsbonk.fun / LaunchLab)
 - **Raydium CPMM**: Raydium 集中池做市商事件
 - **Raydium CLMM**: Raydium 集中流动性做市商事件
 - **Raydium AMM V4**: Raydium 自动做市商 V4 事件
@@ -121,33 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.4" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.0"
+solana-streamer-sdk = "1.4.4"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.0"
+solana-streamer-sdk = "1.4.4"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.4+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.9+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
-### 升级到 v1.4.0
+### 升级到 v1.4.4
 
-v1.4.0 将 streamer 的解析热路径迁移到 `sol-parser-sdk 0.4.4`，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
+v1.4.4 使用 crates.io 上的 `sol-parser-sdk 0.4.9` 处理 Yellowstone gRPC、ShredStream、RPC 交易解析和账户解析中的所有当前支持协议，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
 
 新增可选能力：
 
@@ -188,7 +189,7 @@ let callback = |event: DexEvent| {
 您可以自定义客户端配置：
 
 ```rust
-use solana_streamer_sdk::streaming::grpc::ClientConfig;
+use solana_streamer_sdk::streaming::{grpc::ClientConfig, YellowstoneGrpc};
 
 // 使用默认配置
 let grpc = YellowstoneGrpc::new(endpoint, token)?;
@@ -207,6 +208,69 @@ let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 - `connection.connect_timeout`: 连接超时（秒）（默认：10）
 - `connection.request_timeout`: 请求超时（秒）（默认：60）
 - `connection.max_decoding_message_size`: 最大消息大小（字节）（默认：10MB）
+
+### 最小 gRPC 订阅
+
+```rust
+use solana_streamer_sdk::streaming::{
+    event_parser::{
+        common::{filter::EventTypeFilter, EventType},
+        core::EventDispatcher,
+        DexEvent, Protocol,
+    },
+    yellowstone_grpc::{AccountFilter, TransactionFilter},
+    YellowstoneGrpc,
+};
+
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+let protocols = vec![
+    Protocol::PumpFun,
+    Protocol::PumpFees,
+    Protocol::PumpSwap,
+    Protocol::RaydiumLaunchpad,
+    Protocol::RaydiumCpmm,
+    Protocol::RaydiumClmm,
+    Protocol::RaydiumAmmV4,
+    Protocol::OrcaWhirlpool,
+    Protocol::MeteoraPools,
+    Protocol::MeteoraDammV2,
+    Protocol::MeteoraDlmm,
+];
+
+let program_ids = EventDispatcher::get_program_ids(&protocols)
+    .into_iter()
+    .map(|pubkey| pubkey.to_string())
+    .collect::<Vec<_>>();
+
+let transaction_filter = TransactionFilter {
+    account_include: program_ids.clone(),
+    account_exclude: vec![],
+    account_required: vec![],
+};
+let account_filter = AccountFilter { account: vec![], owner: program_ids, filters: vec![] };
+
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::PumpSwapBuy,
+    EventType::BonkBuyExactIn,
+    EventType::RaydiumCpmmSwapBaseInput,
+    EventType::MeteoraDlmmSwap,
+]));
+
+grpc.subscribe_events_immediate(
+    protocols,
+    None,
+    vec![transaction_filter],
+    vec![account_filter],
+    event_type_filter,
+    None,
+    |event: DexEvent| {
+        println!("{:?}", event.metadata().event_type);
+    },
+)
+.await?;
+```
 
 ## 📚 使用示例
 
@@ -269,14 +333,21 @@ let event_type_filter = Some(EventTypeFilter::exclude_only(vec![EventType::Block
 **交易机器人（专注交易事件）**
 ```rust
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::PumpFunBuyExactSolIn,
+    EventType::PumpFunSell,
     EventType::PumpSwapBuy,
     EventType::PumpSwapSell,
-    EventType::PumpFunBuy,
-    EventType::PumpFunSell,
+    EventType::BonkBuyExactIn,
+    EventType::BonkSellExactIn,
     EventType::RaydiumCpmmSwapBaseInput,
+    EventType::RaydiumCpmmSwapBaseOutput,
     EventType::RaydiumClmmSwap,
     EventType::RaydiumAmmV4SwapBaseIn,
+    EventType::RaydiumAmmV4SwapBaseOut,
     EventType::OrcaWhirlpoolSwap,
+    EventType::MeteoraPoolsSwap,
+    EventType::MeteoraDammV2Swap,
     EventType::MeteoraDlmmSwap,
 ]));
 ```
@@ -284,6 +355,7 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 **池监控（专注流动性事件）**
 ```rust
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFeesUpdateFeeShares,
     EventType::PumpSwapCreatePool,
     EventType::PumpSwapDeposit,
     EventType::PumpSwapWithdraw,
@@ -291,6 +363,8 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::RaydiumCpmmDeposit,
     EventType::RaydiumCpmmWithdraw,
     EventType::RaydiumClmmCreatePool,
+    EventType::OrcaWhirlpoolPoolInitialized,
+    EventType::MeteoraPoolsPoolCreated,
     EventType::MeteoraDammV2AddLiquidity,
     EventType::MeteoraPoolsAddLiquidity,
     EventType::MeteoraDlmmAddLiquidity,
@@ -327,8 +401,9 @@ grpc.update_subscription(
 ## 🔧 支持的协议
 
 - **PumpFun**: 主要迷因币交易平台
+- **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议
-- **Bonk**: 代币发布平台 (letsbonk.fun)
+- **Raydium Launchpad / Bonk**: 代币发射平台 (letsbonk.fun / LaunchLab)
 - **Raydium CPMM**: Raydium 集中池做市商协议
 - **Raydium CLMM**: Raydium 集中流动性做市商协议
 - **Raydium AMM V4**: Raydium 自动做市商 V4 协议
@@ -353,8 +428,8 @@ grpc.update_subscription(
 
 ### 事件解析系统
 
-- **sol-parser-sdk 优先**: Yellowstone gRPC、RPC 交易解析、账户解析和 SDK ShredStream 集成都优先使用 SDK 实现
-- **ComputeBudget 本地补充**: 本地指令解析保留用于 ComputeBudget 事件和无 meta 交易 fallback
+- **sol-parser-sdk facade**: Yellowstone gRPC、ShredStream、RPC 交易解析和账户解析中的协议解析都委托给 `sol-parser-sdk`
+- **本地非 DEX 补充**: 本地逻辑仅保留 streamer 基础设施和 ComputeBudget 元数据等非 DEX 兼容场景
 - **可扩展桥接层**: `streaming::sdk_bridge` 暴露原始 SDK 能力，但不强迫已有 Bot 改回调 API
 
 ### 流基础设施
@@ -370,17 +445,10 @@ src/
 ├── common/           # 通用功能和类型
 ├── protos/           # Protocol buffer 定义
 ├── streaming/        # 事件流系统
-│   ├── event_parser/ # 事件解析系统
-│   │   ├── common/   # 通用事件解析工具
-│   │   ├── core/     # gRPC 和 compiled transaction 解析入口
-│   │   ├── protocols/# 协议特定解析器
-│   │   │   ├── bonk/ # Bonk 事件解析
-│   │   │   ├── meteora_damm_v2/ # Meteora DAMM v2 事件解析
-│   │   │   ├── pumpfun/ # PumpFun 事件解析
-│   │   │   ├── pumpswap/ # PumpSwap 事件解析
-│   │   │   ├── raydium_amm_v4/ # Raydium AMM V4 事件解析
-│   │   │   ├── raydium_clmm/ # Raydium CLMM 事件解析
-│   │   │   ├── raydium_cpmm/ # Raydium CPMM 事件解析
+│   ├── event_parser/ # 基于 sol-parser-sdk 的 streamer 兼容事件 facade
+│   │   ├── common/   # 公开事件元数据和过滤类型
+│   │   ├── core/     # SDK 分发入口和兼容封装
+│   │   ├── protocols/# Streamer 事件类型和旧模块路径
 │   │   │   └── sol_parser_forward/ # SDK 转发协议事件封装
 │   ├── parser_sdk_bridge/ # sol-parser-sdk 事件适配层
 │   ├── rpc_parse.rs # RPC 交易解析 helper
