@@ -96,6 +96,7 @@ impl SubscriptionManager {
                     owner: af.owner.clone(),
                     filters: af.filters.clone(),
                     nonempty_txn_signature: None,
+                    cuckoo_accounts_filter: None,
                 },
             );
         }
