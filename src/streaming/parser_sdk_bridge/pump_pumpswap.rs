@@ -556,6 +556,9 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         cashback_fee_basis_points: t.cashback_fee_basis_points,
         cashback: t.cashback,
         is_cashback_coin: t.is_cashback_coin,
+        amount: t.amount,
+        max_sol_cost: t.max_sol_cost,
+        min_sol_output: t.min_sol_output,
         ..Default::default()
     };
     DexEvent::PumpFunTradeEvent(st)

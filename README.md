@@ -123,33 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.4" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.5" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.4"
+solana-streamer-sdk = "1.4.5"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.4"
+solana-streamer-sdk = "1.4.5"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.4", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.5", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.9+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.10+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v1.4.4
+### Upgrading to v1.4.5
 
-Version 1.4.4 uses `sol-parser-sdk 0.4.9` from crates.io for all supported protocol parsing across Yellowstone gRPC, ShredStream, RPC transaction parsing, and account parsing while preserving the existing subscription and callback API. Existing bots can usually upgrade by changing only the crate version.
+Version 1.4.5 uses `sol-parser-sdk 0.4.10` from crates.io and preserves PumpFun instruction args (`amount`, `max_sol_cost`, `min_sol_output`) across Yellowstone gRPC, ShredStream, RPC transaction parsing, and account parsing while preserving the existing subscription and callback API. Existing bots can usually upgrade by changing only the crate version.
 
 New optional capabilities:
 

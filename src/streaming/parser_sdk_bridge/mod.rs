@@ -62,6 +62,9 @@ mod tests {
         t.user = Pubkey::new_unique();
         t.sol_amount = 100;
         t.token_amount = 200;
+        t.amount = 200;
+        t.max_sol_cost = 150;
+        t.min_sol_output = 0;
         t.is_buy = true;
 
         let ev = convert_parser_event(PbDexEvent::PumpFunTrade(t), None, 999).expect("convert");
@@ -71,6 +74,9 @@ mod tests {
                 assert_eq!(st.metadata.recv_us, 999);
                 assert_eq!(st.sol_amount, 100);
                 assert_eq!(st.token_amount, 200);
+                assert_eq!(st.amount, 200);
+                assert_eq!(st.max_sol_cost, 150);
+                assert_eq!(st.min_sol_output, 0);
                 assert!(st.is_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
