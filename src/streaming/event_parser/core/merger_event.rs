@@ -1,6 +1,20 @@
 use crate::streaming::event_parser::DexEvent;
 use solana_sdk::pubkey::Pubkey;
 
+#[inline]
+fn fill_pubkey(to: &mut Pubkey, from: Pubkey) {
+    if *to == Pubkey::default() && from != Pubkey::default() {
+        *to = from;
+    }
+}
+
+#[inline]
+fn fill_u64(to: &mut u64, from: u64) {
+    if *to == 0 && from != 0 {
+        *to = from;
+    }
+}
+
 pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
     match instruction_event {
         // PumpFun events
@@ -27,11 +41,65 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.total_claimed_tokens = cpie.total_claimed_tokens;
                 e.current_sol_volume = cpie.current_sol_volume;
                 e.last_update_timestamp = cpie.last_update_timestamp;
-                e.ix_name = cpie.ix_name.clone();
-                e.mayhem_mode = cpie.mayhem_mode;
-                e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
-                e.cashback = cpie.cashback;
-                e.is_cashback_coin = cpie.is_cashback_coin;
+                if !cpie.ix_name.is_empty() {
+                    e.ix_name = cpie.ix_name.clone();
+                }
+                e.mayhem_mode |= cpie.mayhem_mode;
+                fill_u64(&mut e.cashback_fee_basis_points, cpie.cashback_fee_basis_points);
+                fill_u64(&mut e.cashback, cpie.cashback);
+                fill_u64(&mut e.buyback_fee_basis_points, cpie.buyback_fee_basis_points);
+                fill_u64(&mut e.buyback_fee, cpie.buyback_fee);
+                if e.shareholders.is_empty() && !cpie.shareholders.is_empty() {
+                    e.shareholders = cpie.shareholders;
+                }
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_u64(&mut e.quote_amount, cpie.quote_amount);
+                fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                fill_u64(&mut e.real_quote_reserves, cpie.real_quote_reserves);
+                e.is_cashback_coin |= cpie.is_cashback_coin;
+                e.is_created_buy |= cpie.is_created_buy;
+                fill_u64(&mut e.amount, cpie.amount);
+                fill_u64(&mut e.max_sol_cost, cpie.max_sol_cost);
+                fill_u64(&mut e.min_sol_output, cpie.min_sol_output);
+                fill_u64(&mut e.spendable_sol_in, cpie.spendable_sol_in);
+                fill_u64(&mut e.spendable_quote_in, cpie.spendable_quote_in);
+                fill_u64(&mut e.min_tokens_out, cpie.min_tokens_out);
+                fill_pubkey(&mut e.global, cpie.global);
+                fill_pubkey(&mut e.bonding_curve, cpie.bonding_curve);
+                fill_pubkey(&mut e.bonding_curve_v2, cpie.bonding_curve_v2);
+                fill_pubkey(&mut e.associated_bonding_curve, cpie.associated_bonding_curve);
+                fill_pubkey(&mut e.associated_user, cpie.associated_user);
+                fill_pubkey(&mut e.system_program, cpie.system_program);
+                fill_pubkey(&mut e.token_program, cpie.token_program);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
+                fill_pubkey(&mut e.associated_token_program, cpie.associated_token_program);
+                fill_pubkey(&mut e.creator_vault, cpie.creator_vault);
+                fill_pubkey(
+                    &mut e.associated_quote_fee_recipient,
+                    cpie.associated_quote_fee_recipient,
+                );
+                fill_pubkey(&mut e.buyback_fee_recipient, cpie.buyback_fee_recipient);
+                fill_pubkey(
+                    &mut e.associated_quote_buyback_fee_recipient,
+                    cpie.associated_quote_buyback_fee_recipient,
+                );
+                fill_pubkey(
+                    &mut e.associated_quote_bonding_curve,
+                    cpie.associated_quote_bonding_curve,
+                );
+                fill_pubkey(&mut e.associated_quote_user, cpie.associated_quote_user);
+                fill_pubkey(&mut e.associated_creator_vault, cpie.associated_creator_vault);
+                fill_pubkey(&mut e.sharing_config, cpie.sharing_config);
+                fill_pubkey(&mut e.event_authority, cpie.event_authority);
+                fill_pubkey(&mut e.program, cpie.program);
+                fill_pubkey(&mut e.global_volume_accumulator, cpie.global_volume_accumulator);
+                fill_pubkey(&mut e.user_volume_accumulator, cpie.user_volume_accumulator);
+                fill_pubkey(
+                    &mut e.associated_user_volume_accumulator,
+                    cpie.associated_user_volume_accumulator,
+                );
+                fill_pubkey(&mut e.fee_config, cpie.fee_config);
+                fill_pubkey(&mut e.fee_program, cpie.fee_program);
                 if cpie.account.is_some() {
                     e.account = cpie.account;
                 }
@@ -206,6 +274,20 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
                 e.cashback = cpie.cashback;
                 e.is_pump_pool = cpie.is_pump_pool;
+                fill_pubkey(&mut e.base_mint, cpie.base_mint);
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.pool_base_token_account, cpie.pool_base_token_account);
+                fill_pubkey(&mut e.pool_quote_token_account, cpie.pool_quote_token_account);
+                fill_pubkey(&mut e.coin_creator_vault_ata, cpie.coin_creator_vault_ata);
+                fill_pubkey(&mut e.coin_creator_vault_authority, cpie.coin_creator_vault_authority);
+                fill_pubkey(&mut e.base_token_program, cpie.base_token_program);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
+                fill_pubkey(&mut e.pool_v2, cpie.pool_v2);
+                fill_pubkey(&mut e.fee_recipient, cpie.fee_recipient);
+                fill_pubkey(
+                    &mut e.fee_recipient_quote_token_account,
+                    cpie.fee_recipient_quote_token_account,
+                );
             }
             _ => {}
         },
@@ -237,6 +319,20 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
                 e.cashback = cpie.cashback;
                 e.is_pump_pool = cpie.is_pump_pool;
+                fill_pubkey(&mut e.base_mint, cpie.base_mint);
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.pool_base_token_account, cpie.pool_base_token_account);
+                fill_pubkey(&mut e.pool_quote_token_account, cpie.pool_quote_token_account);
+                fill_pubkey(&mut e.coin_creator_vault_ata, cpie.coin_creator_vault_ata);
+                fill_pubkey(&mut e.coin_creator_vault_authority, cpie.coin_creator_vault_authority);
+                fill_pubkey(&mut e.base_token_program, cpie.base_token_program);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
+                fill_pubkey(&mut e.pool_v2, cpie.pool_v2);
+                fill_pubkey(&mut e.fee_recipient, cpie.fee_recipient);
+                fill_pubkey(
+                    &mut e.fee_recipient_quote_token_account,
+                    cpie.fee_recipient_quote_token_account,
+                );
             }
             _ => {}
         },
@@ -682,5 +778,66 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
         },
 
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::streaming::event_parser::protocols::pumpfun::events::{
+        PumpFeesShareholder, PumpFunTradeEvent,
+    };
+
+    #[test]
+    fn pumpfun_merge_keeps_instruction_context_and_copies_latest_trade_tail() {
+        let quote_mint = Pubkey::new_unique();
+        let associated_quote_user = Pubkey::new_unique();
+        let shareholder = Pubkey::new_unique();
+
+        let mut instruction_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
+            ix_name: "buy_exact_quote_in_v2".to_string(),
+            quote_mint,
+            spendable_quote_in: 500,
+            min_tokens_out: 600,
+            associated_quote_user,
+            ..Default::default()
+        });
+
+        let cpi_log_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
+            sol_amount: 500,
+            token_amount: 600,
+            is_buy: true,
+            buyback_fee_basis_points: 30,
+            buyback_fee: 40,
+            shareholders: vec![PumpFeesShareholder { address: shareholder, share_bps: 250 }],
+            quote_amount: 500,
+            virtual_quote_reserves: 700,
+            real_quote_reserves: 800,
+            is_created_buy: true,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, cpi_log_event);
+
+        match instruction_event {
+            DexEvent::PumpFunTradeEvent(t) => {
+                assert_eq!(t.sol_amount, 500);
+                assert_eq!(t.token_amount, 600);
+                assert_eq!(t.ix_name, "buy_exact_quote_in_v2");
+                assert_eq!(t.quote_mint, quote_mint);
+                assert_eq!(t.spendable_quote_in, 500);
+                assert_eq!(t.min_tokens_out, 600);
+                assert_eq!(t.associated_quote_user, associated_quote_user);
+                assert_eq!(t.buyback_fee_basis_points, 30);
+                assert_eq!(t.buyback_fee, 40);
+                assert_eq!(t.shareholders.len(), 1);
+                assert_eq!(t.shareholders[0].address, shareholder);
+                assert_eq!(t.quote_amount, 500);
+                assert_eq!(t.virtual_quote_reserves, 700);
+                assert_eq!(t.real_quote_reserves, 800);
+                assert!(t.is_created_buy);
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
     }
 }

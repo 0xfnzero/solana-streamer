@@ -62,6 +62,12 @@ pub struct PumpSwapBuyEvent {
     pub base_token_program: Pubkey,
     #[borsh(skip)]
     pub quote_token_program: Pubkey,
+    #[borsh(skip)]
+    pub pool_v2: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient_quote_token_account: Pubkey,
 }
 
 /// Minimum bytes through `last_update_timestamp` (Anchor/Borsh layout, bool = 1 byte).
@@ -117,6 +123,12 @@ pub struct PumpSwapSellEvent {
     pub base_token_program: Pubkey,
     #[borsh(skip)]
     pub quote_token_program: Pubkey,
+    #[borsh(skip)]
+    pub pool_v2: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient_quote_token_account: Pubkey,
 }
 
 pub const PUMP_SWAP_SELL_EVENT_LOG_MIN: usize = 352;

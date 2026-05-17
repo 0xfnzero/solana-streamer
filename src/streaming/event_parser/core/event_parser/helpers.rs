@@ -37,9 +37,10 @@ pub(crate) fn process_event(event: DexEvent, bot_wallet: Option<Pubkey>) -> DexE
             DexEvent::PumpFunCreateV2TokenEvent(token_info)
         }
         DexEvent::PumpFunTradeEvent(mut trade_info) => {
-            trade_info.is_dev_create_token_trade =
-                is_dev_address_in_signature(&signature, &trade_info.user)
-                    || is_dev_address_in_signature(&signature, &trade_info.creator);
+            trade_info.is_dev_create_token_trade = trade_info.is_dev_create_token_trade
+                || trade_info.is_created_buy
+                || is_dev_address_in_signature(&signature, &trade_info.user)
+                || is_dev_address_in_signature(&signature, &trade_info.creator);
             trade_info.is_bot = Some(trade_info.user) == bot_wallet;
 
             if let Some(swap_data) = trade_info.metadata.swap_data.as_mut() {

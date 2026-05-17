@@ -122,33 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.5" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.6" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.5"
+solana-streamer-sdk = "1.4.6"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.5"
+solana-streamer-sdk = "1.4.6"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.5", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.6", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.10+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.11+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
-### 升级到 v1.4.5
+### 升级到 v1.4.6
 
-v1.4.5 使用 crates.io 上的 `sol-parser-sdk 0.4.10`，并在 Yellowstone gRPC、ShredStream、RPC 交易解析和账户解析中保留 PumpFun 指令参数 `amount`、`max_sol_cost`、`min_sol_output`，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
+v1.4.6 使用 crates.io 上的 `sol-parser-sdk 0.4.11`，并在 Yellowstone gRPC、ShredStream、RPC 交易解析和账户解析中支持 Pump.fun / PumpSwap fee-recipient 升级账户以及 Pump.fun v2 交易指令，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
 
 新增可选能力：
 

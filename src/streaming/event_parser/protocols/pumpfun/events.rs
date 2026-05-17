@@ -143,6 +143,8 @@ pub struct PumpFunTradeEvent {
     #[borsh(skip)]
     pub bonding_curve: Pubkey,
     #[borsh(skip)]
+    pub bonding_curve_v2: Pubkey,
+    #[borsh(skip)]
     pub associated_bonding_curve: Pubkey,
     #[borsh(skip)]
     pub associated_user: Pubkey,
@@ -179,9 +181,51 @@ pub struct PumpFunTradeEvent {
     pub cashback_fee_basis_points: u64,
     #[borsh(skip)]
     pub cashback: u64,
+    #[borsh(skip)]
+    pub buyback_fee_basis_points: u64,
+    #[borsh(skip)]
+    pub buyback_fee: u64,
+    #[borsh(skip)]
+    pub shareholders: Vec<PumpFeesShareholder>,
+    #[borsh(skip)]
+    pub quote_mint: Pubkey,
+    #[borsh(skip)]
+    pub quote_amount: u64,
+    #[borsh(skip)]
+    pub virtual_quote_reserves: u64,
+    #[borsh(skip)]
+    pub real_quote_reserves: u64,
     /// Whether this is a cashback coin (cashback_fee_basis_points > 0)
     #[borsh(skip)]
     pub is_cashback_coin: bool,
+    #[borsh(skip)]
+    pub is_created_buy: bool,
+    #[borsh(skip)]
+    pub spendable_sol_in: u64,
+    #[borsh(skip)]
+    pub spendable_quote_in: u64,
+    #[borsh(skip)]
+    pub min_tokens_out: u64,
+    #[borsh(skip)]
+    pub quote_token_program: Pubkey,
+    #[borsh(skip)]
+    pub associated_token_program: Pubkey,
+    #[borsh(skip)]
+    pub associated_quote_fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub buyback_fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub associated_quote_buyback_fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub associated_quote_bonding_curve: Pubkey,
+    #[borsh(skip)]
+    pub associated_quote_user: Pubkey,
+    #[borsh(skip)]
+    pub associated_creator_vault: Pubkey,
+    #[borsh(skip)]
+    pub sharing_config: Pubkey,
+    #[borsh(skip)]
+    pub associated_user_volume_accumulator: Pubkey,
 }
 
 /// Borsh byte length of TradeEvent fixed fields (IDL order; excludes ix_name and following variable part).
@@ -246,7 +290,7 @@ pub struct PumpFunMigrateEvent {
 
 // ---------- pump-fees IDL: `idls/pump_fees.json` (Program `pfeeUx...`) ----------
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFeesShareholder {
     pub address: Pubkey,
     pub share_bps: u16,

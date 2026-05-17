@@ -65,6 +65,24 @@ mod tests {
         t.amount = 200;
         t.max_sol_cost = 150;
         t.min_sol_output = 0;
+        t.spendable_sol_in = 11;
+        t.spendable_quote_in = 12;
+        t.min_tokens_out = 13;
+        t.is_created_buy = true;
+        t.global = Pubkey::new_unique();
+        t.bonding_curve_v2 = Pubkey::new_unique();
+        t.associated_user = Pubkey::new_unique();
+        t.system_program = Pubkey::new_unique();
+        t.event_authority = Pubkey::new_unique();
+        t.program = Pubkey::new_unique();
+        t.global_volume_accumulator = Pubkey::new_unique();
+        t.user_volume_accumulator = Pubkey::new_unique();
+        t.fee_config = Pubkey::new_unique();
+        t.fee_program = Pubkey::new_unique();
+        t.quote_mint = Pubkey::new_unique();
+        t.quote_amount = 14;
+        t.virtual_quote_reserves = 15;
+        t.real_quote_reserves = 16;
         t.is_buy = true;
 
         let ev = convert_parser_event(PbDexEvent::PumpFunTrade(t), None, 999).expect("convert");
@@ -77,6 +95,25 @@ mod tests {
                 assert_eq!(st.amount, 200);
                 assert_eq!(st.max_sol_cost, 150);
                 assert_eq!(st.min_sol_output, 0);
+                assert_eq!(st.spendable_sol_in, 11);
+                assert_eq!(st.spendable_quote_in, 12);
+                assert_eq!(st.min_tokens_out, 13);
+                assert!(st.is_created_buy);
+                assert!(st.is_dev_create_token_trade);
+                assert_ne!(st.global, Pubkey::default());
+                assert_ne!(st.bonding_curve_v2, Pubkey::default());
+                assert_ne!(st.associated_user, Pubkey::default());
+                assert_ne!(st.system_program, Pubkey::default());
+                assert_ne!(st.event_authority, Pubkey::default());
+                assert_ne!(st.program, Pubkey::default());
+                assert_ne!(st.global_volume_accumulator, Pubkey::default());
+                assert_ne!(st.user_volume_accumulator, Pubkey::default());
+                assert_ne!(st.fee_config, Pubkey::default());
+                assert_ne!(st.fee_program, Pubkey::default());
+                assert_ne!(st.quote_mint, Pubkey::default());
+                assert_eq!(st.quote_amount, 14);
+                assert_eq!(st.virtual_quote_reserves, 15);
+                assert_eq!(st.real_quote_reserves, 16);
                 assert!(st.is_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
