@@ -12,5 +12,6 @@ pub use types::*;
 
 // 从公用模块重新导出
 pub use crate::streaming::common::{
-    ConnectionConfig, MetricsManager, PerformanceMetrics, StreamClientConfig as ClientConfig,
+    ConnectionConfig, MetricsManager, OrderMode, PerformanceMetrics,
+    StreamClientConfig as ClientConfig,
 };

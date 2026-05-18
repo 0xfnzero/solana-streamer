@@ -41,6 +41,57 @@ fn create_metrics_callback(
     })
 }
 
+#[inline]
+pub fn transaction_metrics_callback(
+    callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
+) -> Arc<dyn Fn(DexEvent) + Send + Sync> {
+    create_metrics_callback(callback)
+}
+
+pub fn parse_grpc_transaction_events(
+    transaction_pretty: crate::streaming::grpc::TransactionPretty,
+    protocols: &[Protocol],
+    event_type_filter: Option<&EventTypeFilter>,
+    bot_wallet: Option<Pubkey>,
+) -> Vec<DexEvent> {
+    MetricsManager::global().add_tx_process_count();
+
+    let slot = transaction_pretty.slot;
+    let block_time = transaction_pretty.block_time;
+    let recv_us = transaction_pretty.recv_us;
+    let grpc_tx = transaction_pretty.grpc_tx;
+    let block_time_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
+    let update =
+        SubscribeUpdateTransaction { slot, transaction: Some(grpc_tx), ..Default::default() };
+    let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
+    let sdk_events = parse_subscribe_update_transaction_low_latency(
+        &update,
+        recv_us,
+        block_time_us,
+        sdk_parse_filter.as_ref(),
+    );
+    let mut events = adapt_parser_events_list(
+        sdk_events,
+        block_time.as_ref(),
+        recv_us,
+        protocols,
+        event_type_filter,
+    );
+
+    for event in events.iter_mut() {
+        event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
+    }
+
+    events
+        .into_iter()
+        .map(|event| {
+            crate::streaming::event_parser::core::event_parser::helpers::process_event(
+                event, bot_wallet,
+            )
+        })
+        .collect()
+}
+
 /// Process GRPC transaction events
 pub async fn process_grpc_transaction(
     event_pretty: EventPretty,
@@ -66,40 +117,14 @@ pub async fn process_grpc_transaction(
             }
         }
         EventPretty::Transaction(transaction_pretty) => {
-            MetricsManager::global().add_tx_process_count();
-
-            let slot = transaction_pretty.slot;
-            let block_time = transaction_pretty.block_time;
-            let recv_us = transaction_pretty.recv_us;
-            let grpc_tx = transaction_pretty.grpc_tx;
-            let adapter_callback = create_metrics_callback(callback.clone());
-            let block_time_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
-            let update = SubscribeUpdateTransaction {
-                slot,
-                transaction: Some(grpc_tx),
-                ..Default::default()
-            };
-            let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
-            let sdk_events = parse_subscribe_update_transaction_low_latency(
-                &update,
-                recv_us,
-                block_time_us,
-                sdk_parse_filter.as_ref(),
-            );
-            let events = adapt_parser_events_list(
-                sdk_events,
-                block_time.as_ref(),
-                recv_us,
+            let callback = transaction_metrics_callback(callback);
+            for event in parse_grpc_transaction_events(
+                transaction_pretty,
                 protocols,
                 event_type_filter,
-            );
-
-            for mut event in events {
-                event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
-                event = crate::streaming::event_parser::core::event_parser::helpers::process_event(
-                    event, bot_wallet,
-                );
-                adapter_callback(event);
+                bot_wallet,
+            ) {
+                callback(event);
             }
         }
         EventPretty::BlockMeta(block_meta_pretty) => {

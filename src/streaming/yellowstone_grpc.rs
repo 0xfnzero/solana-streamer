@@ -1,21 +1,24 @@
 use crate::common::AnyResult;
 use crate::streaming::common::{
-    process_grpc_transaction, MetricsManager, PerformanceMetrics, StreamClientConfig,
+    parse_grpc_transaction_events, process_grpc_transaction, transaction_metrics_callback,
+    MetricsManager, MicroBatchBuffer, PerformanceMetrics, SlotBuffer, StreamClientConfig,
     SubscriptionHandle,
 };
 use crate::streaming::event_parser::common::filter::EventTypeFilter;
 use crate::streaming::event_parser::{DexEvent, Protocol};
 use crate::streaming::grpc::pool::factory;
-use crate::streaming::grpc::{EventPretty, SubscriptionManager};
+use crate::streaming::grpc::{EventPretty, SubscriptionManager, TransactionPretty};
 use anyhow::anyhow;
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
 use log::error;
+use sol_parser_sdk::grpc::OrderMode;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
+use tokio::time::{Duration, Instant};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use yellowstone_grpc_proto::geyser::{
     CommitmentLevel, SubscribeRequest, SubscribeRequestFilterAccountsFilter, SubscribeRequestPing,
@@ -179,9 +182,35 @@ impl YellowstoneGrpc {
 
         // Wrap callback once before the async block
         let callback = Arc::new(callback);
+        let transaction_callback = transaction_metrics_callback(callback.clone());
+        let order_mode = self.config.order_mode;
+        let order_timeout_ms = self.config.order_timeout_ms;
+        let micro_batch_us = self.config.micro_batch_us;
 
         let stream_handle = tokio::spawn(async move {
+            let mut slot_buffer = SlotBuffer::new();
+            let mut micro_batch = MicroBatchBuffer::new();
+            let mut last_slot = 0u64;
+            let check_interval = match order_mode {
+                OrderMode::MicroBatch => Duration::from_micros(micro_batch_us.max(1)),
+                _ => Duration::from_millis((order_timeout_ms / 2).max(1)),
+            };
+            let mut next_check = Instant::now() + check_interval;
+
             loop {
+                if has_buffered_events(order_mode, &slot_buffer, &micro_batch) {
+                    flush_ordered_timeouts(
+                        order_mode,
+                        &mut slot_buffer,
+                        &mut micro_batch,
+                        transaction_callback.clone(),
+                        order_timeout_ms,
+                        micro_batch_us,
+                        &mut next_check,
+                        check_interval,
+                    );
+                }
+
                 tokio::select! {
                     message = stream.next() => {
                         match message {
@@ -225,17 +254,18 @@ impl YellowstoneGrpc {
                                             transaction_pretty.signature,
                                             transaction_pretty.slot
                                         );
-                                        if let Err(e) = process_grpc_transaction(
-                                            EventPretty::Transaction(transaction_pretty),
+                                        handle_ordered_transaction(
+                                            transaction_pretty,
                                             &protocols,
                                             event_type_filter.as_ref(),
-                                            callback.clone(),
+                                            transaction_callback.clone(),
                                             bot_wallet,
-                                        )
-                                        .await
-                                        {
-                                            error!("Error processing transaction event: {e:?}");
-                                        }
+                                            order_mode,
+                                            &mut slot_buffer,
+                                            &mut micro_batch,
+                                            &mut last_slot,
+                                            micro_batch_us,
+                                        );
                                     }
                                     Some(UpdateOneof::Ping(_)) => {
                                         // 只在需要时获取锁，并立即释放
@@ -261,16 +291,48 @@ impl YellowstoneGrpc {
                             }
                             Some(Err(error)) => {
                                 error!("Stream error: {error:?}");
+                                flush_ordered_on_disconnect(
+                                    order_mode,
+                                    &mut slot_buffer,
+                                    &mut micro_batch,
+                                    transaction_callback.clone(),
+                                );
                                 break;
                             }
-                            None => break,
+                            None => {
+                                flush_ordered_on_disconnect(
+                                    order_mode,
+                                    &mut slot_buffer,
+                                    &mut micro_batch,
+                                    transaction_callback.clone(),
+                                );
+                                break;
+                            }
                         }
                     }
                     Some(update) = control_rx.next() => {
                         if let Err(e) = subscribe_tx.lock().await.send(update).await {
                             error!("Failed to send subscription update: {}", e);
+                            flush_ordered_on_disconnect(
+                                order_mode,
+                                &mut slot_buffer,
+                                &mut micro_batch,
+                                transaction_callback.clone(),
+                            );
                             break;
                         }
+                    }
+                    _ = tokio::time::sleep_until(next_check), if has_buffered_events(order_mode, &slot_buffer, &micro_batch) => {
+                        flush_ordered_timeouts(
+                            order_mode,
+                            &mut slot_buffer,
+                            &mut micro_batch,
+                            transaction_callback.clone(),
+                            order_timeout_ms,
+                            micro_batch_us,
+                            &mut next_check,
+                            check_interval,
+                        );
                     }
                 }
             }
@@ -342,6 +404,139 @@ impl YellowstoneGrpc {
         *self.current_request.write().await = Some(request);
 
         Ok(())
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn handle_ordered_transaction(
+    transaction_pretty: TransactionPretty,
+    protocols: &[Protocol],
+    event_type_filter: Option<&EventTypeFilter>,
+    callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
+    bot_wallet: Option<Pubkey>,
+    order_mode: OrderMode,
+    slot_buffer: &mut SlotBuffer,
+    micro_batch: &mut MicroBatchBuffer,
+    last_slot: &mut u64,
+    micro_batch_us: u64,
+) {
+    let fallback_slot = transaction_pretty.slot;
+    let fallback_tx_index = transaction_pretty.tx_index.unwrap_or(0);
+    let recv_us = transaction_pretty.recv_us;
+    let events =
+        parse_grpc_transaction_events(transaction_pretty, protocols, event_type_filter, bot_wallet);
+
+    match order_mode {
+        OrderMode::Unordered => {
+            for event in events {
+                callback(event);
+            }
+        }
+        OrderMode::Ordered => {
+            if fallback_slot > *last_slot && *last_slot > 0 {
+                deliver_events(callback.clone(), slot_buffer.flush_before(fallback_slot));
+            }
+            *last_slot = fallback_slot;
+            for event in events {
+                let (slot, tx_index) = event_order_key(&event, fallback_slot, fallback_tx_index);
+                slot_buffer.push(slot, tx_index, event);
+            }
+        }
+        OrderMode::StreamingOrdered => {
+            for event in events {
+                let (slot, tx_index) = event_order_key(&event, fallback_slot, fallback_tx_index);
+                deliver_events(callback.clone(), slot_buffer.push_streaming(slot, tx_index, event));
+            }
+        }
+        OrderMode::MicroBatch => {
+            for event in events {
+                let (slot, tx_index) = event_order_key(&event, fallback_slot, fallback_tx_index);
+                if micro_batch.push(slot, tx_index, event, recv_us, micro_batch_us) {
+                    deliver_events(callback.clone(), micro_batch.flush());
+                }
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn flush_ordered_timeouts(
+    order_mode: OrderMode,
+    slot_buffer: &mut SlotBuffer,
+    micro_batch: &mut MicroBatchBuffer,
+    callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
+    order_timeout_ms: u64,
+    micro_batch_us: u64,
+    next_check: &mut Instant,
+    check_interval: Duration,
+) {
+    if Instant::now() < *next_check {
+        return;
+    }
+    *next_check = Instant::now() + check_interval;
+
+    match order_mode {
+        OrderMode::Ordered => {
+            if slot_buffer.should_timeout(order_timeout_ms) {
+                deliver_events(callback, slot_buffer.flush_all());
+            }
+        }
+        OrderMode::StreamingOrdered => {
+            if slot_buffer.should_timeout(order_timeout_ms) {
+                deliver_events(callback, slot_buffer.flush_streaming_timeout());
+            }
+        }
+        OrderMode::MicroBatch => {
+            let now_us =
+                crate::streaming::event_parser::common::high_performance_clock::get_high_perf_clock(
+                );
+            if micro_batch.should_flush(now_us, micro_batch_us) {
+                deliver_events(callback, micro_batch.flush());
+            }
+        }
+        OrderMode::Unordered => {}
+    }
+}
+
+fn flush_ordered_on_disconnect(
+    order_mode: OrderMode,
+    slot_buffer: &mut SlotBuffer,
+    micro_batch: &mut MicroBatchBuffer,
+    callback: Arc<dyn Fn(DexEvent) + Send + Sync>,
+) {
+    match order_mode {
+        OrderMode::Ordered => deliver_events(callback, slot_buffer.flush_all()),
+        OrderMode::StreamingOrdered => {
+            deliver_events(callback, slot_buffer.flush_streaming_timeout())
+        }
+        OrderMode::MicroBatch => deliver_events(callback, micro_batch.flush()),
+        OrderMode::Unordered => {}
+    }
+}
+
+#[inline]
+fn event_order_key(event: &DexEvent, fallback_slot: u64, fallback_tx_index: u64) -> (u64, u64) {
+    let metadata = event.metadata();
+    (metadata.slot.max(fallback_slot), metadata.tx_index.unwrap_or(fallback_tx_index))
+}
+
+#[inline]
+fn deliver_events(callback: Arc<dyn Fn(DexEvent) + Send + Sync>, events: Vec<DexEvent>) {
+    for event in events {
+        callback(event);
+    }
+}
+
+#[inline]
+fn has_buffered_events(
+    order_mode: OrderMode,
+    slot_buffer: &SlotBuffer,
+    micro_batch: &MicroBatchBuffer,
+) -> bool {
+    match order_mode {
+        OrderMode::Ordered | OrderMode::StreamingOrdered => !slot_buffer.is_empty(),
+        OrderMode::MicroBatch => !micro_batch.is_empty(),
+        OrderMode::Unordered => false,
     }
 }
 

@@ -122,39 +122,40 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.6" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.7" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.6"
+solana-streamer-sdk = "1.4.7"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.6"
+solana-streamer-sdk = "1.4.7"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.6", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.7", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.11+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
-### 升级到 v1.4.6
+### 升级到 v1.4.7
 
-v1.4.6 使用 crates.io 上的 `sol-parser-sdk 0.4.11`，并在 Yellowstone gRPC、ShredStream、RPC 交易解析和账户解析中支持 Pump.fun / PumpSwap fee-recipient 升级账户以及 Pump.fun v2 交易指令，同时保留已有订阅和回调 API。大多数 Bot 只需要修改 crate 版本即可升级。
+v1.4.7 使用 crates.io 上的 `sol-parser-sdk 0.4.11`，并在 streamer facade 中补齐与 SDK 兼容的 Yellowstone gRPC 输出顺序模式，同时保留已有订阅和回调 API。现有 Bot 可以继续使用默认的超低延迟 `Unordered` 模式，也可以通过 `ClientConfig` 选择 `Ordered`、`StreamingOrdered` 或 `MicroBatch`。
 
 新增可选能力：
 
 - `solana_streamer_sdk::parser_sdk` 重新导出原始 `sol-parser-sdk` crate。
 - `solana_streamer_sdk::sdk_bridge` 可将原始 SDK 事件适配回 streamer `DexEvent`。
 - `fetch_rpc_transaction_as_streamer_events` 和 `parse_encoded_rpc_transaction_as_streamer_events` 可将 RPC 交易解析为 streamer 事件。
+- `grpc::ClientConfig::order_mode` 支持 `Unordered`、`Ordered`、`StreamingOrdered` 和 `MicroBatch`。
 - `sdk-parse-zero-copy` 可启用 SDK zero-copy 解析后端。
 
 ### 从 v0.5.x 迁移到 v1.x.x
@@ -189,7 +190,10 @@ let callback = |event: DexEvent| {
 您可以自定义客户端配置：
 
 ```rust
-use solana_streamer_sdk::streaming::{grpc::ClientConfig, YellowstoneGrpc};
+use solana_streamer_sdk::streaming::{
+    grpc::{ClientConfig, OrderMode},
+    YellowstoneGrpc,
+};
 
 // 使用默认配置
 let grpc = YellowstoneGrpc::new(endpoint, token)?;
@@ -199,6 +203,9 @@ let mut config = ClientConfig::default();
 config.enable_metrics = true;  // 启用性能监控
 config.connection.connect_timeout = 30;  // 30 秒
 config.connection.request_timeout = 120;  // 120 秒
+config.order_mode = OrderMode::MicroBatch;  // Unordered / Ordered / StreamingOrdered / MicroBatch
+config.order_timeout_ms = 100;
+config.micro_batch_us = 100;
 
 let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 ```
@@ -208,6 +215,9 @@ let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 - `connection.connect_timeout`: 连接超时（秒）（默认：10）
 - `connection.request_timeout`: 请求超时（秒）（默认：60）
 - `connection.max_decoding_message_size`: 最大消息大小（字节）（默认：10MB）
+- `order_mode`: 交易事件输出顺序模式（默认：`Unordered`）
+- `order_timeout_ms`: `Ordered` 和 `StreamingOrdered` 模式的刷新超时（默认：100）
+- `micro_batch_us`: `MicroBatch` 模式的微批窗口（默认：100）
 
 ### 最小 gRPC 订阅
 

@@ -123,39 +123,40 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.6" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.7" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.6"
+solana-streamer-sdk = "1.4.7"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.6"
+solana-streamer-sdk = "1.4.7"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.6", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.7", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.11+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v1.4.6
+### Upgrading to v1.4.7
 
-Version 1.4.6 uses `sol-parser-sdk 0.4.11` from crates.io and supports the Pump.fun / PumpSwap fee-recipient upgrade accounts and Pump.fun v2 trade instructions across Yellowstone gRPC, ShredStream, RPC transaction parsing, and account parsing while preserving the existing subscription and callback API. Existing bots can usually upgrade by changing only the crate version.
+Version 1.4.7 uses `sol-parser-sdk 0.4.11` from crates.io and adds the SDK-compatible Yellowstone gRPC ordering modes to the streamer facade while preserving the existing subscription and callback API. Existing bots can keep the default ultra-low-latency `Unordered` mode or opt into `Ordered`, `StreamingOrdered`, or `MicroBatch` through `ClientConfig`.
 
 New optional capabilities:
 
 - `solana_streamer_sdk::parser_sdk` re-exports the raw `sol-parser-sdk` crate.
 - `solana_streamer_sdk::sdk_bridge` adapts raw SDK events back into streamer `DexEvent`.
 - `fetch_rpc_transaction_as_streamer_events` and `parse_encoded_rpc_transaction_as_streamer_events` parse RPC transactions into streamer events.
+- `grpc::ClientConfig::order_mode` supports `Unordered`, `Ordered`, `StreamingOrdered`, and `MicroBatch`.
 - `sdk-parse-zero-copy` enables the SDK zero-copy parser backend.
 
 ### Migrating from v0.5.x to v1.x.x
@@ -190,7 +191,10 @@ let callback = |event: DexEvent| {
 You can customize client configuration:
 
 ```rust
-use solana_streamer_sdk::streaming::{grpc::ClientConfig, YellowstoneGrpc};
+use solana_streamer_sdk::streaming::{
+    grpc::{ClientConfig, OrderMode},
+    YellowstoneGrpc,
+};
 
 // Use default configuration
 let grpc = YellowstoneGrpc::new(endpoint, token)?;
@@ -200,6 +204,9 @@ let mut config = ClientConfig::default();
 config.enable_metrics = true;  // Enable performance monitoring
 config.connection.connect_timeout = 30;  // 30 seconds
 config.connection.request_timeout = 120;  // 120 seconds
+config.order_mode = OrderMode::MicroBatch;  // Unordered / Ordered / StreamingOrdered / MicroBatch
+config.order_timeout_ms = 100;
+config.micro_batch_us = 100;
 
 let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 ```
@@ -209,6 +216,9 @@ let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
 - `connection.connect_timeout`: Connection timeout in seconds (default: 10)
 - `connection.request_timeout`: Request timeout in seconds (default: 60)
 - `connection.max_decoding_message_size`: Maximum message size in bytes (default: 10MB)
+- `order_mode`: Transaction event output ordering mode (default: `Unordered`)
+- `order_timeout_ms`: Flush timeout for `Ordered` and `StreamingOrdered` modes (default: 100)
+- `micro_batch_us`: Micro-batch window for `MicroBatch` mode (default: 100)
 
 ### Minimal gRPC Subscription
 

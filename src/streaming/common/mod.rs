@@ -3,6 +3,7 @@ pub mod config;
 pub mod constants;
 pub mod event_processor;
 pub mod metrics;
+pub mod order_buffer;
 pub mod subscription;
 
 // 重新导出主要类型
@@ -10,4 +11,5 @@ pub use config::*;
 pub use constants::*;
 pub use event_processor::*;
 pub use metrics::*;
+pub use order_buffer::*;
 pub use subscription::*;
