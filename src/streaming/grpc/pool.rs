@@ -93,20 +93,40 @@ pub struct PooledAccountPretty {
 
 impl PooledAccountPretty {
     /// 从 gRPC 更新重置数据
-    pub fn reset_from_update(&mut self, account_update: SubscribeUpdateAccount) {
-        let account_info = account_update.account.unwrap();
+    pub fn reset_from_update(&mut self, account_update: SubscribeUpdateAccount) -> bool {
+        let Some(account_info) = account_update.account else {
+            log::debug!("drop account update without account payload");
+            return false;
+        };
 
         self.account.slot = account_update.slot;
         self.account.signature = if let Some(txn_signature) = account_info.txn_signature {
-            Signature::try_from(txn_signature.as_slice()).expect("valid signature")
+            match Signature::try_from(txn_signature.as_slice()) {
+                Ok(signature) => signature,
+                Err(_) => {
+                    log::debug!("drop account update with invalid transaction signature");
+                    return false;
+                }
+            }
         } else {
             Signature::default()
         };
-        self.account.pubkey =
-            Pubkey::try_from(account_info.pubkey.as_slice()).expect("valid pubkey");
+        self.account.pubkey = match Pubkey::try_from(account_info.pubkey.as_slice()) {
+            Ok(pubkey) => pubkey,
+            Err(_) => {
+                log::debug!("drop account update with invalid account pubkey");
+                return false;
+            }
+        };
         self.account.executable = account_info.executable;
         self.account.lamports = account_info.lamports;
-        self.account.owner = Pubkey::try_from(account_info.owner.as_slice()).expect("valid pubkey");
+        self.account.owner = match Pubkey::try_from(account_info.owner.as_slice()) {
+            Ok(owner) => owner,
+            Err(_) => {
+                log::debug!("drop account update with invalid owner pubkey");
+                return false;
+            }
+        };
         self.account.rent_epoch = account_info.rent_epoch;
 
         // 优化数据字段的重用
@@ -119,6 +139,7 @@ impl PooledAccountPretty {
         }
 
         self.account.recv_us = get_high_perf_clock();
+        true
     }
 }
 
@@ -272,18 +293,27 @@ impl PooledTransactionPretty {
         &mut self,
         tx_update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,
-    ) {
-        let tx = tx_update.transaction.expect("should be defined");
+    ) -> bool {
+        let Some(tx) = tx_update.transaction else {
+            log::debug!("drop transaction update without transaction payload");
+            return false;
+        };
 
         self.transaction.slot = tx_update.slot;
         self.transaction.tx_index = Some(tx.index);
         self.transaction.block_time = block_time;
         self.transaction.block_hash.clear(); // 重置 block_hash
-        self.transaction.signature =
-            Signature::try_from(tx.signature.as_slice()).expect("valid signature");
+        self.transaction.signature = match Signature::try_from(tx.signature.as_slice()) {
+            Ok(signature) => signature,
+            Err(_) => {
+                log::debug!("drop transaction update with invalid signature");
+                return false;
+            }
+        };
         self.transaction.is_vote = tx.is_vote;
         self.transaction.recv_us = get_high_perf_clock();
         self.transaction.grpc_tx = tx;
+        true
     }
 }
 
@@ -372,7 +402,9 @@ impl EventPrettyPool {
     /// 创建账户事件 - 使用对象池优化
     pub fn create_account_event_optimized(&self, update: SubscribeUpdateAccount) -> AccountPretty {
         let mut pooled_account = self.acquire_account();
-        pooled_account.reset_from_update(update);
+        if !pooled_account.reset_from_update(update) {
+            return AccountPretty::default();
+        }
         // 移动数据而不是克隆，避免多余的内存分配
         let result = std::mem::replace(pooled_account.deref_mut(), AccountPretty::default());
         result
@@ -398,7 +430,9 @@ impl EventPrettyPool {
         block_time: Option<Timestamp>,
     ) -> TransactionPretty {
         let mut pooled_tx = self.acquire_transaction();
-        pooled_tx.reset_from_update(update, block_time);
+        if !pooled_tx.reset_from_update(update, block_time) {
+            return TransactionPretty::default();
+        }
         // 移动数据而不是克隆
         let result = std::mem::replace(pooled_tx.deref_mut(), TransactionPretty::default());
         result
