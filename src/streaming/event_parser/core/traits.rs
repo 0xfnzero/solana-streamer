@@ -55,6 +55,10 @@ pub enum DexEvent {
     PumpFunMigrateBondingCurveCreatorEvent(PumpFunMigrateBondingCurveCreatorEvent),
     PumpFunBondingCurveAccountEvent(PumpFunBondingCurveAccountEvent),
     PumpFunGlobalAccountEvent(PumpFunGlobalAccountEvent),
+    PumpFunFeeConfigAccountEvent(PumpFunFeeConfigAccountEvent),
+    PumpFunSharingConfigAccountEvent(PumpFunSharingConfigAccountEvent),
+    PumpFunGlobalVolumeAccumulatorAccountEvent(PumpFunGlobalVolumeAccumulatorAccountEvent),
+    PumpFunUserVolumeAccumulatorAccountEvent(PumpFunUserVolumeAccumulatorAccountEvent),
 
     // PumpSwap events
     PumpSwapBuyEvent(PumpSwapBuyEvent),
@@ -185,6 +189,10 @@ impl_dex_event_metadata!(
     PumpFunMigrateBondingCurveCreatorEvent,
     PumpFunBondingCurveAccountEvent,
     PumpFunGlobalAccountEvent,
+    PumpFunFeeConfigAccountEvent,
+    PumpFunSharingConfigAccountEvent,
+    PumpFunGlobalVolumeAccumulatorAccountEvent,
+    PumpFunUserVolumeAccumulatorAccountEvent,
     // PumpSwap events
     PumpSwapBuyEvent,
     PumpSwapSellEvent,

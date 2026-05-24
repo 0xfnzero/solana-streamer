@@ -15,6 +15,20 @@ fn fill_u64(to: &mut u64, from: u64) {
     }
 }
 
+#[inline]
+fn fill_i64(to: &mut i64, from: i64) {
+    if *to == 0 && from != 0 {
+        *to = from;
+    }
+}
+
+#[inline]
+fn fill_string(to: &mut String, from: String) {
+    if to.is_empty() && !from.is_empty() {
+        *to = from;
+    }
+}
+
 pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
     match instruction_event {
         // PumpFun events
@@ -108,6 +122,9 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
         },
         DexEvent::PumpFunCreateTokenEvent(e) => match cpi_log_event {
             DexEvent::PumpFunCreateV2TokenEvent(cpie) => {
+                fill_string(&mut e.name, cpie.name);
+                fill_string(&mut e.symbol, cpie.symbol);
+                fill_string(&mut e.uri, cpie.uri);
                 if cpie.mint != solana_sdk::pubkey::Pubkey::default() {
                     e.mint = cpie.mint;
                 }
@@ -138,13 +155,37 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 if cpie.token_program != solana_sdk::pubkey::Pubkey::default() {
                     e.token_program = cpie.token_program;
                 }
-                e.is_mayhem_mode = cpie.is_mayhem_mode;
-                e.is_cashback_enabled = cpie.is_cashback_enabled;
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                e.is_mayhem_mode |= cpie.is_mayhem_mode;
+                e.is_cashback_enabled |= cpie.is_cashback_enabled;
             }
             _ => {}
         },
         DexEvent::PumpFunCreateV2TokenEvent(e) => match cpi_log_event {
+            DexEvent::PumpFunCreateTokenEvent(cpie) => {
+                fill_string(&mut e.name, cpie.name);
+                fill_string(&mut e.symbol, cpie.symbol);
+                fill_string(&mut e.uri, cpie.uri);
+                fill_pubkey(&mut e.mint, cpie.mint);
+                fill_pubkey(&mut e.bonding_curve, cpie.bonding_curve);
+                fill_pubkey(&mut e.user, cpie.user);
+                fill_pubkey(&mut e.creator, cpie.creator);
+                fill_i64(&mut e.timestamp, cpie.timestamp);
+                fill_u64(&mut e.virtual_token_reserves, cpie.virtual_token_reserves);
+                fill_u64(&mut e.virtual_sol_reserves, cpie.virtual_sol_reserves);
+                fill_u64(&mut e.real_token_reserves, cpie.real_token_reserves);
+                fill_u64(&mut e.token_total_supply, cpie.token_total_supply);
+                fill_pubkey(&mut e.token_program, cpie.token_program);
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                e.is_mayhem_mode |= cpie.is_mayhem_mode;
+                e.is_cashback_enabled |= cpie.is_cashback_enabled;
+            }
             DexEvent::PumpFunCreateV2TokenEvent(cpie) => {
+                fill_string(&mut e.name, cpie.name);
+                fill_string(&mut e.symbol, cpie.symbol);
+                fill_string(&mut e.uri, cpie.uri);
                 if cpie.mint != solana_sdk::pubkey::Pubkey::default() {
                     e.mint = cpie.mint;
                 }
@@ -175,8 +216,10 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 if cpie.token_program != solana_sdk::pubkey::Pubkey::default() {
                     e.token_program = cpie.token_program;
                 }
-                e.is_mayhem_mode = cpie.is_mayhem_mode;
-                e.is_cashback_enabled = cpie.is_cashback_enabled;
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                e.is_mayhem_mode |= cpie.is_mayhem_mode;
+                e.is_cashback_enabled |= cpie.is_cashback_enabled;
             }
             _ => {}
         },
@@ -795,7 +838,7 @@ mod tests {
         let shareholder = Pubkey::new_unique();
 
         let mut instruction_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
-            ix_name: "buy_exact_quote_in_v2".to_string(),
+            ix_name: "buy_exact_quote_in".to_string(),
             quote_mint,
             spendable_quote_in: 500,
             min_tokens_out: 600,
@@ -823,7 +866,7 @@ mod tests {
             DexEvent::PumpFunTradeEvent(t) => {
                 assert_eq!(t.sol_amount, 500);
                 assert_eq!(t.token_amount, 600);
-                assert_eq!(t.ix_name, "buy_exact_quote_in_v2");
+                assert_eq!(t.ix_name, "buy_exact_quote_in");
                 assert_eq!(t.quote_mint, quote_mint);
                 assert_eq!(t.spendable_quote_in, 500);
                 assert_eq!(t.min_tokens_out, 600);

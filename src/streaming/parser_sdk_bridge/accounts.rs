@@ -16,9 +16,6 @@ pub(crate) enum AccountParseResult {
     Unsupported,
 }
 
-// SDK account event omits the streamer wrapper fields and this byte; recover them from raw data.
-const PUMPFUN_GLOBAL_CASHBACK_OFFSET: usize = 8 + 764;
-
 pub(crate) fn parse_account_event(
     account: &AccountPretty,
     protocols: &[Protocol],
@@ -104,6 +101,16 @@ fn streamer_account_event_to_sdk_types(t: &EventType) -> Vec<SdkGrpcEventType> {
         EventType::AccountPumpFunBondingCurve => {
             vec![SdkGrpcEventType::AccountPumpFunBondingCurve]
         }
+        EventType::AccountPumpFunFeeConfig => vec![SdkGrpcEventType::AccountPumpFunFeeConfig],
+        EventType::AccountPumpFunSharingConfig => {
+            vec![SdkGrpcEventType::AccountPumpFunSharingConfig]
+        }
+        EventType::AccountPumpFunGlobalVolumeAccumulator => {
+            vec![SdkGrpcEventType::AccountPumpFunGlobalVolumeAccumulator]
+        }
+        EventType::AccountPumpFunUserVolumeAccumulator => {
+            vec![SdkGrpcEventType::AccountPumpFunUserVolumeAccumulator]
+        }
         EventType::AccountPumpSwapGlobalConfig => {
             vec![SdkGrpcEventType::AccountPumpSwapGlobalConfig]
         }
@@ -130,11 +137,32 @@ fn normalize_account_event(event: &mut DexEvent, account: &AccountPretty) {
             e.lamports = account.lamports;
             e.owner = account.owner;
             e.rent_epoch = account.rent_epoch;
-            if let Some(flag) = account.data.get(PUMPFUN_GLOBAL_CASHBACK_OFFSET) {
-                e.global.is_cashback_enabled = *flag != 0;
-            }
         }
         DexEvent::PumpFunBondingCurveAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::PumpFunFeeConfigAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::PumpFunSharingConfigAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::PumpFunGlobalVolumeAccumulatorAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::PumpFunUserVolumeAccumulatorAccountEvent(e) => {
             e.executable = account.executable;
             e.lamports = account.lamports;
             e.owner = account.owner;

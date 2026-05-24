@@ -8,8 +8,11 @@ use crate::streaming::event_parser::protocols::pumpfun::events::{
     PumpFeesTransferFeeSharingAuthorityEvent, PumpFeesUpdateAdminEvent,
     PumpFeesUpdateFeeConfigEvent, PumpFeesUpdateFeeSharesEvent, PumpFeesUpsertFeeTiersEvent,
     PumpFunBondingCurveAccountEvent, PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent,
-    PumpFunGlobalAccountEvent, PumpFunMigrateBondingCurveCreatorEvent, PumpFunMigrateEvent,
-    PumpFunTradeEvent,
+    PumpFunFeeConfig, PumpFunFeeConfigAccountEvent, PumpFunGlobalAccountEvent,
+    PumpFunGlobalVolumeAccumulator, PumpFunGlobalVolumeAccumulatorAccountEvent,
+    PumpFunMigrateBondingCurveCreatorEvent, PumpFunMigrateEvent, PumpFunSharingConfig,
+    PumpFunSharingConfigAccountEvent, PumpFunTradeEvent, PumpFunUserVolumeAccumulator,
+    PumpFunUserVolumeAccumulatorAccountEvent,
 };
 use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Global};
 use crate::streaming::event_parser::protocols::pumpswap::events::{
@@ -44,6 +47,8 @@ pub(crate) fn pumpfun_create_token_from_parser(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
+        quote_mint: c.quote_mint,
+        virtual_quote_reserves: c.virtual_quote_reserves,
         ..Default::default()
     }
 }
@@ -69,6 +74,8 @@ pub(crate) fn pumpfun_create_v2_from_parser(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
+        quote_mint: c.quote_mint,
+        virtual_quote_reserves: c.virtual_quote_reserves,
         mint_authority: c.mint_authority,
         associated_bonding_curve: c.associated_bonding_curve,
         global: c.global,
@@ -328,7 +335,11 @@ pub(crate) fn pumpfun_global_account_from_parser(
             reserved_fee_recipient: e.global.reserved_fee_recipient,
             mayhem_mode_enabled: e.global.mayhem_mode_enabled,
             reserved_fee_recipients: e.global.reserved_fee_recipients,
-            is_cashback_enabled: false,
+            is_cashback_enabled: e.global.is_cashback_enabled,
+            buyback_fee_recipients: e.global.buyback_fee_recipients,
+            buyback_basis_points: e.global.buyback_basis_points,
+            initial_virtual_quote_reserves: e.global.initial_virtual_quote_reserves,
+            whitelisted_quote_mints: e.global.whitelisted_quote_mints,
         },
     }
 }
@@ -346,15 +357,118 @@ pub(crate) fn pumpfun_bonding_curve_account_from_parser(
         rent_epoch: 0,
         bonding_curve: BondingCurve {
             virtual_token_reserves: e.bonding_curve.virtual_token_reserves,
-            // Streamer keeps the historical SOL field names; SDK v0.4.15 uses quote reserves.
-            virtual_sol_reserves: e.bonding_curve.virtual_quote_reserves,
+            virtual_quote_reserves: e.bonding_curve.virtual_quote_reserves,
             real_token_reserves: e.bonding_curve.real_token_reserves,
-            real_sol_reserves: e.bonding_curve.real_quote_reserves,
+            real_quote_reserves: e.bonding_curve.real_quote_reserves,
             token_total_supply: e.bonding_curve.token_total_supply,
             complete: e.bonding_curve.complete,
             creator: e.bonding_curve.creator,
             is_mayhem_mode: e.bonding_curve.is_mayhem_mode,
             is_cashback_coin: e.bonding_curve.is_cashback_coin,
+            quote_mint: e.bonding_curve.quote_mint,
+        },
+    }
+}
+
+pub(crate) fn pumpfun_fee_config_account_from_parser(
+    e: sol_parser_sdk::core::events::PumpFunFeeConfigAccountEvent,
+    meta: EventMetadata,
+) -> PumpFunFeeConfigAccountEvent {
+    PumpFunFeeConfigAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        executable: false,
+        lamports: 0,
+        owner: pump_program(),
+        rent_epoch: 0,
+        fee_config: PumpFunFeeConfig {
+            bump: e.fee_config.bump,
+            admin: e.fee_config.admin,
+            flat_fees: pump_fees_fees_from_parser(e.fee_config.flat_fees),
+            fee_tiers: e.fee_config.fee_tiers.into_iter().map(pump_fees_tier_from_parser).collect(),
+            stable_fee_tiers: e
+                .fee_config
+                .stable_fee_tiers
+                .into_iter()
+                .map(pump_fees_tier_from_parser)
+                .collect(),
+        },
+    }
+}
+
+pub(crate) fn pumpfun_sharing_config_account_from_parser(
+    e: sol_parser_sdk::core::events::PumpFunSharingConfigAccountEvent,
+    meta: EventMetadata,
+) -> PumpFunSharingConfigAccountEvent {
+    PumpFunSharingConfigAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        executable: false,
+        lamports: 0,
+        owner: pump_program(),
+        rent_epoch: 0,
+        sharing_config: PumpFunSharingConfig {
+            bump: e.sharing_config.bump,
+            version: e.sharing_config.version,
+            status: pump_fees_status_from_parser(e.sharing_config.status),
+            mint: e.sharing_config.mint,
+            admin: e.sharing_config.admin,
+            admin_revoked: e.sharing_config.admin_revoked,
+            shareholders: e
+                .sharing_config
+                .shareholders
+                .into_iter()
+                .map(pump_fees_shareholder_from_parser)
+                .collect(),
+        },
+    }
+}
+
+pub(crate) fn pumpfun_global_volume_account_from_parser(
+    e: sol_parser_sdk::core::events::PumpFunGlobalVolumeAccumulatorAccountEvent,
+    meta: EventMetadata,
+) -> PumpFunGlobalVolumeAccumulatorAccountEvent {
+    PumpFunGlobalVolumeAccumulatorAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        executable: false,
+        lamports: 0,
+        owner: pump_program(),
+        rent_epoch: 0,
+        global_volume_accumulator: PumpFunGlobalVolumeAccumulator {
+            start_time: e.global_volume_accumulator.start_time,
+            end_time: e.global_volume_accumulator.end_time,
+            seconds_in_a_day: e.global_volume_accumulator.seconds_in_a_day,
+            mint: e.global_volume_accumulator.mint,
+            total_token_supply: e.global_volume_accumulator.total_token_supply,
+            sol_volumes: e.global_volume_accumulator.sol_volumes,
+        },
+    }
+}
+
+pub(crate) fn pumpfun_user_volume_account_from_parser(
+    e: sol_parser_sdk::core::events::PumpFunUserVolumeAccumulatorAccountEvent,
+    meta: EventMetadata,
+) -> PumpFunUserVolumeAccumulatorAccountEvent {
+    PumpFunUserVolumeAccumulatorAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        executable: false,
+        lamports: 0,
+        owner: pump_program(),
+        rent_epoch: 0,
+        user_volume_accumulator: PumpFunUserVolumeAccumulator {
+            user: e.user_volume_accumulator.user,
+            needs_claim: e.user_volume_accumulator.needs_claim,
+            total_unclaimed_tokens: e.user_volume_accumulator.total_unclaimed_tokens,
+            total_claimed_tokens: e.user_volume_accumulator.total_claimed_tokens,
+            current_sol_volume: e.user_volume_accumulator.current_sol_volume,
+            last_update_timestamp: e.user_volume_accumulator.last_update_timestamp,
+            has_total_claimed_tokens: e.user_volume_accumulator.has_total_claimed_tokens,
+            cashback_earned: e.user_volume_accumulator.cashback_earned,
+            total_cashback_claimed: e.user_volume_accumulator.total_cashback_claimed,
+            stable_cashback_earned: e.user_volume_accumulator.stable_cashback_earned,
+            total_stable_cashback_claimed: e.user_volume_accumulator.total_stable_cashback_claimed,
         },
     }
 }
@@ -544,8 +658,18 @@ pub(crate) fn pumpfun_trade_from_parser(
     bt: Option<&Timestamp>,
     recv_wall_us: i64,
 ) -> DexEvent {
-    let event_type = if t.is_buy { EventType::PumpFunBuy } else { EventType::PumpFunSell };
+    let event_type = pumpfun_trade_event_type(&t);
     pumpfun_trade_from_parser_with_event_type(t, bt, recv_wall_us, event_type)
+}
+
+pub(crate) fn pumpfun_trade_event_type(
+    t: &sol_parser_sdk::core::events::PumpFunTradeEvent,
+) -> EventType {
+    match t.ix_name.as_str() {
+        "buy_exact_sol_in" => EventType::PumpFunBuyExactSolIn,
+        _ if t.is_buy => EventType::PumpFunBuy,
+        _ => EventType::PumpFunSell,
+    }
 }
 
 pub(crate) fn pumpfun_trade_from_parser_with_event_type(

@@ -228,10 +228,58 @@ pub(crate) fn convert_parser_event(
                 pumpfun_bonding_curve_account_from_parser(e, meta),
             ))
         }
-        PbDexEvent::PumpFunFeeConfigAccount(_)
-        | PbDexEvent::PumpFunSharingConfigAccount(_)
-        | PbDexEvent::PumpFunGlobalVolumeAccumulatorAccount(_)
-        | PbDexEvent::PumpFunUserVolumeAccumulatorAccount(_) => None,
+        PbDexEvent::PumpFunFeeConfigAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::AccountPumpFunFeeConfig,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunFeeConfigAccountEvent(pumpfun_fee_config_account_from_parser(
+                e, meta,
+            )))
+        }
+        PbDexEvent::PumpFunSharingConfigAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::AccountPumpFunSharingConfig,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunSharingConfigAccountEvent(
+                pumpfun_sharing_config_account_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::PumpFunGlobalVolumeAccumulatorAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::AccountPumpFunGlobalVolumeAccumulator,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunGlobalVolumeAccumulatorAccountEvent(
+                pumpfun_global_volume_account_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::PumpFunUserVolumeAccumulatorAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::AccountPumpFunUserVolumeAccumulator,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunUserVolumeAccumulatorAccountEvent(
+                pumpfun_user_volume_account_from_parser(e, meta),
+            ))
+        }
 
         PbDexEvent::PumpSwapTrade(t) => pumpswap_trade_from_parser(t, bt, recv_wall_us),
         PbDexEvent::PumpSwapBuy(b) => {

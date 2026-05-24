@@ -254,6 +254,14 @@ fn push_streamer_event_sdk_grpc_types(t: &EventType, out: &mut Vec<SdkGrpcEventT
         St::NonceAccount => out.push(Sdk::NonceAccount),
         St::AccountPumpFunGlobal => out.push(Sdk::AccountPumpFunGlobal),
         St::AccountPumpFunBondingCurve => out.push(Sdk::AccountPumpFunBondingCurve),
+        St::AccountPumpFunFeeConfig => out.push(Sdk::AccountPumpFunFeeConfig),
+        St::AccountPumpFunSharingConfig => out.push(Sdk::AccountPumpFunSharingConfig),
+        St::AccountPumpFunGlobalVolumeAccumulator => {
+            out.push(Sdk::AccountPumpFunGlobalVolumeAccumulator)
+        }
+        St::AccountPumpFunUserVolumeAccumulator => {
+            out.push(Sdk::AccountPumpFunUserVolumeAccumulator)
+        }
         St::AccountPumpSwapGlobalConfig => out.push(Sdk::AccountPumpSwapGlobalConfig),
         St::AccountPumpSwapPool => out.push(Sdk::AccountPumpSwapPool),
         _ => return false,
@@ -641,6 +649,11 @@ mod tests {
             EventType::TokenInfo,
             EventType::NonceAccount,
             EventType::AccountPumpFunGlobal,
+            EventType::AccountPumpFunBondingCurve,
+            EventType::AccountPumpFunFeeConfig,
+            EventType::AccountPumpFunSharingConfig,
+            EventType::AccountPumpFunGlobalVolumeAccumulator,
+            EventType::AccountPumpFunUserVolumeAccumulator,
             EventType::AccountPumpSwapGlobalConfig,
             EventType::AccountPumpSwapPool,
         ];

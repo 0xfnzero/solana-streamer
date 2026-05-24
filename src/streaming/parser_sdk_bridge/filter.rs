@@ -42,7 +42,11 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::PumpFun, DexEvent::PumpFeesUpsertFeeTiersEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunMigrateBondingCurveCreatorEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunBondingCurveAccountEvent(_))
-        | (Protocol::PumpFun, DexEvent::PumpFunGlobalAccountEvent(_)) => true,
+        | (Protocol::PumpFun, DexEvent::PumpFunGlobalAccountEvent(_))
+        | (Protocol::PumpFun, DexEvent::PumpFunFeeConfigAccountEvent(_))
+        | (Protocol::PumpFun, DexEvent::PumpFunSharingConfigAccountEvent(_))
+        | (Protocol::PumpFun, DexEvent::PumpFunGlobalVolumeAccumulatorAccountEvent(_))
+        | (Protocol::PumpFun, DexEvent::PumpFunUserVolumeAccumulatorAccountEvent(_)) => true,
         (Protocol::PumpFees, DexEvent::PumpFeesCreateFeeSharingConfigEvent(_))
         | (Protocol::PumpFees, DexEvent::PumpFeesInitializeFeeConfigEvent(_))
         | (Protocol::PumpFees, DexEvent::PumpFeesResetFeeSharingConfigEvent(_))

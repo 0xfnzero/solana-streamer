@@ -142,6 +142,23 @@ mod tests {
     }
 
     #[test]
+    fn converts_pumpfun_buy_exact_quote_in_as_buy_event() {
+        let mut t = PbPumpTrade::default();
+        t.metadata = EventMetadata::default();
+        t.is_buy = true;
+        t.ix_name = "buy_exact_quote_in".to_string();
+
+        let ev = convert_parser_event(PbDexEvent::PumpFunBuy(t), None, 999).expect("convert");
+        match ev {
+            DexEvent::PumpFunTradeEvent(st) => {
+                assert_eq!(st.metadata.event_type, EventType::PumpFunBuy);
+                assert_eq!(st.ix_name, "buy_exact_quote_in");
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
     fn protocol_filter_keeps_pumpfun_only_when_requested() {
         let mut t = PbPumpTrade::default();
         t.metadata = EventMetadata::default();

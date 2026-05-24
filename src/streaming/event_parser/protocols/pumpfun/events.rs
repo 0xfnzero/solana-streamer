@@ -29,6 +29,10 @@ pub struct PumpFunCreateTokenEvent {
     #[borsh(skip)]
     pub is_cashback_enabled: bool,
     #[borsh(skip)]
+    pub quote_mint: Pubkey,
+    #[borsh(skip)]
+    pub virtual_quote_reserves: u64,
+    #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]
     pub associated_bonding_curve: Pubkey,
@@ -71,6 +75,10 @@ pub struct PumpFunCreateV2TokenEvent {
     pub is_mayhem_mode: bool,
     /// Whether cashback is enabled (IDL CreateEvent.is_cashback_enabled)
     pub is_cashback_enabled: bool,
+    #[borsh(skip)]
+    pub quote_mint: Pubkey,
+    #[borsh(skip)]
+    pub virtual_quote_reserves: u64,
     #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]
@@ -446,6 +454,95 @@ pub struct PumpFunGlobalAccountEvent {
     pub owner: Pubkey,
     pub rent_epoch: u64,
     pub global: Global,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunFeeConfigAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub fee_config: PumpFunFeeConfig,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunFeeConfig {
+    pub bump: u8,
+    pub admin: Pubkey,
+    pub flat_fees: PumpFeesFees,
+    pub fee_tiers: Vec<PumpFeesFeeTier>,
+    pub stable_fee_tiers: Vec<PumpFeesFeeTier>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunSharingConfigAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub sharing_config: PumpFunSharingConfig,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunSharingConfig {
+    pub bump: u8,
+    pub version: u8,
+    pub status: PumpFeesConfigStatus,
+    pub mint: Pubkey,
+    pub admin: Pubkey,
+    pub admin_revoked: bool,
+    pub shareholders: Vec<PumpFeesShareholder>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunGlobalVolumeAccumulatorAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub global_volume_accumulator: PumpFunGlobalVolumeAccumulator,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunGlobalVolumeAccumulator {
+    pub start_time: i64,
+    pub end_time: i64,
+    pub seconds_in_a_day: i64,
+    pub mint: Pubkey,
+    pub total_token_supply: [u64; 30],
+    pub sol_volumes: [u64; 30],
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunUserVolumeAccumulatorAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub user_volume_accumulator: PumpFunUserVolumeAccumulator,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunUserVolumeAccumulator {
+    pub user: Pubkey,
+    pub needs_claim: bool,
+    pub total_unclaimed_tokens: u64,
+    pub total_claimed_tokens: u64,
+    pub current_sol_volume: u64,
+    pub last_update_timestamp: i64,
+    pub has_total_claimed_tokens: bool,
+    pub cashback_earned: u64,
+    pub total_cashback_claimed: u64,
+    pub stable_cashback_earned: u64,
+    pub total_stable_cashback_claimed: u64,
 }
 
 /// Event discriminator constants

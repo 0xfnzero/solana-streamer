@@ -5,17 +5,18 @@ use solana_sdk::pubkey::Pubkey;
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BondingCurve {
     pub virtual_token_reserves: u64,
-    pub virtual_sol_reserves: u64,
+    pub virtual_quote_reserves: u64,
     pub real_token_reserves: u64,
-    pub real_sol_reserves: u64,
+    pub real_quote_reserves: u64,
     pub token_total_supply: u64,
     pub complete: bool,
     pub creator: Pubkey,
     pub is_mayhem_mode: bool,
     pub is_cashback_coin: bool,
+    pub quote_mint: Pubkey,
 }
 
-pub const BONDING_CURVE_SIZE: usize = 8 * 5 + 1 + 32 + 1 + 1;
+pub const BONDING_CURVE_SIZE: usize = 8 * 5 + 1 + 32 + 1 + 1 + 32;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct Global {
@@ -40,7 +41,25 @@ pub struct Global {
     pub mayhem_mode_enabled: bool,
     pub reserved_fee_recipients: [Pubkey; 7],
     pub is_cashback_enabled: bool,
+    pub buyback_fee_recipients: [Pubkey; 8],
+    pub buyback_basis_points: u64,
+    pub initial_virtual_quote_reserves: u64,
+    pub whitelisted_quote_mints: [Pubkey; 1],
 }
 
-pub const GLOBAL_SIZE: usize =
-    1 + 32 * 2 + 8 * 5 + 32 + 1 + 8 * 2 + 32 * 7 + 32 * 2 + 1 + 32 * 2 + 1 + 32 * 7 + 1;
+pub const GLOBAL_SIZE: usize = 1
+    + 32 * 2
+    + 8 * 5
+    + 32
+    + 1
+    + 8 * 2
+    + 32 * 7
+    + 32 * 2
+    + 1
+    + 32 * 2
+    + 1
+    + 32 * 7
+    + 1
+    + 32 * 8
+    + 8 * 2
+    + 32;
