@@ -59,8 +59,11 @@ impl YellowstoneGrpc {
                         let created_at = msg.created_at;
                         match msg.update_oneof {
                             Some(UpdateOneof::Transaction(sut)) => {
-                                let transaction_pretty =
-                                    factory::create_transaction_pretty_pooled(sut, created_at);
+                                let Some(transaction_pretty) =
+                                    factory::create_transaction_pretty_pooled(sut, created_at)
+                                else {
+                                    continue;
+                                };
                                 let event_pretty = EventPretty::Transaction(transaction_pretty);
                                 if let Err(e) =
                                     Self::process_system_transaction(event_pretty, &*callback).await

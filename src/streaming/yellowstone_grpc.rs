@@ -155,6 +155,7 @@ impl YellowstoneGrpc {
             return Err(anyhow!("Already subscribed. Use update_subscription() to modify filters"));
         }
 
+        let clear_active_on_drop = ActiveSubscriptionGuard(self.active_subscription.clone());
         let mut metrics_handle = None;
         // 启动自动性能监控（如果启用）
         if self.config.enable_metrics {
@@ -187,7 +188,9 @@ impl YellowstoneGrpc {
         let order_timeout_ms = self.config.order_timeout_ms;
         let micro_batch_us = self.config.micro_batch_us;
 
+        let active_subscription = self.active_subscription.clone();
         let stream_handle = tokio::spawn(async move {
+            let _clear_active = ActiveSubscriptionGuard(active_subscription);
             let mut slot_buffer = SlotBuffer::new();
             let mut micro_batch = MicroBatchBuffer::new();
             let mut last_slot = 0u64;
@@ -218,7 +221,11 @@ impl YellowstoneGrpc {
                                 let created_at = msg.created_at;
                                 match msg.update_oneof {
                                     Some(UpdateOneof::Account(account)) => {
-                                        let account_pretty = factory::create_account_pretty_pooled(account);
+                                        let Some(account_pretty) =
+                                            factory::create_account_pretty_pooled(account)
+                                        else {
+                                            continue;
+                                        };
                                         log::debug!("Received account: {:?}", account_pretty);
                                         if let Err(e) = process_grpc_transaction(
                                             EventPretty::Account(account_pretty),
@@ -248,7 +255,11 @@ impl YellowstoneGrpc {
                                         }
                                     }
                                     Some(UpdateOneof::Transaction(sut)) => {
-                                        let transaction_pretty = factory::create_transaction_pretty_pooled(sut, created_at);
+                                        let Some(transaction_pretty) =
+                                            factory::create_transaction_pretty_pooled(sut, created_at)
+                                        else {
+                                            continue;
+                                        };
                                         log::debug!(
                                             "Received transaction: {} at slot {}",
                                             transaction_pretty.signature,
@@ -343,6 +354,7 @@ impl YellowstoneGrpc {
         let mut handle_guard = self.subscription_handle.lock().await;
         *handle_guard = Some(subscription_handle);
 
+        std::mem::forget(clear_active_on_drop);
         Ok(())
     }
 
@@ -537,6 +549,14 @@ fn has_buffered_events(
         OrderMode::Ordered | OrderMode::StreamingOrdered => !slot_buffer.is_empty(),
         OrderMode::MicroBatch => !micro_batch.is_empty(),
         OrderMode::Unordered => false,
+    }
+}
+
+struct ActiveSubscriptionGuard(Arc<AtomicBool>);
+
+impl Drop for ActiveSubscriptionGuard {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
     }
 }
 
