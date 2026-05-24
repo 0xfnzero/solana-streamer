@@ -60,7 +60,7 @@ impl YellowstoneGrpc {
                         match msg.update_oneof {
                             Some(UpdateOneof::Transaction(sut)) => {
                                 let Some(transaction_pretty) =
-                                    factory::create_transaction_pretty_pooled(sut, created_at)
+                                    factory::try_create_transaction_pretty_pooled(sut, created_at)
                                 else {
                                     continue;
                                 };

@@ -1,6 +1,5 @@
 use super::types::{AccountPretty, BlockMetaPretty, TransactionPretty};
 use crate::streaming::event_parser::common::high_performance_clock::get_high_perf_clock;
-use log::warn;
 use solana_sdk::{pubkey::Pubkey, signature::Signature};
 use std::collections::VecDeque;
 use std::ops::DerefMut;
@@ -96,23 +95,20 @@ impl PooledAccountPretty {
     /// 从 gRPC 更新重置数据
     pub fn reset_from_update(&mut self, account_update: SubscribeUpdateAccount) -> bool {
         let Some(account_info) = account_update.account else {
-            warn!("grpc account update missing nested account, skipping");
+            log::debug!("drop account update without account payload");
             return false;
         };
 
         self.account.slot = account_update.slot;
         self.account.signature = if let Some(txn_signature) = account_info.txn_signature {
             if txn_signature.len() != 64 {
-                warn!(
-                    "grpc account update has invalid signature length {}, skipping",
-                    txn_signature.len()
-                );
+                log::debug!("drop account update with invalid signature length");
                 return false;
             }
             match Signature::try_from(txn_signature.as_slice()) {
                 Ok(sig) => sig,
                 Err(_) => {
-                    warn!("grpc account update has invalid signature bytes, skipping");
+                    log::debug!("drop account update with invalid transaction signature");
                     return false;
                 }
             }
@@ -120,32 +116,26 @@ impl PooledAccountPretty {
             Signature::default()
         };
         if account_info.pubkey.len() != 32 {
-            warn!(
-                "grpc account update has invalid pubkey length {}, skipping",
-                account_info.pubkey.len()
-            );
+            log::debug!("drop account update with invalid account pubkey length");
             return false;
         }
         self.account.pubkey = match Pubkey::try_from(account_info.pubkey.as_slice()) {
             Ok(pubkey) => pubkey,
             Err(_) => {
-                warn!("grpc account update has invalid pubkey bytes, skipping");
+                log::debug!("drop account update with invalid account pubkey");
                 return false;
             }
         };
         self.account.executable = account_info.executable;
         self.account.lamports = account_info.lamports;
         if account_info.owner.len() != 32 {
-            warn!(
-                "grpc account update has invalid owner length {}, skipping",
-                account_info.owner.len()
-            );
+            log::debug!("drop account update with invalid owner pubkey length");
             return false;
         }
         self.account.owner = match Pubkey::try_from(account_info.owner.as_slice()) {
             Ok(owner) => owner,
             Err(_) => {
-                warn!("grpc account update has invalid owner bytes, skipping");
+                log::debug!("drop account update with invalid owner pubkey");
                 return false;
             }
         };
@@ -317,15 +307,12 @@ impl PooledTransactionPretty {
         block_time: Option<Timestamp>,
     ) -> bool {
         let Some(tx) = tx_update.transaction else {
-            warn!("grpc transaction update missing nested transaction, skipping");
+            log::debug!("drop transaction update without transaction payload");
             return false;
         };
 
         if tx.signature.len() != 64 {
-            warn!(
-                "grpc transaction update has invalid signature length {}, skipping",
-                tx.signature.len()
-            );
+            log::debug!("drop transaction update with invalid signature length");
             return false;
         }
 
@@ -336,7 +323,7 @@ impl PooledTransactionPretty {
         self.transaction.signature = match Signature::try_from(tx.signature.as_slice()) {
             Ok(signature) => signature,
             Err(_) => {
-                warn!("grpc transaction update has invalid signature bytes, skipping");
+                log::debug!("drop transaction update with invalid signature");
                 return false;
             }
         };
@@ -406,6 +393,12 @@ impl EventPrettyPool {
     }
 }
 
+impl Default for EventPrettyPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// 对象池管理器（单例）
 pub struct PoolManager {
     event_pool: EventPrettyPool,
@@ -430,7 +423,7 @@ impl Default for PoolManager {
 /// 工厂函数用于创建优化的 EventPretty
 impl EventPrettyPool {
     /// 创建账户事件 - 使用对象池优化
-    pub fn create_account_event_optimized(
+    pub fn try_create_account_event_optimized(
         &self,
         update: SubscribeUpdateAccount,
     ) -> Option<AccountPretty> {
@@ -439,8 +432,13 @@ impl EventPrettyPool {
             return None;
         }
         // 移动数据而不是克隆，避免多余的内存分配
-        let result = std::mem::replace(pooled_account.deref_mut(), AccountPretty::default());
+        let result = std::mem::take(pooled_account.deref_mut());
         Some(result)
+    }
+
+    /// 创建账户事件 - 使用对象池优化
+    pub fn create_account_event_optimized(&self, update: SubscribeUpdateAccount) -> AccountPretty {
+        self.try_create_account_event_optimized(update).unwrap_or_default()
     }
 
     /// 创建区块事件 - 使用对象池优化
@@ -452,12 +450,12 @@ impl EventPrettyPool {
         let mut pooled_block = self.acquire_block();
         pooled_block.reset_from_update(update, block_time);
         // 移动数据而不是克隆
-        let result = std::mem::replace(pooled_block.deref_mut(), BlockMetaPretty::default());
+        let result = std::mem::take(pooled_block.deref_mut());
         result
     }
 
     /// 创建交易事件 - 使用对象池优化
-    pub fn create_transaction_event_optimized(
+    pub fn try_create_transaction_event_optimized(
         &self,
         update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,
@@ -467,8 +465,17 @@ impl EventPrettyPool {
             return None;
         }
         // 移动数据而不是克隆
-        let result = std::mem::replace(pooled_tx.deref_mut(), TransactionPretty::default());
+        let result = std::mem::take(pooled_tx.deref_mut());
         Some(result)
+    }
+
+    /// 创建交易事件 - 使用对象池优化
+    pub fn create_transaction_event_optimized(
+        &self,
+        update: SubscribeUpdateTransaction,
+        block_time: Option<Timestamp>,
+    ) -> TransactionPretty {
+        self.try_create_transaction_event_optimized(update, block_time).unwrap_or_default()
     }
 }
 
@@ -480,8 +487,15 @@ pub static GLOBAL_POOL_MANAGER: std::sync::LazyLock<PoolManager> =
 pub mod factory {
     use super::*;
 
+    /// 尝试使用对象池创建账户事件，坏 gRPC update 返回 None
+    pub fn try_create_account_pretty_pooled(
+        update: SubscribeUpdateAccount,
+    ) -> Option<AccountPretty> {
+        GLOBAL_POOL_MANAGER.get_event_pool().try_create_account_event_optimized(update)
+    }
+
     /// 使用对象池创建账户事件（推荐用于高性能场景）
-    pub fn create_account_pretty_pooled(update: SubscribeUpdateAccount) -> Option<AccountPretty> {
+    pub fn create_account_pretty_pooled(update: SubscribeUpdateAccount) -> AccountPretty {
         GLOBAL_POOL_MANAGER.get_event_pool().create_account_event_optimized(update)
     }
 
@@ -493,11 +507,21 @@ pub mod factory {
         GLOBAL_POOL_MANAGER.get_event_pool().create_block_event_optimized(update, block_time)
     }
 
+    /// 尝试使用对象池创建交易事件，坏 gRPC update 返回 None
+    pub fn try_create_transaction_pretty_pooled(
+        update: SubscribeUpdateTransaction,
+        block_time: Option<Timestamp>,
+    ) -> Option<TransactionPretty> {
+        GLOBAL_POOL_MANAGER
+            .get_event_pool()
+            .try_create_transaction_event_optimized(update, block_time)
+    }
+
     /// 使用对象池创建交易事件（推荐用于高性能场景）
     pub fn create_transaction_pretty_pooled(
         update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,
-    ) -> Option<TransactionPretty> {
+    ) -> TransactionPretty {
         GLOBAL_POOL_MANAGER.get_event_pool().create_transaction_event_optimized(update, block_time)
     }
 }

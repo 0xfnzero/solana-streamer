@@ -155,11 +155,10 @@ impl YellowstoneGrpc {
             return Err(anyhow!("Already subscribed. Use update_subscription() to modify filters"));
         }
 
-        let clear_active_on_drop = ActiveSubscriptionGuard(self.active_subscription.clone());
-        let mut metrics_handle = None;
+        let mut start_guard = SubscriptionStartGuard::new(self.active_subscription.clone());
         // 启动自动性能监控（如果启用）
         if self.config.enable_metrics {
-            metrics_handle = MetricsManager::global().start_auto_monitoring().await;
+            start_guard.set_metrics_handle(MetricsManager::global().start_auto_monitoring().await);
         }
 
         let transactions = self
@@ -189,8 +188,16 @@ impl YellowstoneGrpc {
         let micro_batch_us = self.config.micro_batch_us;
 
         let active_subscription = self.active_subscription.clone();
+        let control_tx_cleanup = self.control_tx.clone();
+        let current_request_cleanup = self.current_request.clone();
+        let metrics_handle = start_guard.disarm();
         let stream_handle = tokio::spawn(async move {
-            let _clear_active = ActiveSubscriptionGuard(active_subscription);
+            let cleanup = SubscriptionCleanupGuard::new(
+                active_subscription,
+                control_tx_cleanup,
+                current_request_cleanup,
+                metrics_handle,
+            );
             let mut slot_buffer = SlotBuffer::new();
             let mut micro_batch = MicroBatchBuffer::new();
             let mut last_slot = 0u64;
@@ -222,7 +229,7 @@ impl YellowstoneGrpc {
                                 match msg.update_oneof {
                                     Some(UpdateOneof::Account(account)) => {
                                         let Some(account_pretty) =
-                                            factory::create_account_pretty_pooled(account)
+                                            factory::try_create_account_pretty_pooled(account)
                                         else {
                                             continue;
                                         };
@@ -256,7 +263,7 @@ impl YellowstoneGrpc {
                                     }
                                     Some(UpdateOneof::Transaction(sut)) => {
                                         let Some(transaction_pretty) =
-                                            factory::create_transaction_pretty_pooled(sut, created_at)
+                                            factory::try_create_transaction_pretty_pooled(sut, created_at)
                                         else {
                                             continue;
                                         };
@@ -347,14 +354,14 @@ impl YellowstoneGrpc {
                     }
                 }
             }
+            cleanup.finish().await;
         });
 
         // 保存订阅句柄
-        let subscription_handle = SubscriptionHandle::new(stream_handle, None, metrics_handle);
+        let subscription_handle = SubscriptionHandle::new(stream_handle, None, None);
         let mut handle_guard = self.subscription_handle.lock().await;
         *handle_guard = Some(subscription_handle);
 
-        std::mem::forget(clear_active_on_drop);
         Ok(())
     }
 
@@ -552,11 +559,75 @@ fn has_buffered_events(
     }
 }
 
-struct ActiveSubscriptionGuard(Arc<AtomicBool>);
+struct SubscriptionStartGuard {
+    active_subscription: Arc<AtomicBool>,
+    metrics_handle: Option<tokio::task::JoinHandle<()>>,
+    disarmed: bool,
+}
 
-impl Drop for ActiveSubscriptionGuard {
+impl SubscriptionStartGuard {
+    fn new(active_subscription: Arc<AtomicBool>) -> Self {
+        Self { active_subscription, metrics_handle: None, disarmed: false }
+    }
+
+    fn set_metrics_handle(&mut self, metrics_handle: Option<tokio::task::JoinHandle<()>>) {
+        self.metrics_handle = metrics_handle;
+    }
+
+    fn disarm(&mut self) -> Option<tokio::task::JoinHandle<()>> {
+        self.disarmed = true;
+        self.metrics_handle.take()
+    }
+}
+
+impl Drop for SubscriptionStartGuard {
     fn drop(&mut self) {
-        self.0.store(false, Ordering::Release);
+        if !self.disarmed {
+            self.active_subscription.store(false, Ordering::Release);
+            if let Some(handle) = self.metrics_handle.take() {
+                handle.abort();
+            }
+        }
+    }
+}
+
+struct SubscriptionCleanupGuard {
+    active_subscription: Arc<AtomicBool>,
+    control_tx: Arc<tokio::sync::Mutex<Option<mpsc::Sender<SubscribeRequest>>>>,
+    current_request: Arc<tokio::sync::RwLock<Option<SubscribeRequest>>>,
+    metrics_handle: Option<tokio::task::JoinHandle<()>>,
+    finished: bool,
+}
+
+impl SubscriptionCleanupGuard {
+    fn new(
+        active_subscription: Arc<AtomicBool>,
+        control_tx: Arc<tokio::sync::Mutex<Option<mpsc::Sender<SubscribeRequest>>>>,
+        current_request: Arc<tokio::sync::RwLock<Option<SubscribeRequest>>>,
+        metrics_handle: Option<tokio::task::JoinHandle<()>>,
+    ) -> Self {
+        Self { active_subscription, control_tx, current_request, metrics_handle, finished: false }
+    }
+
+    async fn finish(mut self) {
+        *self.control_tx.lock().await = None;
+        *self.current_request.write().await = None;
+        self.active_subscription.store(false, Ordering::Release);
+        if let Some(handle) = self.metrics_handle.take() {
+            handle.abort();
+        }
+        self.finished = true;
+    }
+}
+
+impl Drop for SubscriptionCleanupGuard {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.active_subscription.store(false, Ordering::Release);
+            if let Some(handle) = self.metrics_handle.take() {
+                handle.abort();
+            }
+        }
     }
 }
 
