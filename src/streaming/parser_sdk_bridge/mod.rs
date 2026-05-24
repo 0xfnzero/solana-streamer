@@ -77,6 +77,8 @@ mod tests {
         t.program = Pubkey::new_unique();
         t.global_volume_accumulator = Pubkey::new_unique();
         t.user_volume_accumulator = Pubkey::new_unique();
+        t.associated_creator_vault = Pubkey::new_unique();
+        t.sharing_config = Pubkey::new_unique();
         t.fee_config = Pubkey::new_unique();
         t.fee_program = Pubkey::new_unique();
         t.quote_mint = Pubkey::new_unique();
@@ -108,6 +110,8 @@ mod tests {
                 assert_ne!(st.program, Pubkey::default());
                 assert_ne!(st.global_volume_accumulator, Pubkey::default());
                 assert_ne!(st.user_volume_accumulator, Pubkey::default());
+                assert_ne!(st.associated_creator_vault, Pubkey::default());
+                assert_ne!(st.sharing_config, Pubkey::default());
                 assert_ne!(st.fee_config, Pubkey::default());
                 assert_ne!(st.fee_program, Pubkey::default());
                 assert_ne!(st.quote_mint, Pubkey::default());

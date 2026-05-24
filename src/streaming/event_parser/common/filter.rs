@@ -253,6 +253,7 @@ fn push_streamer_event_sdk_grpc_types(t: &EventType, out: &mut Vec<SdkGrpcEventT
         St::TokenAccount | St::TokenInfo => out.push(Sdk::TokenAccount),
         St::NonceAccount => out.push(Sdk::NonceAccount),
         St::AccountPumpFunGlobal => out.push(Sdk::AccountPumpFunGlobal),
+        St::AccountPumpFunBondingCurve => out.push(Sdk::AccountPumpFunBondingCurve),
         St::AccountPumpSwapGlobalConfig => out.push(Sdk::AccountPumpSwapGlobalConfig),
         St::AccountPumpSwapPool => out.push(Sdk::AccountPumpSwapPool),
         _ => return false,

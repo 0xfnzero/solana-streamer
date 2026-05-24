@@ -123,33 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.7" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.10" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.7"
+solana-streamer-sdk = "1.4.10"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.7"
+solana-streamer-sdk = "1.4.10"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.7", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.10", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.11+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v1.4.7
+### Upgrading to v1.4.10
 
-Version 1.4.7 uses `sol-parser-sdk 0.4.11` from crates.io and adds the SDK-compatible Yellowstone gRPC ordering modes to the streamer facade while preserving the existing subscription and callback API. Existing bots can keep the default ultra-low-latency `Unordered` mode or opt into `Ordered`, `StreamingOrdered`, or `MicroBatch` through `ClientConfig`.
+Version 1.4.10 uses `sol-parser-sdk 0.4.15` from crates.io and preserves the SDK-compatible Yellowstone gRPC ordering modes in the streamer facade while adding the latest PumpFun USDC/v2 parser fields.
 
 New optional capabilities:
 

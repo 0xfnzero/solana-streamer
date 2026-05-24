@@ -101,6 +101,9 @@ fn streamer_account_event_to_sdk_types(t: &EventType) -> Vec<SdkGrpcEventType> {
         EventType::TokenAccount | EventType::TokenInfo => vec![SdkGrpcEventType::TokenAccount],
         EventType::NonceAccount => vec![SdkGrpcEventType::NonceAccount],
         EventType::AccountPumpFunGlobal => vec![SdkGrpcEventType::AccountPumpFunGlobal],
+        EventType::AccountPumpFunBondingCurve => {
+            vec![SdkGrpcEventType::AccountPumpFunBondingCurve]
+        }
         EventType::AccountPumpSwapGlobalConfig => {
             vec![SdkGrpcEventType::AccountPumpSwapGlobalConfig]
         }
@@ -121,13 +124,22 @@ fn dedup_sdk_grpc_event_types(v: &mut Vec<SdkGrpcEventType>) {
 }
 
 fn normalize_account_event(event: &mut DexEvent, account: &AccountPretty) {
-    if let DexEvent::PumpFunGlobalAccountEvent(e) = event {
-        e.executable = account.executable;
-        e.lamports = account.lamports;
-        e.owner = account.owner;
-        e.rent_epoch = account.rent_epoch;
-        if let Some(flag) = account.data.get(PUMPFUN_GLOBAL_CASHBACK_OFFSET) {
-            e.global.is_cashback_enabled = *flag != 0;
+    match event {
+        DexEvent::PumpFunGlobalAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+            if let Some(flag) = account.data.get(PUMPFUN_GLOBAL_CASHBACK_OFFSET) {
+                e.global.is_cashback_enabled = *flag != 0;
+            }
         }
+        DexEvent::PumpFunBondingCurveAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        _ => {}
     }
 }

@@ -122,33 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.7" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.10" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.7"
+solana-streamer-sdk = "1.4.10"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.7"
+solana-streamer-sdk = "1.4.10"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.7", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.10", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.11+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
-### 升级到 v1.4.7
+### 升级到 v1.4.10
 
-v1.4.7 使用 crates.io 上的 `sol-parser-sdk 0.4.11`，并在 streamer facade 中补齐与 SDK 兼容的 Yellowstone gRPC 输出顺序模式，同时保留已有订阅和回调 API。现有 Bot 可以继续使用默认的超低延迟 `Unordered` 模式，也可以通过 `ClientConfig` 选择 `Ordered`、`StreamingOrdered` 或 `MicroBatch`。
+v1.4.10 使用 crates.io 上的 `sol-parser-sdk 0.4.15`，保留 streamer facade 中与 SDK 兼容的 Yellowstone gRPC 输出顺序模式，并补齐最新 PumpFun USDC/v2 解析字段。
 
 新增可选能力：
 

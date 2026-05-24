@@ -7,10 +7,11 @@ use crate::streaming::event_parser::protocols::pumpfun::events::{
     PumpFeesRevokeFeeSharingAuthorityEvent, PumpFeesShareholder,
     PumpFeesTransferFeeSharingAuthorityEvent, PumpFeesUpdateAdminEvent,
     PumpFeesUpdateFeeConfigEvent, PumpFeesUpdateFeeSharesEvent, PumpFeesUpsertFeeTiersEvent,
-    PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent, PumpFunGlobalAccountEvent,
-    PumpFunMigrateBondingCurveCreatorEvent, PumpFunMigrateEvent, PumpFunTradeEvent,
+    PumpFunBondingCurveAccountEvent, PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent,
+    PumpFunGlobalAccountEvent, PumpFunMigrateBondingCurveCreatorEvent, PumpFunMigrateEvent,
+    PumpFunTradeEvent,
 };
-use crate::streaming::event_parser::protocols::pumpfun::types::Global;
+use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Global};
 use crate::streaming::event_parser::protocols::pumpswap::events::{
     PumpSwapBuyEvent, PumpSwapCreatePoolEvent, PumpSwapDepositEvent, PumpSwapSellEvent,
     PumpSwapWithdrawEvent,
@@ -328,6 +329,32 @@ pub(crate) fn pumpfun_global_account_from_parser(
             mayhem_mode_enabled: e.global.mayhem_mode_enabled,
             reserved_fee_recipients: e.global.reserved_fee_recipients,
             is_cashback_enabled: false,
+        },
+    }
+}
+
+pub(crate) fn pumpfun_bonding_curve_account_from_parser(
+    e: sol_parser_sdk::core::events::PumpFunBondingCurveAccountEvent,
+    meta: EventMetadata,
+) -> PumpFunBondingCurveAccountEvent {
+    PumpFunBondingCurveAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        executable: false,
+        lamports: 0,
+        owner: pump_program(),
+        rent_epoch: 0,
+        bonding_curve: BondingCurve {
+            virtual_token_reserves: e.bonding_curve.virtual_token_reserves,
+            // Streamer keeps the historical SOL field names; SDK v0.4.15 uses quote reserves.
+            virtual_sol_reserves: e.bonding_curve.virtual_quote_reserves,
+            real_token_reserves: e.bonding_curve.real_token_reserves,
+            real_sol_reserves: e.bonding_curve.real_quote_reserves,
+            token_total_supply: e.bonding_curve.token_total_supply,
+            complete: e.bonding_curve.complete,
+            creator: e.bonding_curve.creator,
+            is_mayhem_mode: e.bonding_curve.is_mayhem_mode,
+            is_cashback_coin: e.bonding_curve.is_cashback_coin,
         },
     }
 }

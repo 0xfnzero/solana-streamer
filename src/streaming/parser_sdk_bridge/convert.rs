@@ -215,6 +215,23 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::PumpFunGlobalAccountEvent(pumpfun_global_account_from_parser(e, meta)))
         }
+        PbDexEvent::PumpFunBondingCurveAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::AccountPumpFunBondingCurve,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunBondingCurveAccountEvent(
+                pumpfun_bonding_curve_account_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::PumpFunFeeConfigAccount(_)
+        | PbDexEvent::PumpFunSharingConfigAccount(_)
+        | PbDexEvent::PumpFunGlobalVolumeAccumulatorAccount(_)
+        | PbDexEvent::PumpFunUserVolumeAccumulatorAccount(_) => None,
 
         PbDexEvent::PumpSwapTrade(t) => pumpswap_trade_from_parser(t, bt, recv_wall_us),
         PbDexEvent::PumpSwapBuy(b) => {
