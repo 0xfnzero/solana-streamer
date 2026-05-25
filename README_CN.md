@@ -122,29 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.12" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.13" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.12"
+solana-streamer-sdk = "1.4.13"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.12"
+solana-streamer-sdk = "1.4.13"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.12", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.13", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.17+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.18+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.4.13
+
+v1.4.13 使用 `sol-parser-sdk 0.4.18`，并按 Raydium CLMM 官方升级后 IDL 更新集成：当前 log-side event discriminator、官方 Swap/Liquidity/Create/Collect 事件布局、限价单事件、dynamic fee 相关事件，以及重塑后的 PoolState/TickState 账户结构。
 
 ### 升级到 v1.4.12
 

@@ -12,9 +12,20 @@ pub struct RaydiumClmmSwapEvent {
     pub other_amount_threshold: u64,
     pub sqrt_price_limit_x64: u128,
     pub is_base_input: bool,
+    pub pool_state: Pubkey,
+    pub sender: Pubkey,
+    pub token_account_0: Pubkey,
+    pub token_account_1: Pubkey,
+    pub amount_0: u64,
+    pub transfer_fee_0: u64,
+    pub amount_1: u64,
+    pub transfer_fee_1: u64,
+    pub zero_for_one: bool,
+    pub sqrt_price_x64: u128,
+    pub liquidity: u128,
+    pub tick: i32,
     pub payer: Pubkey,
     pub amm_config: Pubkey,
-    pub pool_state: Pubkey,
     pub input_token_account: Pubkey,
     pub output_token_account: Pubkey,
     pub input_vault: Pubkey,
@@ -65,7 +76,15 @@ pub struct RaydiumClmmClosePositionEvent {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RaydiumClmmDecreaseLiquidityV2Event {
     pub metadata: EventMetadata,
+    pub position_nft_mint: Pubkey,
     pub liquidity: u128,
+    pub decrease_amount_0: u64,
+    pub decrease_amount_1: u64,
+    pub fee_amount_0: u64,
+    pub fee_amount_1: u64,
+    pub reward_amounts: [u64; 3],
+    pub transfer_fee_0: u64,
+    pub transfer_fee_1: u64,
     pub amount0_min: u64,
     pub amount1_min: u64,
     pub nft_owner: Pubkey,
@@ -93,6 +112,8 @@ pub struct RaydiumClmmCollectFeeEvent {
     pub metadata: EventMetadata,
     pub pool_state: Pubkey,
     pub position_nft_mint: Pubkey,
+    pub recipient_token_account_0: Pubkey,
+    pub recipient_token_account_1: Pubkey,
     pub amount_0: u64,
     pub amount_1: u64,
 }
@@ -102,6 +123,8 @@ pub struct RaydiumClmmCollectFeeEvent {
 pub struct RaydiumClmmCreatePoolEvent {
     pub metadata: EventMetadata,
     pub sqrt_price_x64: u128,
+    pub tick: i32,
+    pub tick_spacing: u16,
     pub open_time: u64,
     pub pool_creator: Pubkey,
     pub amm_config: Pubkey,
@@ -122,7 +145,12 @@ pub struct RaydiumClmmCreatePoolEvent {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RaydiumClmmIncreaseLiquidityV2Event {
     pub metadata: EventMetadata,
+    pub position_nft_mint: Pubkey,
     pub liquidity: u128,
+    pub amount_0: u64,
+    pub amount_1: u64,
+    pub amount_0_transfer_fee: u64,
+    pub amount_1_transfer_fee: u64,
     pub amount0_max: u64,
     pub amount1_max: u64,
     pub base_flag: Option<bool>,
@@ -141,6 +169,121 @@ pub struct RaydiumClmmIncreaseLiquidityV2Event {
     pub token_program2022: Pubkey,
     pub vault0_mint: Pubkey,
     pub vault1_mint: Pubkey,
+}
+
+/// 流动性变化
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmLiquidityChangeEvent {
+    pub metadata: EventMetadata,
+    pub pool_state: Pubkey,
+    pub tick: i32,
+    pub tick_lower: i32,
+    pub tick_upper: i32,
+    pub liquidity_before: u128,
+    pub liquidity_after: u128,
+}
+
+/// 配置变化
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmConfigChangeEvent {
+    pub metadata: EventMetadata,
+    pub index: u16,
+    pub owner: Pubkey,
+    pub protocol_fee_rate: u32,
+    pub trade_fee_rate: u32,
+    pub tick_spacing: u16,
+    pub fund_fee_rate: u32,
+    pub fund_owner: Pubkey,
+}
+
+/// 创建个人仓位
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmCreatePersonalPositionEvent {
+    pub metadata: EventMetadata,
+    pub pool_state: Pubkey,
+    pub minter: Pubkey,
+    pub nft_owner: Pubkey,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+    pub liquidity: u128,
+    pub deposit_amount_0: u64,
+    pub deposit_amount_1: u64,
+    pub deposit_amount_0_transfer_fee: u64,
+    pub deposit_amount_1_transfer_fee: u64,
+}
+
+/// 流动性计算
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmLiquidityCalculateEvent {
+    pub metadata: EventMetadata,
+    pub pool_liquidity: u128,
+    pub pool_sqrt_price_x64: u128,
+    pub pool_tick: i32,
+    pub calc_amount_0: u64,
+    pub calc_amount_1: u64,
+    pub trade_fee_owed_0: u64,
+    pub trade_fee_owed_1: u64,
+    pub transfer_fee_0: u64,
+    pub transfer_fee_1: u64,
+}
+
+/// 打开限价单
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmOpenLimitOrderEvent {
+    pub metadata: EventMetadata,
+    pub pool_id: Pubkey,
+    pub limit_order: Pubkey,
+    pub zero_for_one: bool,
+    pub tick_index: i32,
+    pub total_amount: u64,
+    pub transfer_fee: u64,
+}
+
+/// 增加限价单
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmIncreaseLimitOrderEvent {
+    pub metadata: EventMetadata,
+    pub pool_id: Pubkey,
+    pub limit_order: Pubkey,
+    pub zero_for_one: bool,
+    pub tick_index: i32,
+    pub total_amount: u64,
+    pub increased_amount: u64,
+    pub transfer_fee: u64,
+}
+
+/// 减少限价单
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmDecreaseLimitOrderEvent {
+    pub metadata: EventMetadata,
+    pub pool_id: Pubkey,
+    pub limit_order: Pubkey,
+    pub zero_for_one: bool,
+    pub tick_index: i32,
+    pub total_amount: u64,
+    pub filled_amount: u64,
+    pub settled_output_amount: u64,
+    pub decreased_amount: u64,
+}
+
+/// 结算限价单
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmSettleLimitOrderEvent {
+    pub metadata: EventMetadata,
+    pub pool_id: Pubkey,
+    pub limit_order: Pubkey,
+    pub zero_for_one: bool,
+    pub tick_index: i32,
+    pub total_amount: u64,
+    pub filled_amount: u64,
+    pub settled_amount_out: u64,
+}
+
+/// 更新奖励信息
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumClmmUpdateRewardInfosEvent {
+    pub metadata: EventMetadata,
+    pub reward_growth_global_x64: [u128; 3],
 }
 
 /// 打开仓位v2

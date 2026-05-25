@@ -9,10 +9,14 @@ use crate::streaming::event_parser::protocols::raydium_amm_v4::events::{
     RaydiumAmmV4WithdrawEvent, RaydiumAmmV4WithdrawPnlEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_clmm::events::{
-    RaydiumClmmClosePositionEvent, RaydiumClmmCollectFeeEvent, RaydiumClmmCreatePoolEvent,
-    RaydiumClmmDecreaseLiquidityV2Event, RaydiumClmmIncreaseLiquidityV2Event,
-    RaydiumClmmOpenPositionV2Event, RaydiumClmmOpenPositionWithToken22NftEvent,
-    RaydiumClmmSwapEvent,
+    RaydiumClmmClosePositionEvent, RaydiumClmmCollectFeeEvent, RaydiumClmmConfigChangeEvent,
+    RaydiumClmmCreatePersonalPositionEvent, RaydiumClmmCreatePoolEvent,
+    RaydiumClmmDecreaseLimitOrderEvent, RaydiumClmmDecreaseLiquidityV2Event,
+    RaydiumClmmIncreaseLimitOrderEvent, RaydiumClmmIncreaseLiquidityV2Event,
+    RaydiumClmmLiquidityCalculateEvent, RaydiumClmmLiquidityChangeEvent,
+    RaydiumClmmOpenLimitOrderEvent, RaydiumClmmOpenPositionV2Event,
+    RaydiumClmmOpenPositionWithToken22NftEvent, RaydiumClmmSettleLimitOrderEvent,
+    RaydiumClmmSwapEvent, RaydiumClmmUpdateRewardInfosEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::{
     RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent, RaydiumCpmmSwapEvent,
@@ -320,8 +324,19 @@ pub(crate) fn raydium_clmm_swap_from_parser(
         other_amount_threshold,
         sqrt_price_limit_x64: e.sqrt_price_x64,
         is_base_input: e.zero_for_one,
-        payer: e.sender,
         pool_state: e.pool_state,
+        sender: e.sender,
+        token_account_0: e.token_account_0,
+        token_account_1: e.token_account_1,
+        amount_0: e.amount_0,
+        transfer_fee_0: e.transfer_fee_0,
+        amount_1: e.amount_1,
+        transfer_fee_1: e.transfer_fee_1,
+        zero_for_one: e.zero_for_one,
+        sqrt_price_x64: e.sqrt_price_x64,
+        liquidity: e.liquidity,
+        tick: e.tick,
+        payer: e.sender,
         input_token_account,
         output_token_account,
         ..Default::default()
@@ -335,11 +350,15 @@ pub(crate) fn raydium_clmm_create_pool_from_parser(
     RaydiumClmmCreatePoolEvent {
         metadata: meta,
         sqrt_price_x64: e.sqrt_price_x64,
+        tick: e.tick,
+        tick_spacing: e.tick_spacing,
         open_time: e.open_time,
         pool_creator: e.creator,
         pool_state: e.pool,
         token_mint0: e.token_0_mint,
         token_mint1: e.token_1_mint,
+        token_vault0: e.token_vault_0,
+        token_vault1: e.token_vault_1,
         ..Default::default()
     }
 }
@@ -396,9 +415,14 @@ pub(crate) fn raydium_clmm_increase_liquidity_v2_from_parser(
 ) -> RaydiumClmmIncreaseLiquidityV2Event {
     RaydiumClmmIncreaseLiquidityV2Event {
         metadata: meta,
+        position_nft_mint: e.position_nft_mint,
         liquidity: e.liquidity,
-        amount0_max: e.amount0_max,
-        amount1_max: e.amount1_max,
+        amount_0: e.amount_0,
+        amount_1: e.amount_1,
+        amount_0_transfer_fee: e.amount_0_transfer_fee,
+        amount_1_transfer_fee: e.amount_1_transfer_fee,
+        amount0_max: if e.amount0_max != 0 { e.amount0_max } else { e.amount_0 },
+        amount1_max: if e.amount1_max != 0 { e.amount1_max } else { e.amount_1 },
         nft_owner: e.user,
         pool_state: e.pool,
         ..Default::default()
@@ -411,9 +435,17 @@ pub(crate) fn raydium_clmm_decrease_liquidity_v2_from_parser(
 ) -> RaydiumClmmDecreaseLiquidityV2Event {
     RaydiumClmmDecreaseLiquidityV2Event {
         metadata: meta,
+        position_nft_mint: e.position_nft_mint,
         liquidity: e.liquidity,
-        amount0_min: e.amount0_min,
-        amount1_min: e.amount1_min,
+        decrease_amount_0: e.decrease_amount_0,
+        decrease_amount_1: e.decrease_amount_1,
+        fee_amount_0: e.fee_amount_0,
+        fee_amount_1: e.fee_amount_1,
+        reward_amounts: e.reward_amounts,
+        transfer_fee_0: e.transfer_fee_0,
+        transfer_fee_1: e.transfer_fee_1,
+        amount0_min: if e.amount0_min != 0 { e.amount0_min } else { e.decrease_amount_0 },
+        amount1_min: if e.amount1_min != 0 { e.amount1_min } else { e.decrease_amount_1 },
         nft_owner: e.user,
         pool_state: e.pool,
         ..Default::default()
@@ -428,8 +460,152 @@ pub(crate) fn raydium_clmm_collect_fee_from_parser(
         metadata: meta,
         pool_state: e.pool_state,
         position_nft_mint: e.position_nft_mint,
+        recipient_token_account_0: e.recipient_token_account_0,
+        recipient_token_account_1: e.recipient_token_account_1,
         amount_0: e.amount_0,
         amount_1: e.amount_1,
+    }
+}
+
+pub(crate) fn raydium_clmm_liquidity_change_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmLiquidityChangeEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmLiquidityChangeEvent {
+    RaydiumClmmLiquidityChangeEvent {
+        metadata: meta,
+        pool_state: e.pool_state,
+        tick: e.tick,
+        tick_lower: e.tick_lower,
+        tick_upper: e.tick_upper,
+        liquidity_before: e.liquidity_before,
+        liquidity_after: e.liquidity_after,
+    }
+}
+
+pub(crate) fn raydium_clmm_config_change_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmConfigChangeEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmConfigChangeEvent {
+    RaydiumClmmConfigChangeEvent {
+        metadata: meta,
+        index: e.index,
+        owner: e.owner,
+        protocol_fee_rate: e.protocol_fee_rate,
+        trade_fee_rate: e.trade_fee_rate,
+        tick_spacing: e.tick_spacing,
+        fund_fee_rate: e.fund_fee_rate,
+        fund_owner: e.fund_owner,
+    }
+}
+
+pub(crate) fn raydium_clmm_create_personal_position_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmCreatePersonalPositionEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmCreatePersonalPositionEvent {
+    RaydiumClmmCreatePersonalPositionEvent {
+        metadata: meta,
+        pool_state: e.pool_state,
+        minter: e.minter,
+        nft_owner: e.nft_owner,
+        tick_lower_index: e.tick_lower_index,
+        tick_upper_index: e.tick_upper_index,
+        liquidity: e.liquidity,
+        deposit_amount_0: e.deposit_amount_0,
+        deposit_amount_1: e.deposit_amount_1,
+        deposit_amount_0_transfer_fee: e.deposit_amount_0_transfer_fee,
+        deposit_amount_1_transfer_fee: e.deposit_amount_1_transfer_fee,
+    }
+}
+
+pub(crate) fn raydium_clmm_liquidity_calculate_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmLiquidityCalculateEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmLiquidityCalculateEvent {
+    RaydiumClmmLiquidityCalculateEvent {
+        metadata: meta,
+        pool_liquidity: e.pool_liquidity,
+        pool_sqrt_price_x64: e.pool_sqrt_price_x64,
+        pool_tick: e.pool_tick,
+        calc_amount_0: e.calc_amount_0,
+        calc_amount_1: e.calc_amount_1,
+        trade_fee_owed_0: e.trade_fee_owed_0,
+        trade_fee_owed_1: e.trade_fee_owed_1,
+        transfer_fee_0: e.transfer_fee_0,
+        transfer_fee_1: e.transfer_fee_1,
+    }
+}
+
+pub(crate) fn raydium_clmm_open_limit_order_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmOpenLimitOrderEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmOpenLimitOrderEvent {
+    RaydiumClmmOpenLimitOrderEvent {
+        metadata: meta,
+        pool_id: e.pool_id,
+        limit_order: e.limit_order,
+        zero_for_one: e.zero_for_one,
+        tick_index: e.tick_index,
+        total_amount: e.total_amount,
+        transfer_fee: e.transfer_fee,
+    }
+}
+
+pub(crate) fn raydium_clmm_increase_limit_order_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmIncreaseLimitOrderEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmIncreaseLimitOrderEvent {
+    RaydiumClmmIncreaseLimitOrderEvent {
+        metadata: meta,
+        pool_id: e.pool_id,
+        limit_order: e.limit_order,
+        zero_for_one: e.zero_for_one,
+        tick_index: e.tick_index,
+        total_amount: e.total_amount,
+        increased_amount: e.increased_amount,
+        transfer_fee: e.transfer_fee,
+    }
+}
+
+pub(crate) fn raydium_clmm_decrease_limit_order_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmDecreaseLimitOrderEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmDecreaseLimitOrderEvent {
+    RaydiumClmmDecreaseLimitOrderEvent {
+        metadata: meta,
+        pool_id: e.pool_id,
+        limit_order: e.limit_order,
+        zero_for_one: e.zero_for_one,
+        tick_index: e.tick_index,
+        total_amount: e.total_amount,
+        filled_amount: e.filled_amount,
+        settled_output_amount: e.settled_output_amount,
+        decreased_amount: e.decreased_amount,
+    }
+}
+
+pub(crate) fn raydium_clmm_settle_limit_order_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmSettleLimitOrderEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmSettleLimitOrderEvent {
+    RaydiumClmmSettleLimitOrderEvent {
+        metadata: meta,
+        pool_id: e.pool_id,
+        limit_order: e.limit_order,
+        zero_for_one: e.zero_for_one,
+        tick_index: e.tick_index,
+        total_amount: e.total_amount,
+        filled_amount: e.filled_amount,
+        settled_amount_out: e.settled_amount_out,
+    }
+}
+
+pub(crate) fn raydium_clmm_update_reward_infos_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmUpdateRewardInfosEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmUpdateRewardInfosEvent {
+    RaydiumClmmUpdateRewardInfosEvent {
+        metadata: meta,
+        reward_growth_global_x64: e.reward_growth_global_x64,
     }
 }
 

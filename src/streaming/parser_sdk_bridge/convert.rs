@@ -512,6 +512,123 @@ pub(crate) fn convert_parser_event(
                 raydium_clmm_decrease_liquidity_v2_from_parser(e, meta),
             ))
         }
+        PbDexEvent::RaydiumClmmLiquidityChange(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmLiquidityChange,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmLiquidityChangeEvent(
+                raydium_clmm_liquidity_change_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmConfigChange(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmConfigChange,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmConfigChangeEvent(raydium_clmm_config_change_from_parser(
+                e, meta,
+            )))
+        }
+        PbDexEvent::RaydiumClmmCreatePersonalPosition(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmCreatePersonalPosition,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmCreatePersonalPositionEvent(
+                raydium_clmm_create_personal_position_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmLiquidityCalculate(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmLiquidityCalculate,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmLiquidityCalculateEvent(
+                raydium_clmm_liquidity_calculate_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmOpenLimitOrder(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmOpenLimitOrder,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmOpenLimitOrderEvent(
+                raydium_clmm_open_limit_order_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmIncreaseLimitOrder(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmIncreaseLimitOrder,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmIncreaseLimitOrderEvent(
+                raydium_clmm_increase_limit_order_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmDecreaseLimitOrder(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmDecreaseLimitOrder,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmDecreaseLimitOrderEvent(
+                raydium_clmm_decrease_limit_order_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmSettleLimitOrder(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmSettleLimitOrder,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmSettleLimitOrderEvent(
+                raydium_clmm_settle_limit_order_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmUpdateRewardInfos(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::RaydiumClmmUpdateRewardInfos,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmUpdateRewardInfosEvent(
+                raydium_clmm_update_reward_infos_from_parser(e, meta),
+            ))
+        }
         PbDexEvent::RaydiumClmmCollectFee(e) => {
             let meta = adapt_pm(
                 e.metadata.clone(),
