@@ -1115,6 +1115,7 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::MeteoraDlmmClaimFeeEvent(meteora_dlmm_claim_fee_from_pb(e, meta)))
         }
+        _ => None,
     }
 }
 
