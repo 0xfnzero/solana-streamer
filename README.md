@@ -123,33 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.11" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.12" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.11"
+solana-streamer-sdk = "1.4.12"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.11"
+solana-streamer-sdk = "1.4.12"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.11", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.12", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.16+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.17+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v1.4.11
+### Upgrading to v1.4.12
 
-Version 1.4.11 uses `sol-parser-sdk 0.4.16` and preserves the SDK-compatible Yellowstone gRPC ordering modes in the streamer facade while aligning PumpFun USDC/v2 create, trade, global, bonding-curve, and volume account fields with the parser SDK. `buy_exact_quote_in(_v2)` is delivered as `PumpFunBuy` with the exact quote fields preserved.
+Version 1.4.12 uses `sol-parser-sdk 0.4.17` and normalizes legacy PumpFun SOL quote mints to the Solscan SOL sentinel while preserving real USDC quote mints and quote-reserve fields. Streamer bridge and merger paths keep the parser SDK semantics aligned for Yellowstone gRPC and ShredStream output.
 
 New optional capabilities:
 

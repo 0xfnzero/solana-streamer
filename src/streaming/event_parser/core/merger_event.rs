@@ -1,9 +1,31 @@
 use crate::streaming::event_parser::DexEvent;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{pubkey, pubkey::Pubkey};
+
+const PUMPFUN_SOLSCAN_SOL_QUOTE_MINT: Pubkey =
+    pubkey!("So11111111111111111111111111111111111111111");
 
 #[inline]
 fn fill_pubkey(to: &mut Pubkey, from: Pubkey) {
     if *to == Pubkey::default() && from != Pubkey::default() {
+        *to = from;
+    }
+}
+
+#[inline]
+fn normalize_pumpfun_quote_mint(quote_mint: Pubkey) -> Pubkey {
+    if quote_mint == Pubkey::default() {
+        PUMPFUN_SOLSCAN_SOL_QUOTE_MINT
+    } else {
+        quote_mint
+    }
+}
+
+#[inline]
+fn fill_pumpfun_quote_mint(to: &mut Pubkey, from: Pubkey) {
+    let from = normalize_pumpfun_quote_mint(from);
+    if (*to == Pubkey::default() || *to == PUMPFUN_SOLSCAN_SOL_QUOTE_MINT)
+        && from != Pubkey::default()
+    {
         *to = from;
     }
 }
@@ -66,7 +88,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 if e.shareholders.is_empty() && !cpie.shareholders.is_empty() {
                     e.shareholders = cpie.shareholders;
                 }
-                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
                 fill_u64(&mut e.quote_amount, cpie.quote_amount);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 fill_u64(&mut e.real_quote_reserves, cpie.real_quote_reserves);
@@ -155,7 +177,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 if cpie.token_program != solana_sdk::pubkey::Pubkey::default() {
                     e.token_program = cpie.token_program;
                 }
-                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
@@ -177,7 +199,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_u64(&mut e.real_token_reserves, cpie.real_token_reserves);
                 fill_u64(&mut e.token_total_supply, cpie.token_total_supply);
                 fill_pubkey(&mut e.token_program, cpie.token_program);
-                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
@@ -216,7 +238,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 if cpie.token_program != solana_sdk::pubkey::Pubkey::default() {
                     e.token_program = cpie.token_program;
                 }
-                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
@@ -880,6 +902,24 @@ mod tests {
                 assert_eq!(t.real_quote_reserves, 800);
                 assert!(t.is_created_buy);
             }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn pumpfun_merge_replaces_sol_quote_sentinel_with_real_quote_mint() {
+        let quote_mint = Pubkey::new_unique();
+        let mut instruction_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
+            quote_mint: PUMPFUN_SOLSCAN_SOL_QUOTE_MINT,
+            ..Default::default()
+        });
+        let cpi_log_event =
+            DexEvent::PumpFunTradeEvent(PumpFunTradeEvent { quote_mint, ..Default::default() });
+
+        merge(&mut instruction_event, cpi_log_event);
+
+        match instruction_event {
+            DexEvent::PumpFunTradeEvent(t) => assert_eq!(t.quote_mint, quote_mint),
             _ => panic!("expected PumpFunTradeEvent"),
         }
     }

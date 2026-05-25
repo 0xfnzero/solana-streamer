@@ -21,10 +21,22 @@ use crate::streaming::event_parser::protocols::pumpswap::events::{
 };
 use crate::streaming::event_parser::DexEvent;
 use prost_types::Timestamp;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{pubkey, pubkey::Pubkey};
 
 use super::adapt::adapt_pm;
 use super::program_ids::{pump_program, pumpswap_program};
+
+const PUMPFUN_SOLSCAN_SOL_QUOTE_MINT: Pubkey =
+    pubkey!("So11111111111111111111111111111111111111111");
+
+#[inline]
+fn normalize_pumpfun_quote_mint(quote_mint: Pubkey) -> Pubkey {
+    if quote_mint == Pubkey::default() {
+        PUMPFUN_SOLSCAN_SOL_QUOTE_MINT
+    } else {
+        quote_mint
+    }
+}
 
 pub(crate) fn pumpfun_create_token_from_parser(
     c: sol_parser_sdk::core::events::PumpFunCreateTokenEvent,
@@ -47,7 +59,7 @@ pub(crate) fn pumpfun_create_token_from_parser(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
-        quote_mint: c.quote_mint,
+        quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
         virtual_quote_reserves: c.virtual_quote_reserves,
         ..Default::default()
     }
@@ -74,7 +86,7 @@ pub(crate) fn pumpfun_create_v2_from_parser(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
-        quote_mint: c.quote_mint,
+        quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
         virtual_quote_reserves: c.virtual_quote_reserves,
         mint_authority: c.mint_authority,
         associated_bonding_curve: c.associated_bonding_curve,
@@ -365,7 +377,7 @@ pub(crate) fn pumpfun_bonding_curve_account_from_parser(
             creator: e.bonding_curve.creator,
             is_mayhem_mode: e.bonding_curve.is_mayhem_mode,
             is_cashback_coin: e.bonding_curve.is_cashback_coin,
-            quote_mint: e.bonding_curve.quote_mint,
+            quote_mint: normalize_pumpfun_quote_mint(e.bonding_curve.quote_mint),
         },
     }
 }
@@ -735,7 +747,7 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         buyback_fee_basis_points: t.buyback_fee_basis_points,
         buyback_fee: t.buyback_fee,
         shareholders: t.shareholders.into_iter().map(pump_fees_shareholder_from_parser).collect(),
-        quote_mint: t.quote_mint,
+        quote_mint: normalize_pumpfun_quote_mint(t.quote_mint),
         quote_amount: t.quote_amount,
         virtual_quote_reserves: t.virtual_quote_reserves,
         real_quote_reserves: t.real_quote_reserves,
@@ -838,5 +850,27 @@ pub(crate) fn pumpswap_trade_from_parser(
             base_mint: t.mint,
             ..Default::default()
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pumpfun_default_quote_mint_uses_solscan_sol_sentinel() {
+        let ev = pumpfun_trade_from_parser_with_event_type(
+            sol_parser_sdk::core::events::PumpFunTradeEvent { is_buy: true, ..Default::default() },
+            None,
+            0,
+            EventType::PumpFunBuy,
+        );
+
+        match ev {
+            DexEvent::PumpFunTradeEvent(t) => {
+                assert_eq!(t.quote_mint.to_string(), "So11111111111111111111111111111111111111111");
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
     }
 }
