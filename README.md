@@ -123,29 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.13" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.14" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.4.13"
+solana-streamer-sdk = "1.4.14"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.4.13"
+solana-streamer-sdk = "1.4.14"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.4.13", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.14", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.18+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.4.19+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.4.14
+
+Version 1.4.14 uses `sol-parser-sdk 0.4.19`, wires Raydium CLMM account parsing through the SDK bridge, and reduces ordered-buffer allocation/move overhead in low-latency delivery paths.
 
 ### Upgrading to v1.4.13
 

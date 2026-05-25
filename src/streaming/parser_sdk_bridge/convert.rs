@@ -642,6 +642,45 @@ pub(crate) fn convert_parser_event(
                 e, meta,
             )))
         }
+        PbDexEvent::RaydiumClmmAmmConfigAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::AccountRaydiumClmmAmmConfig,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmAmmConfigAccountEvent(
+                raydium_clmm_amm_config_account_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmPoolStateAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::AccountRaydiumClmmPoolState,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmPoolStateAccountEvent(
+                raydium_clmm_pool_state_account_from_parser(e, meta),
+            ))
+        }
+        PbDexEvent::RaydiumClmmTickArrayStateAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumClmm,
+                EventType::AccountRaydiumClmmTickArrayState,
+                raydium_clmm_program(),
+            );
+            Some(DexEvent::RaydiumClmmTickArrayStateAccountEvent(
+                raydium_clmm_tick_array_state_account_from_parser(e, meta),
+            ))
+        }
 
         PbDexEvent::RaydiumAmmV4Swap(e) => {
             let event_type = if e.max_amount_in != 0 || (e.amount_out != 0 && e.amount_in == 0) {

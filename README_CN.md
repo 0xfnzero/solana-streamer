@@ -122,29 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.13" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.4.14" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.4.13"
+solana-streamer-sdk = "1.4.14"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.4.13"
+solana-streamer-sdk = "1.4.14"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.4.13", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.4.14", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.18+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.4.19+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.4.14
+
+v1.4.14 使用 `sol-parser-sdk 0.4.19`，打通 Raydium CLMM 账户解析的 SDK bridge，并降低有序缓冲低延迟投递路径中的分配和搬移开销。
 
 ### 升级到 v1.4.13
 

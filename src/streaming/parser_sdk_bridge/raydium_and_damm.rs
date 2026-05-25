@@ -9,14 +9,19 @@ use crate::streaming::event_parser::protocols::raydium_amm_v4::events::{
     RaydiumAmmV4WithdrawEvent, RaydiumAmmV4WithdrawPnlEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_clmm::events::{
-    RaydiumClmmClosePositionEvent, RaydiumClmmCollectFeeEvent, RaydiumClmmConfigChangeEvent,
-    RaydiumClmmCreatePersonalPositionEvent, RaydiumClmmCreatePoolEvent,
-    RaydiumClmmDecreaseLimitOrderEvent, RaydiumClmmDecreaseLiquidityV2Event,
-    RaydiumClmmIncreaseLimitOrderEvent, RaydiumClmmIncreaseLiquidityV2Event,
-    RaydiumClmmLiquidityCalculateEvent, RaydiumClmmLiquidityChangeEvent,
-    RaydiumClmmOpenLimitOrderEvent, RaydiumClmmOpenPositionV2Event,
-    RaydiumClmmOpenPositionWithToken22NftEvent, RaydiumClmmSettleLimitOrderEvent,
-    RaydiumClmmSwapEvent, RaydiumClmmUpdateRewardInfosEvent,
+    RaydiumClmmAmmConfigAccountEvent, RaydiumClmmClosePositionEvent, RaydiumClmmCollectFeeEvent,
+    RaydiumClmmConfigChangeEvent, RaydiumClmmCreatePersonalPositionEvent,
+    RaydiumClmmCreatePoolEvent, RaydiumClmmDecreaseLimitOrderEvent,
+    RaydiumClmmDecreaseLiquidityV2Event, RaydiumClmmIncreaseLimitOrderEvent,
+    RaydiumClmmIncreaseLiquidityV2Event, RaydiumClmmLiquidityCalculateEvent,
+    RaydiumClmmLiquidityChangeEvent, RaydiumClmmOpenLimitOrderEvent,
+    RaydiumClmmOpenPositionV2Event, RaydiumClmmOpenPositionWithToken22NftEvent,
+    RaydiumClmmPoolStateAccountEvent, RaydiumClmmSettleLimitOrderEvent, RaydiumClmmSwapEvent,
+    RaydiumClmmTickArrayStateAccountEvent, RaydiumClmmUpdateRewardInfosEvent,
+};
+use crate::streaming::event_parser::protocols::raydium_clmm::types::{
+    AmmConfig as ClmmAmmConfig, DynamicFeeInfo as ClmmDynamicFeeInfo, PoolState as ClmmPoolState,
+    RewardInfo as ClmmRewardInfo, TickArrayState as ClmmTickArrayState, TickState as ClmmTickState,
 };
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::{
     RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent, RaydiumCpmmSwapEvent,
@@ -606,6 +611,170 @@ pub(crate) fn raydium_clmm_update_reward_infos_from_parser(
     RaydiumClmmUpdateRewardInfosEvent {
         metadata: meta,
         reward_growth_global_x64: e.reward_growth_global_x64,
+    }
+}
+
+pub(crate) fn raydium_clmm_amm_config_account_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmAmmConfigAccountEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmAmmConfigAccountEvent {
+    RaydiumClmmAmmConfigAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        amm_config: raydium_clmm_amm_config_from_parser(e.amm_config),
+        ..Default::default()
+    }
+}
+
+pub(crate) fn raydium_clmm_pool_state_account_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmPoolStateAccountEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmPoolStateAccountEvent {
+    RaydiumClmmPoolStateAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        pool_state: raydium_clmm_pool_state_from_parser(e.pool_state),
+        ..Default::default()
+    }
+}
+
+pub(crate) fn raydium_clmm_tick_array_state_account_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmTickArrayStateAccountEvent,
+    meta: EventMetadata,
+) -> RaydiumClmmTickArrayStateAccountEvent {
+    RaydiumClmmTickArrayStateAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        tick_array_state: raydium_clmm_tick_array_state_from_parser(e.tick_array_state),
+        ..Default::default()
+    }
+}
+
+fn raydium_clmm_amm_config_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmAmmConfig,
+) -> ClmmAmmConfig {
+    ClmmAmmConfig {
+        bump: e.bump,
+        index: e.index,
+        owner: e.owner,
+        protocol_fee_rate: e.protocol_fee_rate,
+        trade_fee_rate: e.trade_fee_rate,
+        tick_spacing: e.tick_spacing,
+        fund_fee_rate: e.fund_fee_rate,
+        padding_u32: e.padding_u32,
+        fund_owner: e.fund_owner,
+        padding: e.padding,
+    }
+}
+
+fn raydium_clmm_pool_state_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmPoolState,
+) -> ClmmPoolState {
+    ClmmPoolState {
+        bump: e.bump,
+        amm_config: e.amm_config,
+        owner: e.owner,
+        token_mint_0: e.token_mint_0,
+        token_mint_1: e.token_mint_1,
+        token_vault_0: e.token_vault_0,
+        token_vault_1: e.token_vault_1,
+        observation_key: e.observation_key,
+        mint_decimals_0: e.mint_decimals_0,
+        mint_decimals_1: e.mint_decimals_1,
+        tick_spacing: e.tick_spacing,
+        liquidity: e.liquidity,
+        sqrt_price_x64: e.sqrt_price_x64,
+        tick_current: e.tick_current,
+        padding3: e.padding3,
+        padding4: e.padding4,
+        fee_growth_global0_x64: e.fee_growth_global_0_x64,
+        fee_growth_global1_x64: e.fee_growth_global_1_x64,
+        protocol_fees_token0: e.protocol_fees_token_0,
+        protocol_fees_token1: e.protocol_fees_token_1,
+        padding5: e.padding5,
+        status: e.status,
+        fee_on: e.fee_on,
+        padding: e.padding,
+        reward_infos: [
+            raydium_clmm_reward_info_from_parser(e.reward_infos[0].clone()),
+            raydium_clmm_reward_info_from_parser(e.reward_infos[1].clone()),
+            raydium_clmm_reward_info_from_parser(e.reward_infos[2].clone()),
+        ],
+        tick_array_bitmap: e.tick_array_bitmap,
+        padding6: e.padding6,
+        fund_fees_token0: e.fund_fees_token_0,
+        fund_fees_token1: e.fund_fees_token_1,
+        open_time: e.open_time,
+        recent_epoch: e.recent_epoch,
+        dynamic_fee_info: raydium_clmm_dynamic_fee_info_from_parser(e.dynamic_fee_info),
+        padding1: e.padding1,
+        padding2: e.padding2,
+    }
+}
+
+fn raydium_clmm_reward_info_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmRewardInfo,
+) -> ClmmRewardInfo {
+    ClmmRewardInfo {
+        reward_state: e.reward_state,
+        open_time: e.open_time,
+        end_time: e.end_time,
+        last_update_time: e.last_update_time,
+        emissions_per_second_x64: e.emissions_per_second_x64,
+        reward_total_emitted: e.reward_total_emitted,
+        reward_claimed: e.reward_claimed,
+        token_mint: e.token_mint,
+        token_vault: e.token_vault,
+        authority: e.authority,
+        reward_growth_global_x64: e.reward_growth_global_x64,
+    }
+}
+
+fn raydium_clmm_dynamic_fee_info_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmDynamicFeeInfo,
+) -> ClmmDynamicFeeInfo {
+    ClmmDynamicFeeInfo {
+        filter_period: e.filter_period,
+        decay_period: e.decay_period,
+        reduction_factor: e.reduction_factor,
+        dynamic_fee_control: e.dynamic_fee_control,
+        max_volatility_accumulator: e.max_volatility_accumulator,
+        tick_spacing_index_reference: e.tick_spacing_index_reference,
+        volatility_reference: e.volatility_reference,
+        volatility_accumulator: e.volatility_accumulator,
+        last_update_timestamp: e.last_update_timestamp,
+        padding: e.padding,
+    }
+}
+
+fn raydium_clmm_tick_array_state_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumClmmTickArrayState,
+) -> ClmmTickArrayState {
+    ClmmTickArrayState {
+        pool_id: e.pool_id,
+        start_tick_index: e.start_tick_index,
+        ticks: core::array::from_fn(|i| {
+            e.ticks.get(i).cloned().map(raydium_clmm_tick_state_from_parser).unwrap_or_default()
+        }),
+        initialized_tick_count: e.initialized_tick_count,
+        recent_epoch: e.recent_epoch,
+        padding: e.padding,
+    }
+}
+
+fn raydium_clmm_tick_state_from_parser(e: sol_parser_sdk::core::events::Tick) -> ClmmTickState {
+    ClmmTickState {
+        tick: e.tick,
+        liquidity_net: e.liquidity_net,
+        liquidity_gross: e.liquidity_gross,
+        fee_growth_outside0_x64: e.fee_growth_outside_0_x64,
+        fee_growth_outside1_x64: e.fee_growth_outside_1_x64,
+        reward_growths_outside_x64: e.reward_growths_outside_x64,
+        order_phase: e.order_phase,
+        orders_amount: e.orders_amount,
+        part_filled_orders_remaining: e.part_filled_orders_remaining,
+        unfilled_ratio_x64: e.unfilled_ratio_x64,
+        padding: e.padding,
     }
 }
 

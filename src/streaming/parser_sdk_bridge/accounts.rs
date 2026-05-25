@@ -115,6 +115,15 @@ fn streamer_account_event_to_sdk_types(t: &EventType) -> Vec<SdkGrpcEventType> {
             vec![SdkGrpcEventType::AccountPumpSwapGlobalConfig]
         }
         EventType::AccountPumpSwapPool => vec![SdkGrpcEventType::AccountPumpSwapPool],
+        EventType::AccountRaydiumClmmAmmConfig => {
+            vec![SdkGrpcEventType::AccountRaydiumClmmAmmConfig]
+        }
+        EventType::AccountRaydiumClmmPoolState => {
+            vec![SdkGrpcEventType::AccountRaydiumClmmPoolState]
+        }
+        EventType::AccountRaydiumClmmTickArrayState => {
+            vec![SdkGrpcEventType::AccountRaydiumClmmTickArrayState]
+        }
         _ => Vec::new(),
     }
 }
@@ -163,6 +172,24 @@ fn normalize_account_event(event: &mut DexEvent, account: &AccountPretty) {
             e.rent_epoch = account.rent_epoch;
         }
         DexEvent::PumpFunUserVolumeAccumulatorAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::RaydiumClmmAmmConfigAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::RaydiumClmmPoolStateAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::RaydiumClmmTickArrayStateAccountEvent(e) => {
             e.executable = account.executable;
             e.lamports = account.lamports;
             e.owner = account.owner;

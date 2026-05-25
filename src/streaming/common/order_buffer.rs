@@ -38,15 +38,13 @@ impl SlotBuffer {
     }
 
     pub fn flush_before(&mut self, current_slot: u64) -> Vec<DexEvent> {
-        let slots_to_flush: Vec<u64> =
-            self.slots.keys().filter(|&&s| s < current_slot).copied().collect();
+        let keep_slots = self.slots.split_off(&current_slot);
+        let flush_slots = std::mem::replace(&mut self.slots, keep_slots);
 
-        let mut result = Vec::with_capacity(slots_to_flush.len() * 4);
-        for slot in slots_to_flush {
-            if let Some(mut events) = self.slots.remove(&slot) {
-                events.sort_unstable_by_key(|(idx, _)| *idx);
-                result.extend(events.into_iter().map(|(_, event)| event));
-            }
+        let mut result = Vec::with_capacity(flush_slots.values().map(Vec::len).sum());
+        for (_slot, mut events) in flush_slots {
+            events.sort_unstable_by_key(|(idx, _)| *idx);
+            result.extend(events.into_iter().map(|(_, event)| event));
         }
 
         if !result.is_empty() {
@@ -56,14 +54,12 @@ impl SlotBuffer {
     }
 
     pub fn flush_all(&mut self) -> Vec<DexEvent> {
-        let all_slots: Vec<u64> = self.slots.keys().copied().collect();
-        let mut result = Vec::with_capacity(all_slots.len() * 4);
+        let all_slots = std::mem::take(&mut self.slots);
+        let mut result = Vec::with_capacity(all_slots.values().map(Vec::len).sum());
 
-        for slot in all_slots {
-            if let Some(mut events) = self.slots.remove(&slot) {
-                events.sort_unstable_by_key(|(idx, _)| *idx);
-                result.extend(events.into_iter().map(|(_, event)| event));
-            }
+        for (_slot, mut events) in all_slots {
+            events.sort_unstable_by_key(|(idx, _)| *idx);
+            result.extend(events.into_iter().map(|(_, event)| event));
         }
 
         if !result.is_empty() {
@@ -83,12 +79,12 @@ impl SlotBuffer {
         let mut result = Vec::new();
 
         if slot > self.current_slot && self.current_slot > 0 {
-            let old_slots: Vec<u64> = self.slots.keys().filter(|&&s| s < slot).copied().collect();
-            for old_slot in old_slots {
-                if let Some(mut events) = self.slots.remove(&old_slot) {
-                    events.sort_unstable_by_key(|(idx, _)| *idx);
-                    result.extend(events.into_iter().map(|(_, event)| event));
-                }
+            let keep_slots = self.slots.split_off(&slot);
+            let flush_slots = std::mem::replace(&mut self.slots, keep_slots);
+            result.reserve(flush_slots.values().map(Vec::len).sum());
+            for (old_slot, mut events) in flush_slots {
+                events.sort_unstable_by_key(|(idx, _)| *idx);
+                result.extend(events.into_iter().map(|(_, event)| event));
                 self.streaming_watermarks.remove(&old_slot);
             }
         }
@@ -103,12 +99,23 @@ impl SlotBuffer {
             result.push(event);
             let mut watermark = next_expected + 1;
 
-            if let Some(buffered) = self.slots.get_mut(&slot) {
+            let remove_empty_slot = if let Some(buffered) = self.slots.get_mut(&slot) {
                 buffered.sort_unstable_by_key(|(idx, _)| *idx);
-                while let Some(pos) = buffered.iter().position(|(idx, _)| *idx == watermark) {
-                    result.push(buffered.remove(pos).1);
+                let mut ready_count = 0;
+                while ready_count < buffered.len() && buffered[ready_count].0 == watermark {
                     watermark += 1;
+                    ready_count += 1;
                 }
+                result.reserve(ready_count);
+                for (_, event) in buffered.drain(..ready_count) {
+                    result.push(event);
+                }
+                buffered.is_empty()
+            } else {
+                false
+            };
+            if remove_empty_slot {
+                self.slots.remove(&slot);
             }
             self.streaming_watermarks.insert(slot, watermark);
         } else if tx_index > next_expected {
@@ -125,8 +132,9 @@ impl SlotBuffer {
     }
 
     pub fn flush_streaming_timeout(&mut self) -> Vec<DexEvent> {
-        let mut result = Vec::new();
-        for (slot, mut events) in std::mem::take(&mut self.slots) {
+        let flush_slots = std::mem::take(&mut self.slots);
+        let mut result = Vec::with_capacity(flush_slots.values().map(Vec::len).sum());
+        for (slot, mut events) in flush_slots {
             events.sort_unstable_by_key(|(idx, _)| *idx);
             result.extend(events.into_iter().map(|(_, event)| event));
             self.streaming_watermarks.remove(&slot);
@@ -172,8 +180,8 @@ impl MicroBatchBuffer {
         }
 
         self.events.sort_unstable_by_key(|(slot, tx_index, _)| (*slot, *tx_index));
-        let result =
-            std::mem::take(&mut self.events).into_iter().map(|(_, _, event)| event).collect();
+        let mut result = Vec::with_capacity(self.events.len());
+        result.extend(self.events.drain(..).map(|(_, _, event)| event));
         self.window_start_us = 0;
         result
     }
@@ -192,5 +200,62 @@ impl MicroBatchBuffer {
 impl Default for MicroBatchBuffer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::streaming::event_parser::protocols::BlockMetaEvent;
+
+    fn event(id: u64) -> DexEvent {
+        DexEvent::BlockMetaEvent(BlockMetaEvent::new(id, id.to_string(), 0, 0))
+    }
+
+    fn ids(events: Vec<DexEvent>) -> Vec<u64> {
+        events
+            .into_iter()
+            .map(|event| match event {
+                DexEvent::BlockMetaEvent(event) => event.slot,
+                _ => unreachable!("test only creates block meta events"),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn flush_before_keeps_newer_slots_and_sorts_flushed_events() {
+        let mut buffer = SlotBuffer::new();
+        buffer.push(7, 2, event(72));
+        buffer.push(5, 1, event(51));
+        buffer.push(5, 0, event(50));
+
+        assert_eq!(ids(buffer.flush_before(6)), vec![50, 51]);
+        assert_eq!(ids(buffer.flush_all()), vec![72]);
+    }
+
+    #[test]
+    fn streaming_order_drains_only_contiguous_ready_prefix() {
+        let mut buffer = SlotBuffer::new();
+
+        assert!(buffer.push_streaming(10, 3, event(103)).is_empty());
+        assert!(buffer.push_streaming(10, 1, event(101)).is_empty());
+        assert_eq!(ids(buffer.push_streaming(10, 0, event(100))), vec![100, 101]);
+        assert_eq!(ids(buffer.push_streaming(10, 2, event(102))), vec![102, 103]);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn micro_batch_flush_sorts_and_reuses_allocation() {
+        let mut buffer = MicroBatchBuffer::new();
+        let initial_capacity = buffer.events.capacity();
+
+        assert!(!buffer.push(2, 1, event(21), 0, 100));
+        assert!(!buffer.push(1, 0, event(10), 10, 100));
+
+        assert_eq!(ids(buffer.flush()), vec![10, 21]);
+        assert!(buffer.events.capacity() >= initial_capacity);
+
+        assert!(!buffer.push(3, 0, event(30), 200, 100));
+        assert_eq!(ids(buffer.flush()), vec![30]);
     }
 }
