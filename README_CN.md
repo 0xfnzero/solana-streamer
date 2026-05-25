@@ -69,7 +69,7 @@
 - **实时事件流**: 订阅多个 Solana DEX 协议的实时交易事件
 - **SDK 底层解析核心**: 交易、RPC、账户和 ShredStream 解析都优先复用 `sol-parser-sdk`
 - **Yellowstone gRPC 支持**: 使用 Yellowstone gRPC 进行高性能事件订阅
-- **ShredStream 支持**: 使用 ShredStream 协议进行替代事件流传输
+- **ShredStream 支持**: 使用 ShredStream 协议进行替代事件流传输；ALT-loaded 账户会以默认账户占位并尽量解析外层事件
 - **统一事件接口**: 在所有支持的协议中保持一致的事件处理
 
 ### 多协议支持
@@ -122,29 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.1" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.0"
+solana-streamer-sdk = "1.5.1"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.0"
+solana-streamer-sdk = "1.5.1"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.0+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.1
+
+v1.5.1 使用 crates.io 上的 `sol-parser-sdk 0.5.1`。该版本改进 ShredStream 的 ALT 处理：ALT-loaded 账户会以默认账户占位，外层指令按 data/discriminator 尽量解析；同时增加队列满时的 dropped event 可观测性，并明确 CPI/inner-only 事件仍是 ShredStream 的固有限制。
 
 ### 升级到 v1.5.0
 

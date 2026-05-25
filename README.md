@@ -70,7 +70,7 @@
 - **Real-time Event Streaming**: Subscribe to live trading events from multiple Solana DEX protocols
 - **SDK-backed Parser Core**: Transaction, RPC, account, and ShredStream parsing are backed by `sol-parser-sdk`
 - **Yellowstone gRPC Support**: High-performance event subscription using Yellowstone gRPC
-- **ShredStream Support**: Alternative event streaming using ShredStream protocol
+- **ShredStream Support**: Alternative event streaming using ShredStream protocol; ALT-loaded accounts are parsed best-effort with default account placeholders
 - **Unified Event Interface**: Consistent event handling across all supported protocols
 
 ### Multi-Protocol Support
@@ -123,29 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.1" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.0"
+solana-streamer-sdk = "1.5.1"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.0"
+solana-streamer-sdk = "1.5.1"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.0+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.1
+
+Version 1.5.1 uses `sol-parser-sdk 0.5.1` from crates.io. It improves ShredStream ALT handling by parsing outer instructions best-effort with default placeholders for ALT-loaded accounts, adds dropped-event queue observability, and keeps CPI/inner-only events documented as a ShredStream limitation.
 
 ### Upgrading to v1.5.0
 
