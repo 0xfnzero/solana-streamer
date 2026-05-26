@@ -122,29 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.1" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.2" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.1"
+solana-streamer-sdk = "1.5.2"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.1"
+solana-streamer-sdk = "1.5.2"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.1", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.2", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.1+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.2+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.2
+
+v1.5.2 使用 crates.io 上的 `sol-parser-sdk 0.5.2`。ShredStream 投递改为 SDK direct-callback 路径，避免额外的队列消费任务；解析事件缓冲会跨 Entry 复用；ShredStream 拿不到的 `tx_index` 会保留为 `None`；`PumpFunCreateToken` 过滤继续向后兼容 `CreateV2` 事件。direct-callback 路径中的用户回调应避免阻塞操作。
 
 ### 升级到 v1.5.1
 

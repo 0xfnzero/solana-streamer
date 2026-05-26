@@ -173,7 +173,10 @@ fn push_streamer_event_sdk_grpc_types(t: &EventType, out: &mut Vec<SdkGrpcEventT
     use SdkGrpcEventType as Sdk;
     match t {
         St::BlockMeta => out.push(Sdk::BlockMeta),
-        St::PumpFunCreateToken => out.push(Sdk::PumpFunCreate),
+        St::PumpFunCreateToken => {
+            out.push(Sdk::PumpFunCreate);
+            out.push(Sdk::PumpFunCreateV2);
+        }
         St::PumpFunCreateV2Token => out.push(Sdk::PumpFunCreateV2),
         St::PumpFunBuy => {
             out.push(Sdk::PumpFunBuy);
@@ -396,7 +399,8 @@ fn event_type_matches(filter_type: &EventType, event_type: &EventType) -> bool {
     filter_type == event_type
         || matches!(
             (filter_type, event_type),
-            (EventType::PumpFunBuy, EventType::PumpFunBuyExactSolIn)
+            (EventType::PumpFunCreateToken, EventType::PumpFunCreateV2Token)
+                | (EventType::PumpFunBuy, EventType::PumpFunBuyExactSolIn)
                 | (EventType::TokenAccount, EventType::TokenInfo)
                 | (EventType::RaydiumClmmSwap, EventType::RaydiumClmmSwapV2)
                 | (EventType::RaydiumClmmSwapV2, EventType::RaydiumClmmSwap)
@@ -529,6 +533,30 @@ mod tests {
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuyExactSolIn));
         assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
+    }
+
+    #[test]
+    fn pumpfun_create_filter_matches_create_v2_for_backward_compat() {
+        let f =
+            EventTypeFilter { include: vec![EventType::PumpFunCreateToken], ..Default::default() };
+        assert!(f.passes_event_type(&EventType::PumpFunCreateToken));
+        assert!(f.passes_event_type(&EventType::PumpFunCreateV2Token));
+
+        let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunCreate));
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunCreateV2));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
+
+        let f = EventTypeFilter {
+            include: vec![EventType::PumpFunCreateV2Token],
+            ..Default::default()
+        };
+        assert!(!f.passes_event_type(&EventType::PumpFunCreateToken));
+        assert!(f.passes_event_type(&EventType::PumpFunCreateV2Token));
+
+        let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunCreate));
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunCreateV2));
     }
 
     #[test]

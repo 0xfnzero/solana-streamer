@@ -78,37 +78,19 @@ impl EventParser {
         tx_index: Option<u64>,
         callback: std::sync::Arc<dyn Fn(crate::streaming::event_parser::DexEvent) + Send + Sync>,
     ) -> anyhow::Result<()> {
-        let sdk_parse_filter =
-            crate::streaming::event_parser::common::filter::build_sdk_shred_parse_event_filter(
-                protocols,
-                event_type_filter,
-            );
-        let mut sdk_events = Vec::with_capacity(4);
-        sol_parser_sdk::shredstream::parse_transaction_dex_events_with_filter(
+        crate::streaming::common::parse_shred_transaction_events(
             transaction,
             signature,
             slot.unwrap_or(0),
-            tx_index.unwrap_or(0),
+            tx_index,
             recv_us,
-            sdk_parse_filter.as_ref(),
-            &mut sdk_events,
-        );
-        for sdk_event in sdk_events {
-            if let Some(mut event) = crate::streaming::parser_sdk_bridge::adapt_parser_event(
-                sdk_event,
-                None,
-                recv_us,
-                protocols,
-                event_type_filter,
-            ) {
-                event.metadata_mut().handle_us =
-                    crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since(
-                        recv_us,
-                    );
-                event = helpers::process_event(event, bot_wallet);
+            protocols,
+            event_type_filter,
+            bot_wallet,
+            |event| {
                 callback(event);
-            }
-        }
+            },
+        );
         Ok(())
     }
 }

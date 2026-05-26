@@ -15,8 +15,16 @@ use crate::streaming::parser_sdk_bridge::{
 use crate::streaming::shred::TransactionWithSlot;
 use sol_parser_sdk::grpc::parse_subscribe_update_transaction_low_latency;
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::Signature;
+use solana_sdk::transaction::VersionedTransaction;
+use std::cell::RefCell;
 use std::sync::Arc;
 use yellowstone_grpc_proto::geyser::SubscribeUpdateTransaction;
+
+thread_local! {
+    static SHRED_SDK_EVENTS: RefCell<Vec<sol_parser_sdk::DexEvent>> =
+        RefCell::new(Vec::with_capacity(4));
+}
 
 /// Wrap the user callback and update transaction metrics after delivery.
 #[inline]
@@ -182,31 +190,66 @@ pub async fn process_shred_transaction(
     let recv_us = transaction_with_slot.recv_us;
 
     let adapter_callback = create_metrics_callback(callback);
-    let sdk_parse_filter = build_sdk_shred_parse_event_filter(protocols, event_type_filter);
-    let mut sdk_events = Vec::with_capacity(4);
-    sol_parser_sdk::shredstream::parse_transaction_dex_events_with_filter(
+    parse_shred_transaction_events(
         &tx,
         signature,
         slot,
-        tx_index.unwrap_or(0),
+        tx_index,
         recv_us,
-        sdk_parse_filter.as_ref(),
-        &mut sdk_events,
+        protocols,
+        event_type_filter,
+        bot_wallet,
+        |event| adapter_callback(event),
     );
 
-    for sdk_event in sdk_events {
-        if let Some(mut event) =
-            adapt_parser_event(sdk_event, None, recv_us, protocols, event_type_filter)
-        {
-            event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
-            event = crate::streaming::event_parser::core::event_parser::helpers::process_event(
-                event, bot_wallet,
-            );
-            adapter_callback(event);
-        }
-    }
-
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn parse_shred_transaction_events(
+    tx: &VersionedTransaction,
+    signature: Signature,
+    slot: u64,
+    tx_index: Option<u64>,
+    recv_us: i64,
+    protocols: &[Protocol],
+    event_type_filter: Option<&EventTypeFilter>,
+    bot_wallet: Option<Pubkey>,
+    mut on_event: impl FnMut(DexEvent),
+) {
+    let sdk_parse_filter = build_sdk_shred_parse_event_filter(protocols, event_type_filter);
+
+    SHRED_SDK_EVENTS.with(|slot_events| {
+        let mut events = {
+            let mut slot_events = slot_events.borrow_mut();
+            std::mem::take(&mut *slot_events)
+        };
+        events.clear();
+        sol_parser_sdk::shredstream::parse_transaction_dex_events_with_filter(
+            tx,
+            signature,
+            slot,
+            tx_index.unwrap_or(0),
+            recv_us,
+            sdk_parse_filter.as_ref(),
+            &mut events,
+        );
+
+        for sdk_event in events.drain(..) {
+            if let Some(mut event) =
+                adapt_parser_event(sdk_event, None, recv_us, protocols, event_type_filter)
+            {
+                event.metadata_mut().tx_index = tx_index;
+                event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
+                event = crate::streaming::event_parser::core::event_parser::helpers::process_event(
+                    event, bot_wallet,
+                );
+                on_event(event);
+            }
+        }
+
+        *slot_events.borrow_mut() = events;
+    });
 }
 
 /// Update metrics for event processing (with optional latency check)
@@ -231,4 +274,97 @@ fn update_metrics_with_latency(
         recv_us,
         block_time_ms,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::process_shred_transaction;
+    use crate::streaming::event_parser::{DexEvent, Protocol};
+    use crate::streaming::shred::TransactionWithSlot;
+    use sol_parser_sdk::instr::program_ids::PUMPFUN_PROGRAM_ID;
+    use solana_sdk::hash::Hash;
+    use solana_sdk::message::{
+        compiled_instruction::CompiledInstruction, v0, MessageHeader, VersionedMessage,
+    };
+    use solana_sdk::pubkey::Pubkey;
+    use solana_sdk::signature::Signature;
+    use solana_sdk::transaction::VersionedTransaction;
+    use std::sync::{Arc, Mutex};
+
+    fn push_string(data: &mut Vec<u8>, value: &str) {
+        data.extend_from_slice(&(value.len() as u32).to_le_bytes());
+        data.extend_from_slice(value.as_bytes());
+    }
+
+    fn pumpfun_create_data() -> Vec<u8> {
+        let mut data = Vec::new();
+        data.extend_from_slice(&[24, 30, 200, 40, 5, 28, 7, 119]);
+        push_string(&mut data, "Index Test");
+        push_string(&mut data, "IDX");
+        push_string(&mut data, "https://example.invalid/index.json");
+        data.extend_from_slice(Pubkey::new_unique().as_ref());
+        data
+    }
+
+    fn pumpfun_create_tx() -> VersionedTransaction {
+        let mut account_keys = (0..10).map(|_| Pubkey::new_unique()).collect::<Vec<_>>();
+        account_keys.push(PUMPFUN_PROGRAM_ID);
+
+        VersionedTransaction {
+            signatures: vec![Signature::default()],
+            message: VersionedMessage::V0(v0::Message {
+                header: MessageHeader {
+                    num_required_signatures: 1,
+                    num_readonly_signed_accounts: 0,
+                    num_readonly_unsigned_accounts: 0,
+                },
+                account_keys,
+                recent_blockhash: Hash::default(),
+                instructions: vec![CompiledInstruction::new_from_raw_parts(
+                    10,
+                    pumpfun_create_data(),
+                    (0..10).collect(),
+                )],
+                address_table_lookups: Vec::new(),
+            }),
+        }
+    }
+
+    async fn parse_single_shred_create(tx_index: Option<u64>) -> DexEvent {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = events.clone();
+        let callback = Arc::new(move |event| {
+            captured.lock().unwrap().push(event);
+        });
+
+        process_shred_transaction(
+            TransactionWithSlot::new(pumpfun_create_tx(), 42, 1_000_000, tx_index),
+            &[Protocol::PumpFun],
+            None,
+            callback,
+            None,
+        )
+        .await
+        .expect("process shred transaction");
+
+        let mut events = events.lock().unwrap();
+        assert_eq!(events.len(), 1);
+        events.pop().unwrap()
+    }
+
+    #[tokio::test]
+    async fn shred_transaction_preserves_unknown_tx_index() {
+        let event = parse_single_shred_create(None).await;
+
+        assert!(matches!(event, DexEvent::PumpFunCreateTokenEvent(_)));
+        assert_eq!(event.metadata().tx_index, None);
+    }
+
+    #[tokio::test]
+    async fn shred_transaction_preserves_present_tx_index() {
+        let event = parse_single_shred_create(Some(42)).await;
+
+        assert!(matches!(event, DexEvent::PumpFunCreateTokenEvent(_)));
+        assert_eq!(event.metadata().tx_index, Some(42));
+    }
 }

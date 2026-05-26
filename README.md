@@ -123,29 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.1" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.2" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.1"
+solana-streamer-sdk = "1.5.2"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.1"
+solana-streamer-sdk = "1.5.2"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.1", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.2", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.1+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.2+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.2
+
+Version 1.5.2 uses `sol-parser-sdk 0.5.2` from crates.io. ShredStream delivery now uses the SDK direct-callback path to avoid the extra queue consumer task, reuses parser event buffers across entries, preserves unknown ShredStream `tx_index` as `None`, and keeps `PumpFunCreateToken` filters backward-compatible with `CreateV2` events. User callbacks on the direct path should avoid blocking work.
 
 ### Upgrading to v1.5.1
 
