@@ -41,8 +41,9 @@ mod tests {
     use crate::streaming::event_parser::{DexEvent, Protocol};
     use sol_parser_sdk::core::events::{
         BonkTradeEvent as PbBonkTrade, EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap,
-        OrcaWhirlpoolSwapEvent as PbOrcaSwap, PumpFunTradeEvent as PbPumpTrade,
-        TokenInfoEvent as PbTokenInfo, TradeDirection as PbBonkDir,
+        OrcaWhirlpoolSwapEvent as PbOrcaSwap, PumpFunCreateV2TokenEvent as PbPumpCreateV2,
+        PumpFunTradeEvent as PbPumpTrade, TokenInfoEvent as PbTokenInfo,
+        TradeDirection as PbBonkDir,
     };
     use sol_parser_sdk::DexEvent as PbDexEvent;
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
@@ -138,6 +139,44 @@ mod tests {
                 assert!(st.is_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn converts_pumpfun_create_v2_as_canonical_create() {
+        let mint = Pubkey::new_unique();
+        let global = Pubkey::new_unique();
+        let event_authority = Pubkey::new_unique();
+        let c = PbPumpCreateV2 {
+            metadata: EventMetadata {
+                signature: Signature::default(),
+                slot: 42,
+                tx_index: 7,
+                block_time_us: 1_000_000,
+                grpc_recv_us: 88,
+                recent_blockhash: None,
+            },
+            name: "Token".to_string(),
+            symbol: "TOK".to_string(),
+            mint,
+            global,
+            event_authority,
+            is_mayhem_mode: true,
+            is_cashback_enabled: true,
+            ..Default::default()
+        };
+
+        let ev = convert_parser_event(PbDexEvent::PumpFunCreateV2(c), None, 999).expect("convert");
+        match ev {
+            DexEvent::PumpFunCreateTokenEvent(st) => {
+                assert_eq!(st.metadata.event_type, EventType::PumpFunCreateToken);
+                assert_eq!(st.mint, mint);
+                assert_eq!(st.global, global);
+                assert_eq!(st.event_authority, event_authority);
+                assert!(st.is_mayhem_mode);
+                assert!(st.is_cashback_enabled);
+            }
+            other => panic!("expected canonical PumpFunCreateTokenEvent, got {other:?}"),
         }
     }
 

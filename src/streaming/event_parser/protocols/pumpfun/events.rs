@@ -52,6 +52,18 @@ pub struct PumpFunCreateTokenEvent {
     pub event_authority: Pubkey,
     #[borsh(skip)]
     pub program: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_program_id: Pubkey,
+    #[borsh(skip)]
+    pub global_params: Pubkey,
+    #[borsh(skip)]
+    pub sol_vault: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_state: Pubkey,
+    #[borsh(skip)]
+    pub mayhem_token_vault: Pubkey,
+    #[borsh(skip)]
+    pub observed_fee_recipient: Pubkey,
 }
 
 /// CreateV2 事件：与 create_v2 指令 16 个账户一致（见 parser 注释）。

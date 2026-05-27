@@ -60,10 +60,10 @@ pub(crate) fn convert_parser_event(
                 bt,
                 recv_wall_us,
                 ProtocolType::PumpFun,
-                EventType::PumpFunCreateV2Token,
+                EventType::PumpFunCreateToken,
                 pump_program(),
             );
-            Some(DexEvent::PumpFunCreateV2TokenEvent(pumpfun_create_v2_from_parser(c, meta)))
+            Some(DexEvent::PumpFunCreateTokenEvent(pumpfun_create_token_from_parser_v2(c, meta)))
         }
         PbDexEvent::PumpFunMigrate(m) => {
             let meta = adapt_pm(

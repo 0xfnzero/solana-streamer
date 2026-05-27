@@ -123,29 +123,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.4" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.3"
+solana-streamer-sdk = "1.5.4"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.3"
+solana-streamer-sdk = "1.5.4"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.3+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.4+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.4
+
+Version 1.5.4 uses `sol-parser-sdk 0.5.4` from crates.io. Pump.fun `create` and `create_v2` are delivered as one canonical `PumpFunCreateTokenEvent`; subscribing to either `PumpFunCreateToken` or `PumpFunCreateV2Token` receives the same complete create-family data. This prevents duplicate new-mint callbacks from gRPC log + instruction parsing while preserving create_v2 account fields on the canonical create event.
 
 ### Upgrading to v1.5.3
 

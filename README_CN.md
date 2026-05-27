@@ -122,29 +122,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.4" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.3"
+solana-streamer-sdk = "1.5.4"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.3"
+solana-streamer-sdk = "1.5.4"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.3+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.4+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.4
+
+v1.5.4 使用 crates.io 上的 `sol-parser-sdk 0.5.4`。Pump.fun `create` 和 `create_v2` 会统一投递为 canonical `PumpFunCreateTokenEvent`；订阅 `PumpFunCreateToken` 或 `PumpFunCreateV2Token` 任意一个，都能收到同一份完整 create-family 数据。该版本避免 gRPC log + instruction 双路径解析导致新 mint 回调重复，同时在 canonical create 事件上保留 create_v2 账户字段。
 
 ### 升级到 v1.5.3
 

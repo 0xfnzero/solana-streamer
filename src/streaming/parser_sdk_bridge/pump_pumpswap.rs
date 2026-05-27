@@ -7,12 +7,11 @@ use crate::streaming::event_parser::protocols::pumpfun::events::{
     PumpFeesRevokeFeeSharingAuthorityEvent, PumpFeesShareholder,
     PumpFeesTransferFeeSharingAuthorityEvent, PumpFeesUpdateAdminEvent,
     PumpFeesUpdateFeeConfigEvent, PumpFeesUpdateFeeSharesEvent, PumpFeesUpsertFeeTiersEvent,
-    PumpFunBondingCurveAccountEvent, PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent,
-    PumpFunFeeConfig, PumpFunFeeConfigAccountEvent, PumpFunGlobalAccountEvent,
-    PumpFunGlobalVolumeAccumulator, PumpFunGlobalVolumeAccumulatorAccountEvent,
-    PumpFunMigrateBondingCurveCreatorEvent, PumpFunMigrateEvent, PumpFunSharingConfig,
-    PumpFunSharingConfigAccountEvent, PumpFunTradeEvent, PumpFunUserVolumeAccumulator,
-    PumpFunUserVolumeAccumulatorAccountEvent,
+    PumpFunBondingCurveAccountEvent, PumpFunCreateTokenEvent, PumpFunFeeConfig,
+    PumpFunFeeConfigAccountEvent, PumpFunGlobalAccountEvent, PumpFunGlobalVolumeAccumulator,
+    PumpFunGlobalVolumeAccumulatorAccountEvent, PumpFunMigrateBondingCurveCreatorEvent,
+    PumpFunMigrateEvent, PumpFunSharingConfig, PumpFunSharingConfigAccountEvent, PumpFunTradeEvent,
+    PumpFunUserVolumeAccumulator, PumpFunUserVolumeAccumulatorAccountEvent,
 };
 use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Global};
 use crate::streaming::event_parser::protocols::pumpswap::events::{
@@ -65,11 +64,11 @@ pub(crate) fn pumpfun_create_token_from_parser(
     }
 }
 
-pub(crate) fn pumpfun_create_v2_from_parser(
+pub(crate) fn pumpfun_create_token_from_parser_v2(
     c: sol_parser_sdk::core::events::PumpFunCreateV2TokenEvent,
     meta: EventMetadata,
-) -> PumpFunCreateV2TokenEvent {
-    PumpFunCreateV2TokenEvent {
+) -> PumpFunCreateTokenEvent {
+    PumpFunCreateTokenEvent {
         metadata: meta,
         name: c.name,
         symbol: c.symbol,
@@ -100,6 +99,7 @@ pub(crate) fn pumpfun_create_v2_from_parser(
         mayhem_token_vault: c.mayhem_token_vault,
         event_authority: c.event_authority,
         program: c.program,
+        ..Default::default()
     }
 }
 
