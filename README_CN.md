@@ -122,33 +122,37 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.2" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.3" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.2"
+solana-streamer-sdk = "1.5.3"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.2"
+solana-streamer-sdk = "1.5.3"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.2", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.3", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.2+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.3+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
+### 升级到 v1.5.3
+
+v1.5.3 使用 crates.io 上的 `sol-parser-sdk 0.5.3`。该版本会通过 streamer bridge 保留真实的 Pump.fun v2 `ix_name`，改进 ShredStream 对 Pump.fun v2 短账户列表的 best-effort 解析，并让订阅 `PumpFunBuy` 或 `PumpFunBuyExactSolIn` 都能匹配兼容的 buy-family 事件。ShredStream 仍使用直接读取 Entry 的自动重连低延迟路径；回调应避免阻塞，`tx_index` 仍是 Entry 内 best-effort 索引。
+
 ### 升级到 v1.5.2
 
-v1.5.2 使用 crates.io 上的 `sol-parser-sdk 0.5.2`。ShredStream 投递改为 SDK direct-callback 路径，避免额外的队列消费任务；解析事件缓冲会跨 Entry 复用；ShredStream 拿不到的 `tx_index` 会保留为 `None`；`PumpFunCreateToken` 过滤继续向后兼容 `CreateV2` 事件。direct-callback 路径中的用户回调应避免阻塞操作。
+v1.5.2 使用 crates.io 上的 `sol-parser-sdk 0.5.2`。ShredStream 投递使用直接读取 Entry 并调用 SDK parser 的低延迟路径，支持自动重连，避免额外的队列消费任务并复用解析事件缓冲。ShredStream 的 `tx_index` 是 Entry 内 best-effort 索引，不是 Yellowstone 的 slot 级交易索引。direct-callback 路径中的用户回调运行在读流任务中，应避免阻塞操作。
 
 ### 升级到 v1.5.1
 

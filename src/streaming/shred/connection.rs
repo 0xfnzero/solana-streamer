@@ -25,7 +25,9 @@ impl ShredStreamGrpc {
 
     /// 创建客户端，使用自定义配置
     pub async fn new_with_config(endpoint: String, config: StreamClientConfig) -> AnyResult<Self> {
-        let shredstream_client = ShredstreamProxyClient::connect(endpoint.clone()).await?;
+        let shredstream_client = ShredstreamProxyClient::connect(endpoint.clone())
+            .await?
+            .max_decoding_message_size(config.connection.max_decoding_message_size);
         let sdk_config = sol_parser_sdk::shredstream::ShredStreamConfig {
             connection_timeout_ms: config.connection.connect_timeout.saturating_mul(1000),
             request_timeout_ms: config.connection.request_timeout.saturating_mul(1000),

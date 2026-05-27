@@ -123,33 +123,37 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.2" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.3" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.2"
+solana-streamer-sdk = "1.5.3"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.2"
+solana-streamer-sdk = "1.5.3"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.2", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.3", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.2+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.3+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
+### Upgrading to v1.5.3
+
+Version 1.5.3 uses `sol-parser-sdk 0.5.3` from crates.io. It preserves real Pump.fun v2 `ix_name` values through the streamer bridge, improves ShredStream Pump.fun v2 best-effort parsing for short account lists, and treats `PumpFunBuy` and `PumpFunBuyExactSolIn` subscriptions as compatible buy-family filters. ShredStream still uses the direct entry-reading path with automatic reconnect; callbacks should remain non-blocking and `tx_index` remains entry-local best-effort.
+
 ### Upgrading to v1.5.2
 
-Version 1.5.2 uses `sol-parser-sdk 0.5.2` from crates.io. ShredStream delivery now uses the SDK direct-callback path to avoid the extra queue consumer task, reuses parser event buffers across entries, preserves unknown ShredStream `tx_index` as `None`, and keeps `PumpFunCreateToken` filters backward-compatible with `CreateV2` events. User callbacks on the direct path should avoid blocking work.
+Version 1.5.2 uses `sol-parser-sdk 0.5.2` from crates.io. ShredStream delivery uses the SDK parser on a direct entry-reading path with automatic reconnect, avoiding the extra queue consumer task while keeping parser event buffers reused. ShredStream `tx_index` is entry-local best-effort, not the Yellowstone slot-level transaction index. User callbacks on the direct path run on the read task and should avoid blocking work.
 
 ### Upgrading to v1.5.1
 
