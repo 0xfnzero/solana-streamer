@@ -11,6 +11,7 @@ use yellowstone_grpc_proto::{
 pub type TransactionsFilterMap = HashMap<String, SubscribeRequestFilterTransactions>;
 pub type AccountsFilterMap = HashMap<String, SubscribeRequestFilterAccounts>;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum EventPretty {
     BlockMeta(BlockMetaPretty),
@@ -65,7 +66,7 @@ impl fmt::Debug for BlockMetaPretty {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TransactionPretty {
     pub slot: u64,
     pub tx_index: Option<u64>, // 新增：交易在slot中的索引
@@ -86,20 +87,5 @@ impl fmt::Debug for TransactionPretty {
             .field("is_vote", &self.is_vote)
             .field("recv_us", &self.recv_us)
             .finish()
-    }
-}
-
-impl Default for TransactionPretty {
-    fn default() -> Self {
-        Self {
-            slot: 0,
-            tx_index: None,
-            block_hash: String::new(),
-            block_time: None,
-            signature: Signature::default(),
-            is_vote: false,
-            grpc_tx: SubscribeUpdateTransactionInfo::default(),
-            recv_us: 0,
-        }
     }
 }

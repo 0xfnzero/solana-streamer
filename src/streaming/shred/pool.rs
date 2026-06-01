@@ -63,7 +63,7 @@ impl PooledTransactionWithSlot {
     /// 使用优化的工厂方法创建 TransactionWithSlot（移动数据而不是克隆）
     pub fn into_transaction_with_slot(mut self) -> TransactionWithSlot {
         // 移动数据而不是克隆，避免多余的内存分配
-        std::mem::replace(self.deref_mut(), TransactionWithSlot::default())
+        std::mem::take(self.deref_mut())
     }
 }
 

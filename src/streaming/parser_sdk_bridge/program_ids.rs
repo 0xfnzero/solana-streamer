@@ -12,7 +12,7 @@ pub(crate) fn pump_fees_program() -> Pubkey {
     program_ids::PUMP_FEES_PROGRAM_ID
 }
 pub(crate) fn bonk_program() -> Pubkey {
-    program_ids::BONK_PROGRAM_ID
+    program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID
 }
 pub(crate) fn raydium_cpmm_program() -> Pubkey {
     program_ids::RAYDIUM_CPMM_PROGRAM_ID
@@ -25,6 +25,10 @@ pub(crate) fn raydium_amm_v4_program() -> Pubkey {
 }
 pub(crate) fn meteora_damm_program() -> Pubkey {
     program_ids::METEORA_DAMM_V2_PROGRAM_ID
+}
+
+pub(crate) fn meteora_dbc_program() -> Pubkey {
+    program_ids::METEORA_DBC_PROGRAM_ID
 }
 
 pub(crate) fn orca_whirlpool_program() -> Pubkey {

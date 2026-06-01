@@ -25,6 +25,7 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
     )
 }
 
+#[allow(clippy::match_like_matches_macro)]
 fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
     match (p, ev) {
         (Protocol::PumpFun, DexEvent::PumpFunCreateTokenEvent(_))
@@ -122,10 +123,18 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2RemoveLiquidityEvent(_))
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2CreatePositionEvent(_))
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2ClosePositionEvent(_)) => true,
+        (Protocol::MeteoraDbc, DexEvent::MeteoraDbcSwapEvent(_))
+        | (Protocol::MeteoraDbc, DexEvent::MeteoraDbcInitializePoolEvent(_))
+        | (Protocol::MeteoraDbc, DexEvent::MeteoraDbcCurveCompleteEvent(_)) => true,
         (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolSwapEvent(_))
         | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolLiquidityIncreasedEvent(_))
         | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolLiquidityDecreasedEvent(_))
-        | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolPoolInitializedEvent(_)) => true,
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolPoolInitializedEvent(_))
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolAccountEvent(_))
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaPositionAccountEvent(_))
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaTickArrayAccountEvent(_))
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaFeeTierAccountEvent(_))
+        | (Protocol::OrcaWhirlpool, DexEvent::OrcaWhirlpoolsConfigAccountEvent(_)) => true,
         (Protocol::MeteoraPools, DexEvent::MeteoraPoolsSwapEvent(_))
         | (Protocol::MeteoraPools, DexEvent::MeteoraPoolsAddLiquidityEvent(_))
         | (Protocol::MeteoraPools, DexEvent::MeteoraPoolsRemoveLiquidityEvent(_))

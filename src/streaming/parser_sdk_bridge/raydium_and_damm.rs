@@ -2,7 +2,8 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::meteora_damm_v2::events::{
     MeteoraDammV2AddLiquidityEvent, MeteoraDammV2ClosePositionEvent,
-    MeteoraDammV2CreatePositionEvent, MeteoraDammV2RemoveLiquidityEvent, MeteoraDammV2SwapEvent,
+    MeteoraDammV2CreatePositionEvent, MeteoraDammV2InitializePoolEvent,
+    MeteoraDammV2RemoveLiquidityEvent, MeteoraDammV2SwapEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_amm_v4::events::{
     RaydiumAmmV4DepositEvent, RaydiumAmmV4Initialize2Event, RaydiumAmmV4SwapEvent,
@@ -24,8 +25,11 @@ use crate::streaming::event_parser::protocols::raydium_clmm::types::{
     RewardInfo as ClmmRewardInfo, TickArrayState as ClmmTickArrayState, TickState as ClmmTickState,
 };
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::{
-    RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent, RaydiumCpmmSwapEvent,
-    RaydiumCpmmWithdrawEvent,
+    RaydiumCpmmAmmConfigAccountEvent, RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent,
+    RaydiumCpmmPoolStateAccountEvent, RaydiumCpmmSwapEvent, RaydiumCpmmWithdrawEvent,
+};
+use crate::streaming::event_parser::protocols::raydium_cpmm::types::{
+    AmmConfig as CpmmAmmConfig, PoolState as CpmmPoolState,
 };
 use solana_sdk::pubkey::Pubkey;
 pub(crate) fn meteora_damm_v2_swap_from_parser(
@@ -69,6 +73,38 @@ pub(crate) fn meteora_damm_v2_swap_from_parser(
         referral_token_account: None,
         event_authority: Pubkey::default(),
         program: Pubkey::default(),
+    }
+}
+
+pub(crate) fn meteora_damm_v2_initialize_pool_from_parser(
+    e: sol_parser_sdk::core::events::MeteoraDammV2InitializePoolEvent,
+    meta: EventMetadata,
+) -> MeteoraDammV2InitializePoolEvent {
+    MeteoraDammV2InitializePoolEvent {
+        metadata: meta,
+        pool: e.pool,
+        token_a_mint: e.token_a_mint,
+        token_b_mint: e.token_b_mint,
+        creator: e.creator,
+        payer: e.payer,
+        alpha_vault: e.alpha_vault,
+        sqrt_min_price: e.sqrt_min_price,
+        sqrt_max_price: e.sqrt_max_price,
+        activation_type: e.activation_type,
+        collect_fee_mode: e.collect_fee_mode,
+        liquidity: e.liquidity,
+        sqrt_price: e.sqrt_price,
+        activation_point: e.activation_point.unwrap_or(0),
+        token_a_flag: e.token_a_flag,
+        token_b_flag: e.token_b_flag,
+        token_a_amount: e.token_a_amount,
+        token_b_amount: e.token_b_amount,
+        total_amount_a: e.total_amount_a,
+        total_amount_b: e.total_amount_b,
+        pool_type: e.pool_type,
+        position: e.position,
+        position_nft_mint: e.position_nft_mint,
+        ..Default::default()
     }
 }
 
@@ -160,6 +196,85 @@ pub(crate) fn raydium_cpmm_initialize_from_parser(
         open_time: 0,
         creator: e.creator,
         pool_state: e.pool,
+        ..Default::default()
+    }
+}
+
+fn raydium_cpmm_amm_config_from_parser(
+    c: sol_parser_sdk::core::events::RaydiumCpmmAmmConfig,
+) -> CpmmAmmConfig {
+    CpmmAmmConfig {
+        bump: c.bump,
+        disable_create_pool: c.disable_create_pool,
+        index: c.index,
+        trade_fee_rate: c.trade_fee_rate,
+        protocol_fee_rate: c.protocol_fee_rate,
+        fund_fee_rate: c.fund_fee_rate,
+        create_pool_fee: c.create_pool_fee,
+        protocol_owner: c.protocol_owner,
+        fund_owner: c.fund_owner,
+        creator_fee_rate: c.creator_fee_rate,
+        padding: c.padding,
+    }
+}
+
+fn raydium_cpmm_pool_state_from_parser(
+    p: sol_parser_sdk::core::events::RaydiumCpmmPoolState,
+) -> CpmmPoolState {
+    CpmmPoolState {
+        amm_config: p.amm_config,
+        pool_creator: p.pool_creator,
+        token_0_vault: p.token_0_vault,
+        token_1_vault: p.token_1_vault,
+        lp_mint: p.lp_mint,
+        token_0_mint: p.token_0_mint,
+        token_1_mint: p.token_1_mint,
+        token_0_program: p.token_0_program,
+        token_1_program: p.token_1_program,
+        observation_key: p.observation_key,
+        auth_bump: p.auth_bump,
+        status: p.status,
+        lp_mint_decimals: p.lp_mint_decimals,
+        mint_0_decimals: p.mint_0_decimals,
+        mint_1_decimals: p.mint_1_decimals,
+        lp_supply: p.lp_supply,
+        protocol_fees_token_0: p.protocol_fees_token_0,
+        protocol_fees_token_1: p.protocol_fees_token_1,
+        fund_fees_token_0: p.fund_fees_token_0,
+        fund_fees_token_1: p.fund_fees_token_1,
+        open_time: p.open_time,
+        recent_epoch: p.recent_epoch,
+        creator_fee_on: p.creator_fee_on,
+        enable_creator_fee: p.enable_creator_fee,
+        padding1: p.padding1,
+        creator_fees_token_0: p.creator_fees_token_0,
+        creator_fees_token_1: p.creator_fees_token_1,
+        padding: p.padding,
+    }
+}
+
+pub(crate) fn raydium_cpmm_amm_config_account_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumCpmmAmmConfigAccountEvent,
+    meta: EventMetadata,
+) -> RaydiumCpmmAmmConfigAccountEvent {
+    RaydiumCpmmAmmConfigAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        owner: super::program_ids::raydium_cpmm_program(),
+        amm_config: raydium_cpmm_amm_config_from_parser(e.amm_config),
+        ..Default::default()
+    }
+}
+
+pub(crate) fn raydium_cpmm_pool_state_account_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumCpmmPoolStateAccountEvent,
+    meta: EventMetadata,
+) -> RaydiumCpmmPoolStateAccountEvent {
+    RaydiumCpmmPoolStateAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        owner: super::program_ids::raydium_cpmm_program(),
+        pool_state: raydium_cpmm_pool_state_from_parser(e.pool_state),
         ..Default::default()
     }
 }

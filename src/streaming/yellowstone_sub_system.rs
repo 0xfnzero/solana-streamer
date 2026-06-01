@@ -16,6 +16,7 @@ use yellowstone_grpc_proto::geyser::{
 
 const SYSTEM_PROGRAM_ID: Pubkey = pubkey!("11111111111111111111111111111111");
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SystemEvent {
     NewTransfer(TransferInfo),
@@ -101,15 +102,12 @@ impl YellowstoneGrpc {
     where
         F: Fn(SystemEvent) + Send + Sync,
     {
-        match event_pretty {
-            EventPretty::Transaction(transaction_pretty) => {
-                callback(SystemEvent::NewTransfer(TransferInfo {
-                    slot: transaction_pretty.slot,
-                    signature: transaction_pretty.signature.to_string(),
-                    tx: Some(transaction_pretty.grpc_tx),
-                }));
-            }
-            _ => {}
+        if let EventPretty::Transaction(transaction_pretty) = event_pretty {
+            callback(SystemEvent::NewTransfer(TransferInfo {
+                slot: transaction_pretty.slot,
+                signature: transaction_pretty.signature.to_string(),
+                tx: Some(transaction_pretty.grpc_tx),
+            }));
         }
         Ok(())
     }

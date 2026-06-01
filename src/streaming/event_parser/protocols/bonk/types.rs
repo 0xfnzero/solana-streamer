@@ -32,30 +32,20 @@ pub struct VestingParams {
     pub unlock_period: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub enum AmmFeeOn {
+    #[default]
     QuoteToken,
     BothToken,
 }
 
-impl Default for AmmFeeOn {
-    fn default() -> Self {
-        Self::QuoteToken
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum AmmCreatorFeeOn {
+    #[default]
     QuoteToken = 0,
     BothToken = 1,
-}
-
-impl Default for AmmCreatorFeeOn {
-    fn default() -> Self {
-        Self::QuoteToken
-    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -170,7 +160,7 @@ impl Default for PoolState {
     }
 }
 
-pub const POOL_STATE_SIZE: usize = 8 + 1 * 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5 + 1 + 1 + 8 + 54;
+pub const POOL_STATE_SIZE: usize = 8 + 5 + 8 * 10 + 32 * 7 + 8 * 8 + 8 * 5 + 1 + 1 + 8 + 54;
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct GlobalConfig {
     pub epoch: u64,

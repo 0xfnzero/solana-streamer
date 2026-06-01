@@ -25,6 +25,7 @@ impl ShredStreamGrpc {
 
     /// 创建客户端，使用自定义配置
     pub async fn new_with_config(endpoint: String, config: StreamClientConfig) -> AnyResult<Self> {
+        sol_parser_sdk::warmup_parser();
         let shredstream_client = ShredstreamProxyClient::connect(endpoint.clone())
             .await?
             .max_decoding_message_size(config.connection.max_decoding_message_size);

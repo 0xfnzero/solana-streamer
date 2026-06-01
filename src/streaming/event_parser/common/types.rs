@@ -49,6 +49,7 @@ pub enum ProtocolType {
     RaydiumClmm,
     RaydiumAmmV4,
     MeteoraDammV2,
+    MeteoraDbc,
     OrcaWhirlpool,
     MeteoraPools,
     MeteoraDlmm,
@@ -153,6 +154,11 @@ pub enum EventType {
     MeteoraDammV2AddLiquidity,
     MeteoraDammV2RemoveLiquidity,
 
+    // Meteora DBC
+    MeteoraDbcSwap,
+    MeteoraDbcInitializePool,
+    MeteoraDbcCurveComplete,
+
     // Orca Whirlpool
     OrcaWhirlpoolSwap,
     OrcaWhirlpoolLiquidityIncreased,
@@ -196,6 +202,11 @@ pub enum EventType {
     AccountRaydiumClmmTickArrayState,
     AccountRaydiumCpmmAmmConfig,
     AccountRaydiumCpmmPoolState,
+    AccountOrcaWhirlpool,
+    AccountOrcaPosition,
+    AccountOrcaTickArray,
+    AccountOrcaFeeTier,
+    AccountOrcaWhirlpoolsConfig,
 
     NonceAccount,
     TokenAccount,
@@ -228,6 +239,11 @@ pub const ACCOUNT_EVENT_TYPES: &[EventType] = &[
     EventType::AccountRaydiumClmmTickArrayState,
     EventType::AccountRaydiumCpmmAmmConfig,
     EventType::AccountRaydiumCpmmPoolState,
+    EventType::AccountOrcaWhirlpool,
+    EventType::AccountOrcaPosition,
+    EventType::AccountOrcaTickArray,
+    EventType::AccountOrcaFeeTier,
+    EventType::AccountOrcaWhirlpoolsConfig,
     EventType::TokenAccount,
     EventType::TokenInfo,
     EventType::NonceAccount,

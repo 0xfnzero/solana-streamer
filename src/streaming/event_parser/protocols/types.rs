@@ -1,8 +1,9 @@
 use anyhow::{anyhow, Result};
 use sol_parser_sdk::instr::program_ids::{
-    BONK_PROGRAM_ID, METEORA_DAMM_V2_PROGRAM_ID, METEORA_DLMM_PROGRAM_ID, METEORA_POOLS_PROGRAM_ID,
-    ORCA_WHIRLPOOL_PROGRAM_ID, PUMPFUN_PROGRAM_ID, PUMPSWAP_PROGRAM_ID, PUMP_FEES_PROGRAM_ID,
-    RAYDIUM_AMM_V4_PROGRAM_ID, RAYDIUM_CLMM_PROGRAM_ID, RAYDIUM_CPMM_PROGRAM_ID,
+    METEORA_DAMM_V2_PROGRAM_ID, METEORA_DBC_PROGRAM_ID, METEORA_DLMM_PROGRAM_ID,
+    METEORA_POOLS_PROGRAM_ID, ORCA_WHIRLPOOL_PROGRAM_ID, PUMPFUN_PROGRAM_ID, PUMPSWAP_PROGRAM_ID,
+    PUMP_FEES_PROGRAM_ID, RAYDIUM_AMM_V4_PROGRAM_ID, RAYDIUM_CLMM_PROGRAM_ID,
+    RAYDIUM_CPMM_PROGRAM_ID, RAYDIUM_LAUNCHLAB_PROGRAM_ID as BONK_PROGRAM_ID,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -19,6 +20,7 @@ pub enum Protocol {
     RaydiumClmm,
     RaydiumAmmV4,
     MeteoraDammV2,
+    MeteoraDbc,
     OrcaWhirlpool,
     MeteoraPools,
     MeteoraDlmm,
@@ -36,6 +38,7 @@ impl Protocol {
             Protocol::RaydiumClmm => vec![RAYDIUM_CLMM_PROGRAM_ID],
             Protocol::RaydiumAmmV4 => vec![RAYDIUM_AMM_V4_PROGRAM_ID],
             Protocol::MeteoraDammV2 => vec![METEORA_DAMM_V2_PROGRAM_ID],
+            Protocol::MeteoraDbc => vec![METEORA_DBC_PROGRAM_ID],
             Protocol::OrcaWhirlpool => vec![ORCA_WHIRLPOOL_PROGRAM_ID],
             Protocol::MeteoraPools => vec![METEORA_POOLS_PROGRAM_ID],
             Protocol::MeteoraDlmm => vec![METEORA_DLMM_PROGRAM_ID],
@@ -55,6 +58,7 @@ impl std::fmt::Display for Protocol {
             Protocol::RaydiumClmm => write!(f, "RaydiumClmm"),
             Protocol::RaydiumAmmV4 => write!(f, "RaydiumAmmV4"),
             Protocol::MeteoraDammV2 => write!(f, "MeteoraDammV2"),
+            Protocol::MeteoraDbc => write!(f, "MeteoraDbc"),
             Protocol::OrcaWhirlpool => write!(f, "OrcaWhirlpool"),
             Protocol::MeteoraPools => write!(f, "MeteoraPools"),
             Protocol::MeteoraDlmm => write!(f, "MeteoraDlmm"),
@@ -77,6 +81,7 @@ impl std::str::FromStr for Protocol {
             "raydiumclmm" | "raydium_clmm" => Ok(Protocol::RaydiumClmm),
             "raydiumammv4" | "raydium_amm_v4" => Ok(Protocol::RaydiumAmmV4),
             "meteoradammv2" | "meteoradamm_v2" | "meteora_damm_v2" => Ok(Protocol::MeteoraDammV2),
+            "meteoradbc" | "meteora_dbc" => Ok(Protocol::MeteoraDbc),
             "orcawhirlpool" | "orca_whirlpool" | "orca" => Ok(Protocol::OrcaWhirlpool),
             "meteorapools" | "meteora_pools" => Ok(Protocol::MeteoraPools),
             "meteoradlmm" | "meteora_dlmm" => Ok(Protocol::MeteoraDlmm),
@@ -99,6 +104,7 @@ mod tests {
             Protocol::RaydiumClmm,
             Protocol::RaydiumAmmV4,
             Protocol::MeteoraDammV2,
+            Protocol::MeteoraDbc,
             Protocol::OrcaWhirlpool,
             Protocol::MeteoraPools,
             Protocol::MeteoraDlmm,
@@ -116,6 +122,7 @@ mod tests {
         assert_eq!(Protocol::from_str("raydium_clmm").unwrap(), Protocol::RaydiumClmm);
         assert_eq!(Protocol::from_str("raydium_amm_v4").unwrap(), Protocol::RaydiumAmmV4);
         assert_eq!(Protocol::from_str("meteora_damm_v2").unwrap(), Protocol::MeteoraDammV2);
+        assert_eq!(Protocol::from_str("meteora_dbc").unwrap(), Protocol::MeteoraDbc);
         assert_eq!(Protocol::from_str("orca_whirlpool").unwrap(), Protocol::OrcaWhirlpool);
         assert_eq!(Protocol::from_str("meteora_pools").unwrap(), Protocol::MeteoraPools);
         assert_eq!(Protocol::from_str("meteora_dlmm").unwrap(), Protocol::MeteoraDlmm);

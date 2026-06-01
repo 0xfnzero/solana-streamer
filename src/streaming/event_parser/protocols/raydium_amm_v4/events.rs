@@ -168,10 +168,10 @@ pub mod discriminators {
     // 指令鉴别器
     pub const SWAP_BASE_IN: &[u8] = &[9];
     pub const SWAP_BASE_OUT: &[u8] = &[11];
-    pub const DEPOSIT: &[u8] = &[03];
-    pub const INITIALIZE2: &[u8] = &[01];
-    pub const WITHDRAW: &[u8] = &[04];
-    pub const WITHDRAW_PNL: &[u8] = &[07];
+    pub const DEPOSIT: &[u8] = &[3];
+    pub const INITIALIZE2: &[u8] = &[1];
+    pub const WITHDRAW: &[u8] = &[4];
+    pub const WITHDRAW_PNL: &[u8] = &[7];
 
     /// 池信息鉴别器
     pub const AMM_INFO: &[u8] = &[6];

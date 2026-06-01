@@ -69,6 +69,185 @@ pub struct OrcaWhirlpoolPoolInitializedEvent {
     pub initial_sqrt_price: u128,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaWhirlpoolAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub whirlpool: OrcaWhirlpoolAccount,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaWhirlpoolAccount {
+    pub whirlpools_config: Pubkey,
+    pub whirlpool_bump: u8,
+    pub tick_spacing: u16,
+    pub tick_spacing_seed: [u8; 2],
+    pub fee_rate: u16,
+    pub protocol_fee_rate: u16,
+    pub liquidity: u128,
+    pub sqrt_price: u128,
+    pub tick_current_index: i32,
+    pub protocol_fee_owed_a: u64,
+    pub protocol_fee_owed_b: u64,
+    pub token_mint_a: Pubkey,
+    pub token_vault_a: Pubkey,
+    pub fee_growth_global_a: u128,
+    pub token_mint_b: Pubkey,
+    pub token_vault_b: Pubkey,
+    pub fee_growth_global_b: u128,
+    pub reward_last_updated_timestamp: u64,
+    pub reward_infos: [OrcaWhirlpoolRewardInfo; 3],
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaWhirlpoolRewardInfo {
+    pub mint: Pubkey,
+    pub vault: Pubkey,
+    pub authority: Pubkey,
+    pub emissions_per_second_x64: u128,
+    pub growth_global_x64: u128,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaPositionAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub position: OrcaPositionAccount,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaPositionAccount {
+    pub whirlpool: Pubkey,
+    pub position_mint: Pubkey,
+    pub liquidity: u128,
+    pub tick_lower_index: i32,
+    pub tick_upper_index: i32,
+    pub fee_growth_checkpoint_a: u128,
+    pub fee_owed_a: u64,
+    pub fee_growth_checkpoint_b: u128,
+    pub fee_owed_b: u64,
+    pub reward_infos: [OrcaPositionRewardInfo; 3],
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaPositionRewardInfo {
+    pub growth_inside_checkpoint: u128,
+    pub amount_owed: u64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaTickArrayAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub tick_array: OrcaTickArrayAccount,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaTickArrayAccount {
+    pub start_tick_index: i32,
+    pub ticks: Vec<OrcaTick>,
+    pub whirlpool: Pubkey,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaTick {
+    pub initialized: bool,
+    pub liquidity_net: i128,
+    pub liquidity_gross: u128,
+    pub fee_growth_outside_a: u128,
+    pub fee_growth_outside_b: u128,
+    pub reward_growths_outside: [u128; 3],
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaFeeTierAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub fee_tier: OrcaFeeTierAccount,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaFeeTierAccount {
+    pub whirlpools_config: Pubkey,
+    pub tick_spacing: u16,
+    pub default_fee_rate: u16,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaWhirlpoolsConfigAccountEvent {
+    pub metadata: EventMetadata,
+    pub pubkey: Pubkey,
+    pub executable: bool,
+    pub lamports: u64,
+    pub owner: Pubkey,
+    pub rent_epoch: u64,
+    pub config: OrcaWhirlpoolsConfigAccount,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaWhirlpoolsConfigAccount {
+    pub fee_authority: Pubkey,
+    pub collect_protocol_fees_authority: Pubkey,
+    pub reward_emissions_super_authority: Pubkey,
+    pub default_protocol_fee_rate: u16,
+}
+
+// --- Meteora DBC ---
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeteoraDbcSwapEvent {
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub config: Pubkey,
+    pub trade_direction: u8,
+    pub has_referral: bool,
+    pub amount_in: u64,
+    pub minimum_amount_out: u64,
+    pub actual_input_amount: u64,
+    pub output_amount: u64,
+    pub next_sqrt_price: u128,
+    pub trading_fee: u64,
+    pub protocol_fee: u64,
+    pub referral_fee: u64,
+    pub current_timestamp: u64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeteoraDbcInitializePoolEvent {
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub config: Pubkey,
+    pub creator: Pubkey,
+    pub base_mint: Pubkey,
+    pub pool_type: u8,
+    pub activation_point: u64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeteoraDbcCurveCompleteEvent {
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub config: Pubkey,
+    pub base_reserve: u64,
+    pub quote_reserve: u64,
+}
+
 // --- Meteora Pools ---
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

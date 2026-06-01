@@ -14,14 +14,16 @@ use crate::streaming::event_parser::protocols::raydium_amm_v4::events::*;
 use crate::streaming::event_parser::protocols::raydium_clmm::events::*;
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::*;
 use crate::streaming::event_parser::protocols::sol_parser_forward::events::{
+    MeteoraDbcCurveCompleteEvent, MeteoraDbcInitializePoolEvent, MeteoraDbcSwapEvent,
     MeteoraDlmmAddLiquidityEvent, MeteoraDlmmClaimFeeEvent, MeteoraDlmmClosePositionEvent,
     MeteoraDlmmCreatePositionEvent, MeteoraDlmmInitializeBinArrayEvent,
     MeteoraDlmmInitializePoolEvent, MeteoraDlmmRemoveLiquidityEvent, MeteoraDlmmSwapEvent,
     MeteoraPoolsAddLiquidityEvent, MeteoraPoolsBootstrapLiquidityEvent,
     MeteoraPoolsPoolCreatedEvent, MeteoraPoolsRemoveLiquidityEvent, MeteoraPoolsSetPoolFeesEvent,
-    MeteoraPoolsSwapEvent, OrcaWhirlpoolLiquidityDecreasedEvent,
+    MeteoraPoolsSwapEvent, OrcaFeeTierAccountEvent, OrcaPositionAccountEvent,
+    OrcaTickArrayAccountEvent, OrcaWhirlpoolAccountEvent, OrcaWhirlpoolLiquidityDecreasedEvent,
     OrcaWhirlpoolLiquidityIncreasedEvent, OrcaWhirlpoolPoolInitializedEvent,
-    OrcaWhirlpoolSwapEvent, ParserSdkErrorEvent,
+    OrcaWhirlpoolSwapEvent, OrcaWhirlpoolsConfigAccountEvent, ParserSdkErrorEvent,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -96,17 +98,17 @@ pub enum DexEvent {
     RaydiumClmmCreatePoolEvent(RaydiumClmmCreatePoolEvent),
     RaydiumClmmOpenPositionWithToken22NftEvent(RaydiumClmmOpenPositionWithToken22NftEvent),
     RaydiumClmmOpenPositionV2Event(RaydiumClmmOpenPositionV2Event),
-    RaydiumClmmAmmConfigAccountEvent(RaydiumClmmAmmConfigAccountEvent),
-    RaydiumClmmPoolStateAccountEvent(RaydiumClmmPoolStateAccountEvent),
-    RaydiumClmmTickArrayStateAccountEvent(RaydiumClmmTickArrayStateAccountEvent),
+    RaydiumClmmAmmConfigAccountEvent(Box<RaydiumClmmAmmConfigAccountEvent>),
+    RaydiumClmmPoolStateAccountEvent(Box<RaydiumClmmPoolStateAccountEvent>),
+    RaydiumClmmTickArrayStateAccountEvent(Box<RaydiumClmmTickArrayStateAccountEvent>),
 
     // Raydium CPMM events
     RaydiumCpmmSwapEvent(RaydiumCpmmSwapEvent),
     RaydiumCpmmDepositEvent(RaydiumCpmmDepositEvent),
     RaydiumCpmmWithdrawEvent(RaydiumCpmmWithdrawEvent),
     RaydiumCpmmInitializeEvent(RaydiumCpmmInitializeEvent),
-    RaydiumCpmmAmmConfigAccountEvent(RaydiumCpmmAmmConfigAccountEvent),
-    RaydiumCpmmPoolStateAccountEvent(RaydiumCpmmPoolStateAccountEvent),
+    RaydiumCpmmAmmConfigAccountEvent(Box<RaydiumCpmmAmmConfigAccountEvent>),
+    RaydiumCpmmPoolStateAccountEvent(Box<RaydiumCpmmPoolStateAccountEvent>),
 
     // Meteora DAMM v2 events
     MeteoraDammV2SwapEvent(MeteoraDammV2SwapEvent),
@@ -122,10 +124,19 @@ pub enum DexEvent {
     MeteoraDammV2CreatePositionEvent(MeteoraDammV2CreatePositionEvent),
     MeteoraDammV2ClosePositionEvent(MeteoraDammV2ClosePositionEvent),
 
+    MeteoraDbcSwapEvent(MeteoraDbcSwapEvent),
+    MeteoraDbcInitializePoolEvent(MeteoraDbcInitializePoolEvent),
+    MeteoraDbcCurveCompleteEvent(MeteoraDbcCurveCompleteEvent),
+
     OrcaWhirlpoolSwapEvent(OrcaWhirlpoolSwapEvent),
     OrcaWhirlpoolLiquidityIncreasedEvent(OrcaWhirlpoolLiquidityIncreasedEvent),
     OrcaWhirlpoolLiquidityDecreasedEvent(OrcaWhirlpoolLiquidityDecreasedEvent),
     OrcaWhirlpoolPoolInitializedEvent(OrcaWhirlpoolPoolInitializedEvent),
+    OrcaWhirlpoolAccountEvent(Box<OrcaWhirlpoolAccountEvent>),
+    OrcaPositionAccountEvent(Box<OrcaPositionAccountEvent>),
+    OrcaTickArrayAccountEvent(Box<OrcaTickArrayAccountEvent>),
+    OrcaFeeTierAccountEvent(Box<OrcaFeeTierAccountEvent>),
+    OrcaWhirlpoolsConfigAccountEvent(Box<OrcaWhirlpoolsConfigAccountEvent>),
 
     MeteoraPoolsSwapEvent(MeteoraPoolsSwapEvent),
     MeteoraPoolsAddLiquidityEvent(MeteoraPoolsAddLiquidityEvent),
@@ -256,10 +267,18 @@ impl_dex_event_metadata!(
     MeteoraDammV2RemoveLiquidityEvent,
     MeteoraDammV2CreatePositionEvent,
     MeteoraDammV2ClosePositionEvent,
+    MeteoraDbcSwapEvent,
+    MeteoraDbcInitializePoolEvent,
+    MeteoraDbcCurveCompleteEvent,
     OrcaWhirlpoolSwapEvent,
     OrcaWhirlpoolLiquidityIncreasedEvent,
     OrcaWhirlpoolLiquidityDecreasedEvent,
     OrcaWhirlpoolPoolInitializedEvent,
+    OrcaWhirlpoolAccountEvent,
+    OrcaPositionAccountEvent,
+    OrcaTickArrayAccountEvent,
+    OrcaFeeTierAccountEvent,
+    OrcaWhirlpoolsConfigAccountEvent,
     MeteoraPoolsSwapEvent,
     MeteoraPoolsAddLiquidityEvent,
     MeteoraPoolsRemoveLiquidityEvent,

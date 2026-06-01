@@ -136,17 +136,18 @@ pub(crate) fn build_sdk_shred_parse_event_filter(
     protocols: &[Protocol],
     filter: Option<&EventTypeFilter>,
 ) -> Option<SdkGrpcEventTypeFilter> {
-    if protocols.is_empty() {
-        return build_sdk_parse_event_filter(filter);
-    }
-
     if let Some(f) = filter.filter(|f| !f.include.is_empty()) {
-        if let Some(exact) = build_sdk_parse_event_filter(Some(f)) {
-            return Some(exact);
-        }
         if !f.include_transaction_event() {
             return Some(SdkGrpcEventTypeFilter::include_only(Vec::new()));
         }
+        if protocols.is_empty() {
+            return build_sdk_parse_event_filter(Some(f));
+        }
+        if let Some(exact) = build_sdk_parse_event_filter(Some(f)) {
+            return Some(exact);
+        }
+    } else if protocols.is_empty() {
+        return build_sdk_parse_event_filter(filter);
     }
 
     let mut raw = Vec::with_capacity(protocols.len() * 8);
@@ -229,12 +230,12 @@ fn push_streamer_event_sdk_grpc_types(
         St::PumpSwapDeposit => out.push(Sdk::PumpSwapLiquidityAdded),
         St::PumpSwapWithdraw => out.push(Sdk::PumpSwapLiquidityRemoved),
         St::BonkBuyExactIn | St::BonkBuyExactOut | St::BonkSellExactIn | St::BonkSellExactOut => {
-            out.push(Sdk::BonkTrade)
+            out.push(Sdk::RaydiumLaunchlabTrade)
         }
         St::BonkInitialize | St::BonkInitializeV2 | St::BonkInitializeWithToken2022 => {
-            out.push(Sdk::BonkPoolCreate)
+            out.push(Sdk::RaydiumLaunchlabPoolCreate)
         }
-        St::BonkMigrateToAmm => out.push(Sdk::BonkMigrateAmm),
+        St::BonkMigrateToAmm => out.push(Sdk::RaydiumLaunchlabMigrateAmm),
         St::RaydiumCpmmSwapBaseInput | St::RaydiumCpmmSwapBaseOutput => {
             out.push(Sdk::RaydiumCpmmSwap)
         }
@@ -278,8 +279,12 @@ fn push_streamer_event_sdk_grpc_types(
         St::MeteoraDammV2Swap | St::MeteoraDammV2Swap2 => out.push(Sdk::MeteoraDammV2Swap),
         St::MeteoraDammV2AddLiquidity => out.push(Sdk::MeteoraDammV2AddLiquidity),
         St::MeteoraDammV2RemoveLiquidity => out.push(Sdk::MeteoraDammV2RemoveLiquidity),
+        St::MeteoraDammV2InitializePool => out.push(Sdk::MeteoraDammV2InitializePool),
         St::MeteoraDammV2CreatePosition => out.push(Sdk::MeteoraDammV2CreatePosition),
         St::MeteoraDammV2ClosePosition => out.push(Sdk::MeteoraDammV2ClosePosition),
+        St::MeteoraDbcSwap => out.push(Sdk::MeteoraDbcSwap),
+        St::MeteoraDbcInitializePool => out.push(Sdk::MeteoraDbcInitializePool),
+        St::MeteoraDbcCurveComplete => out.push(Sdk::MeteoraDbcCurveComplete),
         St::MeteoraDlmmSwap => out.push(Sdk::MeteoraDlmmSwap),
         St::MeteoraDlmmAddLiquidity => out.push(Sdk::MeteoraDlmmAddLiquidity),
         St::MeteoraDlmmRemoveLiquidity => out.push(Sdk::MeteoraDlmmRemoveLiquidity),
@@ -302,6 +307,16 @@ fn push_streamer_event_sdk_grpc_types(
         }
         St::AccountPumpSwapGlobalConfig => out.push(Sdk::AccountPumpSwapGlobalConfig),
         St::AccountPumpSwapPool => out.push(Sdk::AccountPumpSwapPool),
+        St::AccountRaydiumClmmAmmConfig => out.push(Sdk::AccountRaydiumClmmAmmConfig),
+        St::AccountRaydiumClmmPoolState => out.push(Sdk::AccountRaydiumClmmPoolState),
+        St::AccountRaydiumClmmTickArrayState => out.push(Sdk::AccountRaydiumClmmTickArrayState),
+        St::AccountRaydiumCpmmAmmConfig => out.push(Sdk::AccountRaydiumCpmmAmmConfig),
+        St::AccountRaydiumCpmmPoolState => out.push(Sdk::AccountRaydiumCpmmPoolState),
+        St::AccountOrcaWhirlpool => out.push(Sdk::AccountOrcaWhirlpool),
+        St::AccountOrcaPosition => out.push(Sdk::AccountOrcaPosition),
+        St::AccountOrcaTickArray => out.push(Sdk::AccountOrcaTickArray),
+        St::AccountOrcaFeeTier => out.push(Sdk::AccountOrcaFeeTier),
+        St::AccountOrcaWhirlpoolsConfig => out.push(Sdk::AccountOrcaWhirlpoolsConfig),
         _ => return false,
     }
     true
@@ -351,9 +366,11 @@ fn push_protocol_sdk_grpc_event_types(protocol: &Protocol, out: &mut Vec<SdkGrpc
             Sdk::PumpSwapLiquidityAdded,
             Sdk::PumpSwapLiquidityRemoved,
         ]),
-        StProtocol::Bonk | StProtocol::RaydiumLaunchpad => {
-            out.extend_from_slice(&[Sdk::BonkTrade, Sdk::BonkPoolCreate, Sdk::BonkMigrateAmm])
-        }
+        StProtocol::Bonk | StProtocol::RaydiumLaunchpad => out.extend_from_slice(&[
+            Sdk::RaydiumLaunchlabTrade,
+            Sdk::RaydiumLaunchlabPoolCreate,
+            Sdk::RaydiumLaunchlabMigrateAmm,
+        ]),
         StProtocol::RaydiumCpmm => out.extend_from_slice(&[
             Sdk::RaydiumCpmmSwap,
             Sdk::RaydiumCpmmDeposit,
@@ -390,8 +407,14 @@ fn push_protocol_sdk_grpc_event_types(protocol: &Protocol, out: &mut Vec<SdkGrpc
             Sdk::MeteoraDammV2Swap,
             Sdk::MeteoraDammV2AddLiquidity,
             Sdk::MeteoraDammV2RemoveLiquidity,
+            Sdk::MeteoraDammV2InitializePool,
             Sdk::MeteoraDammV2CreatePosition,
             Sdk::MeteoraDammV2ClosePosition,
+        ]),
+        StProtocol::MeteoraDbc => out.extend_from_slice(&[
+            Sdk::MeteoraDbcSwap,
+            Sdk::MeteoraDbcInitializePool,
+            Sdk::MeteoraDbcCurveComplete,
         ]),
         StProtocol::OrcaWhirlpool => out.extend_from_slice(&[
             Sdk::OrcaWhirlpoolSwap,
@@ -499,11 +522,7 @@ mod tests {
 
     #[test]
     fn exclude_blocks_even_when_include_empty() {
-        let f = EventTypeFilter {
-            include: vec![],
-            exclude: vec![EventType::PumpFunSell],
-            ..Default::default()
-        };
+        let f = EventTypeFilter { include: vec![], exclude: vec![EventType::PumpFunSell] };
         let ev = DexEvent::ParserSdkErrorEvent(ParserSdkErrorEvent {
             metadata: mk_meta(EventType::PumpFunSell),
             message: "x".into(),
@@ -528,7 +547,6 @@ mod tests {
         let f = EventTypeFilter {
             include: vec![EventType::PumpFunBuy, EventType::PumpFunSell],
             exclude: vec![EventType::PumpFunSell],
-            ..Default::default()
         };
         let buy = DexEvent::ParserSdkErrorEvent(ParserSdkErrorEvent {
             metadata: mk_meta(EventType::PumpFunBuy),
@@ -544,11 +562,7 @@ mod tests {
 
     #[test]
     fn build_sdk_filter_exclude_only_pumpfun_sell() {
-        let f = EventTypeFilter {
-            include: vec![],
-            exclude: vec![EventType::PumpFunSell],
-            ..Default::default()
-        };
+        let f = EventTypeFilter { include: vec![], exclude: vec![EventType::PumpFunSell] };
         let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
         assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
@@ -725,8 +739,12 @@ mod tests {
             EventType::MeteoraDammV2Swap2,
             EventType::MeteoraDammV2AddLiquidity,
             EventType::MeteoraDammV2RemoveLiquidity,
+            EventType::MeteoraDammV2InitializePool,
             EventType::MeteoraDammV2CreatePosition,
             EventType::MeteoraDammV2ClosePosition,
+            EventType::MeteoraDbcSwap,
+            EventType::MeteoraDbcInitializePool,
+            EventType::MeteoraDbcCurveComplete,
             EventType::MeteoraDlmmSwap,
             EventType::MeteoraDlmmAddLiquidity,
             EventType::MeteoraDlmmRemoveLiquidity,
@@ -746,6 +764,16 @@ mod tests {
             EventType::AccountPumpFunUserVolumeAccumulator,
             EventType::AccountPumpSwapGlobalConfig,
             EventType::AccountPumpSwapPool,
+            EventType::AccountRaydiumClmmAmmConfig,
+            EventType::AccountRaydiumClmmPoolState,
+            EventType::AccountRaydiumClmmTickArrayState,
+            EventType::AccountRaydiumCpmmAmmConfig,
+            EventType::AccountRaydiumCpmmPoolState,
+            EventType::AccountOrcaWhirlpool,
+            EventType::AccountOrcaPosition,
+            EventType::AccountOrcaTickArray,
+            EventType::AccountOrcaFeeTier,
+            EventType::AccountOrcaWhirlpoolsConfig,
         ];
 
         for event_type in sdk_filter_backed {
@@ -760,7 +788,10 @@ mod tests {
     #[test]
     fn build_sdk_filter_none_when_public_sdk_filter_enum_cannot_express_requested_type() {
         let f = EventTypeFilter {
-            include: vec![EventType::PumpFunBuy, EventType::MeteoraDammV2InitializePool],
+            include: vec![
+                EventType::PumpFunBuy,
+                EventType::MeteoraDammV2InitializeCustomizablePool,
+            ],
             ..Default::default()
         };
         assert!(build_sdk_parse_event_filter(Some(&f)).is_none());
@@ -769,7 +800,7 @@ mod tests {
     #[test]
     fn build_sdk_shred_filter_falls_back_to_protocol_group_for_sdk_enum_gap() {
         let f = EventTypeFilter {
-            include: vec![EventType::MeteoraDammV2InitializePool],
+            include: vec![EventType::MeteoraDammV2InitializeCustomizablePool],
             ..Default::default()
         };
         let sdk_f =
@@ -792,12 +823,20 @@ mod tests {
     }
 
     #[test]
-    fn build_sdk_filter_exclude_only_orca_maps_upstream() {
+    fn build_sdk_shred_filter_skips_transaction_parse_for_account_only_without_protocols() {
         let f = EventTypeFilter {
-            include: vec![],
-            exclude: vec![EventType::OrcaWhirlpoolSwap],
+            include: vec![EventType::AccountRaydiumClmmPoolState],
             ..Default::default()
         };
+        let sdk_f = build_sdk_shred_parse_event_filter(&[], Some(&f)).unwrap();
+
+        assert!(!sdk_f.should_include(SdkGrpcEventType::RaydiumClmmSwap));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
+    }
+
+    #[test]
+    fn build_sdk_filter_exclude_only_orca_maps_upstream() {
+        let f = EventTypeFilter { include: vec![], exclude: vec![EventType::OrcaWhirlpoolSwap] };
         let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
         assert!(!sdk_f.should_include(SdkGrpcEventType::OrcaWhirlpoolSwap));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
@@ -807,19 +846,14 @@ mod tests {
     fn build_sdk_filter_exclude_only_none_when_only_sdk_filter_enum_gap() {
         let f = EventTypeFilter {
             include: vec![],
-            exclude: vec![EventType::MeteoraDammV2InitializePool],
-            ..Default::default()
+            exclude: vec![EventType::MeteoraDammV2InitializeCustomizablePool],
         };
         assert!(build_sdk_parse_event_filter(Some(&f)).is_none());
     }
 
     #[test]
     fn build_sdk_filter_exclude_only_none_when_only_unmapped_types() {
-        let f = EventTypeFilter {
-            include: vec![],
-            exclude: vec![EventType::SetComputeUnitLimit],
-            ..Default::default()
-        };
+        let f = EventTypeFilter { include: vec![], exclude: vec![EventType::SetComputeUnitLimit] };
         assert!(build_sdk_parse_event_filter(Some(&f)).is_none());
     }
 }

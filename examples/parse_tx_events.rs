@@ -139,7 +139,7 @@ async fn parse_local_ix_path(
     accounts.extend(address_table_lookups);
 
     let slot = transaction.slot;
-    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t as i64, nanos: 0 });
+    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t, nanos: 0 });
     let bot_wallet = None;
     let tx_index = None;
 

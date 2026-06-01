@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
     accounts.extend(address_table_lookups);
 
     let slot = transaction.slot;
-    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t as i64, nanos: 0 });
+    let block_time = transaction.block_time.map(|t| Timestamp { seconds: t, nanos: 0 });
     let recv_us =
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros()
             as i64;

@@ -105,7 +105,7 @@ pub struct PoolState {
 
 pub const POOL_STATE_SIZE: usize = 1536;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct TickState {
     pub tick: i32,
     pub liquidity_net: i128,
@@ -118,24 +118,6 @@ pub struct TickState {
     pub part_filled_orders_remaining: u64,
     pub unfilled_ratio_x64: u128,
     pub padding: [u32; 3],
-}
-
-impl Default for TickState {
-    fn default() -> Self {
-        Self {
-            tick: 0,
-            liquidity_net: 0,
-            liquidity_gross: 0,
-            fee_growth_outside0_x64: 0,
-            fee_growth_outside1_x64: 0,
-            reward_growths_outside_x64: [0; 3],
-            order_phase: 0,
-            orders_amount: 0,
-            part_filled_orders_remaining: 0,
-            unfilled_ratio_x64: 0,
-            padding: [0; 3],
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]

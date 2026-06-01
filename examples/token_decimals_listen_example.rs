@@ -18,9 +18,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
     println!("Subscribing to Yellowstone gRPC events...");
     // Create low-latency configuration.
-    let mut config: ClientConfig = ClientConfig::default();
     // Metrics add overhead; enable explicitly with STREAMER_ENABLE_METRICS=1.
-    config.enable_metrics = std::env::var("STREAMER_ENABLE_METRICS").as_deref() == Ok("1");
+    let config = ClientConfig {
+        enable_metrics: std::env::var("STREAMER_ENABLE_METRICS").as_deref() == Ok("1"),
+        ..Default::default()
+    };
     let grpc = YellowstoneGrpc::new_with_config(
         "https://solana-yellowstone-grpc.publicnode.com:443".to_string(),
         None,
@@ -80,10 +82,9 @@ async fn test_grpc() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn create_event_callback() -> impl Fn(DexEvent) {
-    |event: DexEvent| match event {
-        DexEvent::TokenInfoEvent(e) => {
+    |event: DexEvent| {
+        if let DexEvent::TokenInfoEvent(e) = event {
             println!("TokenInfo pubkey={} decimals={} supply={}", e.pubkey, e.decimals, e.supply);
         }
-        _ => {}
     }
 }

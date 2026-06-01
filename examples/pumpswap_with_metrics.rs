@@ -15,8 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("PumpSwap with metrics (solana-streamer)\n");
 
-    let mut config = ClientConfig::default();
-    config.enable_metrics = true;
+    let config = ClientConfig { enable_metrics: true, ..Default::default() };
 
     let grpc = YellowstoneGrpc::new_with_config(
         std::env::var("GRPC_ENDPOINT")

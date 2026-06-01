@@ -1,3 +1,5 @@
+#![allow(clippy::single_match)]
+
 use crate::streaming::event_parser::DexEvent;
 use solana_sdk::{pubkey, pubkey::Pubkey};
 

@@ -76,13 +76,14 @@
 - **PumpFun**: 迷因币交易平台事件
 - **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议事件
-- **Raydium Launchpad / Bonk**: 代币发射平台事件 (letsbonk.fun / LaunchLab)
+- **Raydium LaunchLab**: 代币发射平台事件；`Protocol::Bonk` 和 `Protocol::RaydiumLaunchpad` 仍作为兼容别名保留
 - **Raydium CPMM**: Raydium 集中池做市商事件
 - **Raydium CLMM**: Raydium 集中流动性做市商事件
 - **Raydium AMM V4**: Raydium 自动做市商 V4 事件
 - **Meteora DAMM v2**: Meteora DAMM v2 交易和流动性事件
 - **Orca Whirlpool**: Orca Whirlpool 交易和流动性事件
 - **Meteora Pools**: Meteora Pools 交易、流动性、启动流动性和费用事件
+- **Meteora DBC**: Meteora Dynamic Bonding Curve 的 log-side swap、initialize-pool 和 curve-complete 事件
 - **Meteora DLMM**: Meteora DLMM 交易、流动性、池、bin array 和费用事件
 
 ### 高级功能
@@ -122,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.4" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.5" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.4"
+solana-streamer-sdk = "1.5.5"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.4"
+solana-streamer-sdk = "1.5.5"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.4", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.5", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.4+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.5+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.5
+
+v1.5.5 使用 crates.io 上的 `sol-parser-sdk 0.5.5`。底层 SDK 已将 Raydium LaunchLab 事件统一暴露为 `RaydiumLaunchlab*`；streamer 仍保留现有 `Bonk*` 事件结构以及 `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` 兼容别名，同时把解析调用和上游 gRPC 事件过滤映射到新的 LaunchLab SDK variant。该版本也同步了 CLMM/CPMM/Orca account bridge、Meteora DAMM v2 initialize-pool、Meteora DBC 事件，以及客户端创建时的 parser warmup。
 
 ### 升级到 v1.5.4
 
@@ -441,15 +446,16 @@ grpc.update_subscription(
 - **PumpFun**: 主要迷因币交易平台
 - **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议
-- **Raydium Launchpad / Bonk**: 代币发射平台 (letsbonk.fun / LaunchLab)
+- **Raydium LaunchLab**: 代币发射平台；`Bonk` 和 `RaydiumLaunchpad` 作为兼容别名保留
 - **Raydium CPMM**: Raydium 集中池做市商协议
 - **Raydium CLMM**: Raydium 集中流动性做市商协议
 - **Raydium AMM V4**: Raydium 自动做市商 V4 协议
 - **Meteora DAMM v2**: Meteora DAMM v2 协议
 - **Orca Whirlpool**: Orca Whirlpool 协议
 - **Meteora Pools**: Meteora Pools 协议
+- **Meteora DBC**: Meteora Dynamic Bonding Curve 协议
 - **Meteora DLMM**: Meteora 动态流动性做市商协议
-- **通用事件**: Token 账户、Token 元信息、Nonce 账户、区块元数据和 ComputeBudget 事件
+- **通用/账户事件**: Token 账户、Token 元信息、Nonce 账户、区块元数据、ComputeBudget 事件，以及 Raydium CLMM/CPMM、Pump/PumpSwap、Orca Whirlpool 等已支持协议账户状态
 
 ## 🌐 事件流服务
 

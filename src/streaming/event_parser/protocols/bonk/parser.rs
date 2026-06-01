@@ -3,7 +3,7 @@ use crate::streaming::event_parser::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-pub use sol_parser_sdk::instr::program_ids::BONK_PROGRAM_ID;
+pub use sol_parser_sdk::instr::program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID as BONK_PROGRAM_ID;
 
 pub fn parse_bonk_instruction_data(
     discriminator: &[u8],

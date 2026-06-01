@@ -9,6 +9,7 @@ pub(crate) mod helpers;
 pub struct EventParser;
 
 impl EventParser {
+    #[allow(clippy::too_many_arguments)]
     pub async fn parse_grpc_transaction(
         protocols: &[crate::streaming::event_parser::Protocol],
         event_type_filter: Option<&crate::streaming::event_parser::common::filter::EventTypeFilter>,
@@ -32,7 +33,6 @@ impl EventParser {
         let update = yellowstone_grpc_proto::geyser::SubscribeUpdateTransaction {
             slot: slot.unwrap_or(0),
             transaction: Some(grpc_tx),
-            ..Default::default()
         };
         let sdk_parse_filter =
             crate::streaming::event_parser::common::filter::build_sdk_parse_event_filter(

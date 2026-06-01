@@ -11,7 +11,7 @@ use super::convert_parser_event;
 use super::filter::event_matches_protocol;
 
 pub(crate) enum AccountParseResult {
-    Event(DexEvent),
+    Event(Box<DexEvent>),
     Filtered,
     Unsupported,
 }
@@ -22,7 +22,7 @@ pub(crate) fn parse_account_event(
     event_type_filter: Option<&EventTypeFilter>,
 ) -> Option<DexEvent> {
     match parse_account_event_for_streamer(account, protocols, event_type_filter) {
-        AccountParseResult::Event(event) => Some(event),
+        AccountParseResult::Event(event) => Some(*event),
         AccountParseResult::Filtered | AccountParseResult::Unsupported => None,
     }
 }
@@ -68,7 +68,7 @@ pub(crate) fn parse_account_event_for_streamer(
         return AccountParseResult::Filtered;
     }
     normalize_account_event(&mut event, account);
-    AccountParseResult::Event(event)
+    AccountParseResult::Event(Box::new(event))
 }
 
 fn build_sdk_account_event_filter(filter: Option<&EventTypeFilter>) -> SdkGrpcEventTypeFilter {
@@ -123,6 +123,19 @@ fn streamer_account_event_to_sdk_types(t: &EventType) -> Vec<SdkGrpcEventType> {
         }
         EventType::AccountRaydiumClmmTickArrayState => {
             vec![SdkGrpcEventType::AccountRaydiumClmmTickArrayState]
+        }
+        EventType::AccountRaydiumCpmmAmmConfig => {
+            vec![SdkGrpcEventType::AccountRaydiumCpmmAmmConfig]
+        }
+        EventType::AccountRaydiumCpmmPoolState => {
+            vec![SdkGrpcEventType::AccountRaydiumCpmmPoolState]
+        }
+        EventType::AccountOrcaWhirlpool => vec![SdkGrpcEventType::AccountOrcaWhirlpool],
+        EventType::AccountOrcaPosition => vec![SdkGrpcEventType::AccountOrcaPosition],
+        EventType::AccountOrcaTickArray => vec![SdkGrpcEventType::AccountOrcaTickArray],
+        EventType::AccountOrcaFeeTier => vec![SdkGrpcEventType::AccountOrcaFeeTier],
+        EventType::AccountOrcaWhirlpoolsConfig => {
+            vec![SdkGrpcEventType::AccountOrcaWhirlpoolsConfig]
         }
         _ => Vec::new(),
     }
@@ -190,6 +203,48 @@ fn normalize_account_event(event: &mut DexEvent, account: &AccountPretty) {
             e.rent_epoch = account.rent_epoch;
         }
         DexEvent::RaydiumClmmTickArrayStateAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::RaydiumCpmmAmmConfigAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::RaydiumCpmmPoolStateAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::OrcaWhirlpoolAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::OrcaPositionAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::OrcaTickArrayAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::OrcaFeeTierAccountEvent(e) => {
+            e.executable = account.executable;
+            e.lamports = account.lamports;
+            e.owner = account.owner;
+            e.rent_epoch = account.rent_epoch;
+        }
+        DexEvent::OrcaWhirlpoolsConfigAccountEvent(e) => {
             e.executable = account.executable;
             e.lamports = account.lamports;
             e.owner = account.owner;

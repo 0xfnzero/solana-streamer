@@ -32,6 +32,7 @@ pub(crate) use adapt::{block_timestamp_from_stream_meta, fuse_streamer_ix_ctx};
 pub(crate) use convert::{adapt_parser_event, adapt_parser_events_list, convert_parser_event};
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::filter::event_matches_protocol;
     use super::{adapt_parser_event, convert_parser_event};
@@ -40,9 +41,9 @@ mod tests {
     use crate::streaming::event_parser::core::account_event_parser::TokenInfoEvent;
     use crate::streaming::event_parser::{DexEvent, Protocol};
     use sol_parser_sdk::core::events::{
-        BonkTradeEvent as PbBonkTrade, EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap,
-        OrcaWhirlpoolSwapEvent as PbOrcaSwap, PumpFunCreateV2TokenEvent as PbPumpCreateV2,
-        PumpFunTradeEvent as PbPumpTrade, TokenInfoEvent as PbTokenInfo,
+        EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap, OrcaWhirlpoolSwapEvent as PbOrcaSwap,
+        PumpFunCreateV2TokenEvent as PbPumpCreateV2, PumpFunTradeEvent as PbPumpTrade,
+        RaydiumLaunchlabTradeEvent as PbBonkTrade, TokenInfoEvent as PbTokenInfo,
         TradeDirection as PbBonkDir,
     };
     use sol_parser_sdk::DexEvent as PbDexEvent;
@@ -370,7 +371,8 @@ mod tests {
             trade_direction: PbBonkDir::Buy,
             exact_in: true,
         };
-        let dex = convert_parser_event(PbDexEvent::BonkTrade(b), None, 0).expect("convert");
+        let dex =
+            convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");
         match dex {
             DexEvent::BonkTradeEvent(e) => {
                 assert_eq!(e.metadata.event_type, EventType::BonkBuyExactIn)
@@ -391,7 +393,8 @@ mod tests {
             trade_direction: PbBonkDir::Sell,
             exact_in: false,
         };
-        let dex = convert_parser_event(PbDexEvent::BonkTrade(b), None, 0).expect("convert");
+        let dex =
+            convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");
         match dex {
             DexEvent::BonkTradeEvent(e) => {
                 assert_eq!(e.metadata.event_type, EventType::BonkSellExactOut)

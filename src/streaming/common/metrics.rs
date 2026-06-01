@@ -194,6 +194,12 @@ impl PerformanceMetrics {
     }
 }
 
+impl Default for PerformanceMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// High-performance metrics system
 #[derive(Debug)]
 pub struct HighPerformanceMetrics {
@@ -525,7 +531,7 @@ impl MetricsManager {
         let new_count = GLOBAL_METRICS.dropped_events_count.fetch_add(1, Ordering::Relaxed) + 1;
 
         // 每丢弃1000个事件记录一次警告日志
-        if new_count % 1000 == 0 {
+        if new_count.is_multiple_of(1000) {
             log::debug!("Dropped events count reached: {}", new_count);
         }
     }
@@ -547,7 +553,7 @@ impl MetricsManager {
         }
 
         // 每丢弃1000个事件记录一次警告日志
-        if new_count % 1000 == 0 || (new_count / 1000) != ((new_count - count) / 1000) {
+        if new_count.is_multiple_of(1000) || (new_count / 1000) != ((new_count - count) / 1000) {
             log::debug!("Dropped events count reached: {}", new_count);
         }
     }

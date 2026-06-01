@@ -14,7 +14,7 @@ use crate::streaming::event_parser::protocols::pumpswap::events::{
 };
 use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, Pool};
 use sol_parser_sdk::core::events::{
-    BonkTradeEvent as PbBonkTrade, TradeDirection as PbBonkTradeDirection,
+    RaydiumLaunchlabTradeEvent as PbBonkTrade, TradeDirection as PbBonkTradeDirection,
 };
 use solana_sdk::pubkey::Pubkey;
 
@@ -43,7 +43,7 @@ pub(crate) fn sdk_bonk_trade_event_type(
 /// SDK Bonk trade events do not expose reserves or fee rates; keep those fields at streamer
 /// defaults.
 pub(crate) fn bonk_trade_from_parser(
-    b: sol_parser_sdk::core::events::BonkTradeEvent,
+    b: sol_parser_sdk::core::events::RaydiumLaunchlabTradeEvent,
     meta: EventMetadata,
 ) -> BonkTradeEvent {
     BonkTradeEvent {
@@ -71,7 +71,7 @@ pub(crate) fn bonk_trade_from_parser(
 }
 
 pub(crate) fn bonk_pool_create_from_parser(
-    p: sol_parser_sdk::core::events::BonkPoolCreateEvent,
+    p: sol_parser_sdk::core::events::RaydiumLaunchlabPoolCreateEvent,
     meta: EventMetadata,
 ) -> BonkPoolCreateEvent {
     BonkPoolCreateEvent {
@@ -93,7 +93,7 @@ pub(crate) fn bonk_pool_create_from_parser(
 }
 
 pub(crate) fn bonk_migrate_to_amm_from_parser(
-    m: sol_parser_sdk::core::events::BonkMigrateAmmEvent,
+    m: sol_parser_sdk::core::events::RaydiumLaunchlabMigrateAmmEvent,
     meta: EventMetadata,
 ) -> BonkMigrateToAmmEvent {
     BonkMigrateToAmmEvent {

@@ -338,7 +338,7 @@ pub(crate) fn convert_parser_event(
             Some(DexEvent::PumpSwapWithdrawEvent(pumpswap_liquidity_removed_to_withdraw(r, meta)))
         }
 
-        PbDexEvent::BonkTrade(b) => {
+        PbDexEvent::RaydiumLaunchlabTrade(b) => {
             let et = sdk_bonk_trade_event_type(&b);
             let meta = adapt_pm(
                 b.metadata.clone(),
@@ -350,7 +350,7 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::BonkTradeEvent(bonk_trade_from_parser(b, meta)))
         }
-        PbDexEvent::BonkPoolCreate(p) => {
+        PbDexEvent::RaydiumLaunchlabPoolCreate(p) => {
             let meta = adapt_pm(
                 p.metadata.clone(),
                 bt,
@@ -361,7 +361,7 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::BonkPoolCreateEvent(bonk_pool_create_from_parser(p, meta)))
         }
-        PbDexEvent::BonkMigrateAmm(m) => {
+        PbDexEvent::RaydiumLaunchlabMigrateAmm(m) => {
             let meta = adapt_pm(
                 m.metadata.clone(),
                 bt,
@@ -421,6 +421,32 @@ pub(crate) fn convert_parser_event(
                 raydium_cpmm_program(),
             );
             Some(DexEvent::RaydiumCpmmInitializeEvent(raydium_cpmm_initialize_from_parser(e, meta)))
+        }
+        PbDexEvent::RaydiumCpmmAmmConfigAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumCpmm,
+                EventType::AccountRaydiumCpmmAmmConfig,
+                raydium_cpmm_program(),
+            );
+            Some(DexEvent::RaydiumCpmmAmmConfigAccountEvent(Box::new(
+                raydium_cpmm_amm_config_account_from_parser(*e, meta),
+            )))
+        }
+        PbDexEvent::RaydiumCpmmPoolStateAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumCpmm,
+                EventType::AccountRaydiumCpmmPoolState,
+                raydium_cpmm_program(),
+            );
+            Some(DexEvent::RaydiumCpmmPoolStateAccountEvent(Box::new(
+                raydium_cpmm_pool_state_account_from_parser(*e, meta),
+            )))
         }
 
         PbDexEvent::RaydiumClmmSwap(e) => {
@@ -651,9 +677,9 @@ pub(crate) fn convert_parser_event(
                 EventType::AccountRaydiumClmmAmmConfig,
                 raydium_clmm_program(),
             );
-            Some(DexEvent::RaydiumClmmAmmConfigAccountEvent(
-                raydium_clmm_amm_config_account_from_parser(e, meta),
-            ))
+            Some(DexEvent::RaydiumClmmAmmConfigAccountEvent(Box::new(
+                raydium_clmm_amm_config_account_from_parser(*e, meta),
+            )))
         }
         PbDexEvent::RaydiumClmmPoolStateAccount(e) => {
             let meta = adapt_pm(
@@ -664,9 +690,9 @@ pub(crate) fn convert_parser_event(
                 EventType::AccountRaydiumClmmPoolState,
                 raydium_clmm_program(),
             );
-            Some(DexEvent::RaydiumClmmPoolStateAccountEvent(
-                raydium_clmm_pool_state_account_from_parser(e, meta),
-            ))
+            Some(DexEvent::RaydiumClmmPoolStateAccountEvent(Box::new(
+                raydium_clmm_pool_state_account_from_parser(*e, meta),
+            )))
         }
         PbDexEvent::RaydiumClmmTickArrayStateAccount(e) => {
             let meta = adapt_pm(
@@ -677,9 +703,9 @@ pub(crate) fn convert_parser_event(
                 EventType::AccountRaydiumClmmTickArrayState,
                 raydium_clmm_program(),
             );
-            Some(DexEvent::RaydiumClmmTickArrayStateAccountEvent(
-                raydium_clmm_tick_array_state_account_from_parser(e, meta),
-            ))
+            Some(DexEvent::RaydiumClmmTickArrayStateAccountEvent(Box::new(
+                raydium_clmm_tick_array_state_account_from_parser(*e, meta),
+            )))
         }
 
         PbDexEvent::RaydiumAmmV4Swap(e) => {
@@ -758,6 +784,19 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::MeteoraDammV2SwapEvent(meteora_damm_v2_swap_from_parser(e, meta)))
         }
+        PbDexEvent::MeteoraDammV2InitializePool(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDammV2,
+                EventType::MeteoraDammV2InitializePool,
+                meteora_damm_program(),
+            );
+            Some(DexEvent::MeteoraDammV2InitializePoolEvent(
+                meteora_damm_v2_initialize_pool_from_parser(e, meta),
+            ))
+        }
         PbDexEvent::MeteoraDammV2AddLiquidity(e) => {
             let meta = adapt_pm(
                 e.metadata.clone(),
@@ -807,6 +846,44 @@ pub(crate) fn convert_parser_event(
                 meteora_damm_program(),
             );
             Some(DexEvent::MeteoraDammV2ClosePositionEvent(meteora_damm_v2_close_position_from_pb(
+                e, meta,
+            )))
+        }
+
+        PbDexEvent::MeteoraDbcSwap(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDbc,
+                EventType::MeteoraDbcSwap,
+                meteora_dbc_program(),
+            );
+            Some(DexEvent::MeteoraDbcSwapEvent(meteora_dbc_swap_from_pb(e, meta)))
+        }
+        PbDexEvent::MeteoraDbcInitializePool(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDbc,
+                EventType::MeteoraDbcInitializePool,
+                meteora_dbc_program(),
+            );
+            Some(DexEvent::MeteoraDbcInitializePoolEvent(meteora_dbc_initialize_pool_from_pb(
+                e, meta,
+            )))
+        }
+        PbDexEvent::MeteoraDbcCurveComplete(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDbc,
+                EventType::MeteoraDbcCurveComplete,
+                meteora_dbc_program(),
+            );
+            Some(DexEvent::MeteoraDbcCurveCompleteEvent(meteora_dbc_curve_complete_from_pb(
                 e, meta,
             )))
         }
@@ -941,6 +1018,71 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::OrcaWhirlpoolPoolInitializedEvent(orca_pool_initialized_from_pb(
                 e, meta,
+            )))
+        }
+        PbDexEvent::OrcaWhirlpoolAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::OrcaWhirlpool,
+                EventType::AccountOrcaWhirlpool,
+                orca_whirlpool_program(),
+            );
+            Some(DexEvent::OrcaWhirlpoolAccountEvent(Box::new(orca_whirlpool_account_from_pb(
+                *e, meta,
+            ))))
+        }
+        PbDexEvent::OrcaPositionAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::OrcaWhirlpool,
+                EventType::AccountOrcaPosition,
+                orca_whirlpool_program(),
+            );
+            Some(DexEvent::OrcaPositionAccountEvent(Box::new(orca_position_account_from_pb(
+                *e, meta,
+            ))))
+        }
+        PbDexEvent::OrcaTickArrayAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::OrcaWhirlpool,
+                EventType::AccountOrcaTickArray,
+                orca_whirlpool_program(),
+            );
+            Some(DexEvent::OrcaTickArrayAccountEvent(Box::new(orca_tick_array_account_from_pb(
+                *e, meta,
+            ))))
+        }
+        PbDexEvent::OrcaFeeTierAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::OrcaWhirlpool,
+                EventType::AccountOrcaFeeTier,
+                orca_whirlpool_program(),
+            );
+            Some(DexEvent::OrcaFeeTierAccountEvent(Box::new(orca_fee_tier_account_from_pb(
+                *e, meta,
+            ))))
+        }
+        PbDexEvent::OrcaWhirlpoolsConfigAccount(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::OrcaWhirlpool,
+                EventType::AccountOrcaWhirlpoolsConfig,
+                orca_whirlpool_program(),
+            );
+            Some(DexEvent::OrcaWhirlpoolsConfigAccountEvent(Box::new(
+                orca_whirlpools_config_account_from_pb(*e, meta),
             )))
         }
         PbDexEvent::MeteoraPoolsSwap(e) => {

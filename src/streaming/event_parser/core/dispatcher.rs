@@ -70,7 +70,7 @@ impl EventDispatcher {
             }
             Protocol::PumpFees => all_inner::pump_fees::parse(&disc, inner_instruction_data, pm),
             Protocol::Bonk | Protocol::RaydiumLaunchpad => {
-                all_inner::bonk::parse(&disc, inner_instruction_data, pm)
+                all_inner::raydium_launchlab::parse(&disc, inner_instruction_data, pm)
             }
             Protocol::RaydiumCpmm => {
                 all_inner::raydium_cpmm::parse(&disc, inner_instruction_data, pm)
@@ -86,6 +86,8 @@ impl EventDispatcher {
             Protocol::MeteoraDammV2 => {
                 all_inner::meteora_damm::parse(&disc, inner_instruction_data, pm)
             }
+            // Meteora DBC is currently log-side in sol-parser-sdk; direct inner dispatch is absent.
+            Protocol::MeteoraDbc => None,
             Protocol::OrcaWhirlpool => all_inner::orca::parse(&disc, inner_instruction_data, pm),
             Protocol::MeteoraPools => {
                 all_inner::meteora_amm::parse(&disc, inner_instruction_data, pm)
@@ -108,7 +110,7 @@ impl EventDispatcher {
             Some(Protocol::PumpFees)
         } else if program_id == &program_ids::PUMPSWAP_PROGRAM_ID {
             Some(Protocol::PumpSwap)
-        } else if program_id == &program_ids::BONK_PROGRAM_ID {
+        } else if program_id == &program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID {
             Some(Protocol::Bonk)
         } else if program_id == &program_ids::RAYDIUM_CPMM_PROGRAM_ID {
             Some(Protocol::RaydiumCpmm)
@@ -118,6 +120,8 @@ impl EventDispatcher {
             Some(Protocol::RaydiumAmmV4)
         } else if program_id == &program_ids::METEORA_DAMM_V2_PROGRAM_ID {
             Some(Protocol::MeteoraDammV2)
+        } else if program_id == &program_ids::METEORA_DBC_PROGRAM_ID {
+            Some(Protocol::MeteoraDbc)
         } else if program_id == &program_ids::ORCA_WHIRLPOOL_PROGRAM_ID {
             Some(Protocol::OrcaWhirlpool)
         } else if program_id == &program_ids::METEORA_POOLS_PROGRAM_ID {
@@ -148,11 +152,14 @@ impl EventDispatcher {
             Protocol::PumpFun => program_ids::PUMPFUN_PROGRAM_ID,
             Protocol::PumpFees => program_ids::PUMP_FEES_PROGRAM_ID,
             Protocol::PumpSwap => program_ids::PUMPSWAP_PROGRAM_ID,
-            Protocol::Bonk | Protocol::RaydiumLaunchpad => program_ids::BONK_PROGRAM_ID,
+            Protocol::Bonk | Protocol::RaydiumLaunchpad => {
+                program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID
+            }
             Protocol::RaydiumCpmm => program_ids::RAYDIUM_CPMM_PROGRAM_ID,
             Protocol::RaydiumClmm => program_ids::RAYDIUM_CLMM_PROGRAM_ID,
             Protocol::RaydiumAmmV4 => program_ids::RAYDIUM_AMM_V4_PROGRAM_ID,
             Protocol::MeteoraDammV2 => program_ids::METEORA_DAMM_V2_PROGRAM_ID,
+            Protocol::MeteoraDbc => program_ids::METEORA_DBC_PROGRAM_ID,
             Protocol::OrcaWhirlpool => program_ids::ORCA_WHIRLPOOL_PROGRAM_ID,
             Protocol::MeteoraPools => program_ids::METEORA_POOLS_PROGRAM_ID,
             Protocol::MeteoraDlmm => program_ids::METEORA_DLMM_PROGRAM_ID,

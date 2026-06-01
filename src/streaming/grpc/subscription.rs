@@ -54,7 +54,7 @@ impl SubscriptionManager {
     )> {
         // When no filter is set, subscribe to block meta like before; if a filter exists,
         // only keep block meta when the filter includes block-related event types.
-        let blocks_meta = if event_type_filter.map_or(true, |f| f.include_block_event()) {
+        let blocks_meta = if event_type_filter.is_none_or(|f| f.include_block_event()) {
             HashMap::from([("".to_owned(), SubscribeRequestFilterBlocksMeta {})])
         } else {
             HashMap::new()

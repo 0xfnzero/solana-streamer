@@ -1,14 +1,18 @@
 //! Orca Whirlpool and Meteora Pools / DLMM events with SDK-shaped payloads.
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::sol_parser_forward::events::{
+    MeteoraDbcCurveCompleteEvent, MeteoraDbcInitializePoolEvent, MeteoraDbcSwapEvent,
     MeteoraDlmmAddLiquidityEvent, MeteoraDlmmClaimFeeEvent, MeteoraDlmmClosePositionEvent,
     MeteoraDlmmCreatePositionEvent, MeteoraDlmmInitializeBinArrayEvent,
     MeteoraDlmmInitializePoolEvent, MeteoraDlmmRemoveLiquidityEvent, MeteoraDlmmSwapEvent,
     MeteoraPoolsAddLiquidityEvent, MeteoraPoolsBootstrapLiquidityEvent,
     MeteoraPoolsPoolCreatedEvent, MeteoraPoolsRemoveLiquidityEvent, MeteoraPoolsSetPoolFeesEvent,
-    MeteoraPoolsSwapEvent, OrcaWhirlpoolLiquidityDecreasedEvent,
-    OrcaWhirlpoolLiquidityIncreasedEvent, OrcaWhirlpoolPoolInitializedEvent,
-    OrcaWhirlpoolSwapEvent,
+    MeteoraPoolsSwapEvent, OrcaFeeTierAccount, OrcaFeeTierAccountEvent, OrcaPositionAccount,
+    OrcaPositionAccountEvent, OrcaPositionRewardInfo, OrcaTick, OrcaTickArrayAccount,
+    OrcaTickArrayAccountEvent, OrcaWhirlpoolAccount, OrcaWhirlpoolAccountEvent,
+    OrcaWhirlpoolLiquidityDecreasedEvent, OrcaWhirlpoolLiquidityIncreasedEvent,
+    OrcaWhirlpoolPoolInitializedEvent, OrcaWhirlpoolRewardInfo, OrcaWhirlpoolSwapEvent,
+    OrcaWhirlpoolsConfigAccount, OrcaWhirlpoolsConfigAccountEvent,
 };
 
 pub(crate) fn orca_swap_from_pb(
@@ -82,6 +86,192 @@ pub(crate) fn orca_pool_initialized_from_pb(
         decimals_a: e.decimals_a,
         decimals_b: e.decimals_b,
         initial_sqrt_price: e.initial_sqrt_price,
+    }
+}
+
+fn orca_whirlpool_reward_from_pb(
+    r: sol_parser_sdk::core::events::OrcaWhirlpoolRewardInfo,
+) -> OrcaWhirlpoolRewardInfo {
+    OrcaWhirlpoolRewardInfo {
+        mint: r.mint,
+        vault: r.vault,
+        authority: r.authority,
+        emissions_per_second_x64: r.emissions_per_second_x64,
+        growth_global_x64: r.growth_global_x64,
+    }
+}
+
+fn orca_position_reward_from_pb(
+    r: sol_parser_sdk::core::events::OrcaPositionRewardInfo,
+) -> OrcaPositionRewardInfo {
+    OrcaPositionRewardInfo {
+        growth_inside_checkpoint: r.growth_inside_checkpoint,
+        amount_owed: r.amount_owed,
+    }
+}
+
+fn orca_tick_from_pb(t: sol_parser_sdk::core::events::OrcaTick) -> OrcaTick {
+    OrcaTick {
+        initialized: t.initialized,
+        liquidity_net: t.liquidity_net,
+        liquidity_gross: t.liquidity_gross,
+        fee_growth_outside_a: t.fee_growth_outside_a,
+        fee_growth_outside_b: t.fee_growth_outside_b,
+        reward_growths_outside: t.reward_growths_outside,
+    }
+}
+
+pub(crate) fn orca_whirlpool_account_from_pb(
+    e: sol_parser_sdk::core::events::OrcaWhirlpoolAccountEvent,
+    meta: EventMetadata,
+) -> OrcaWhirlpoolAccountEvent {
+    OrcaWhirlpoolAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        whirlpool: OrcaWhirlpoolAccount {
+            whirlpools_config: e.whirlpool.whirlpools_config,
+            whirlpool_bump: e.whirlpool.whirlpool_bump,
+            tick_spacing: e.whirlpool.tick_spacing,
+            tick_spacing_seed: e.whirlpool.tick_spacing_seed,
+            fee_rate: e.whirlpool.fee_rate,
+            protocol_fee_rate: e.whirlpool.protocol_fee_rate,
+            liquidity: e.whirlpool.liquidity,
+            sqrt_price: e.whirlpool.sqrt_price,
+            tick_current_index: e.whirlpool.tick_current_index,
+            protocol_fee_owed_a: e.whirlpool.protocol_fee_owed_a,
+            protocol_fee_owed_b: e.whirlpool.protocol_fee_owed_b,
+            token_mint_a: e.whirlpool.token_mint_a,
+            token_vault_a: e.whirlpool.token_vault_a,
+            fee_growth_global_a: e.whirlpool.fee_growth_global_a,
+            token_mint_b: e.whirlpool.token_mint_b,
+            token_vault_b: e.whirlpool.token_vault_b,
+            fee_growth_global_b: e.whirlpool.fee_growth_global_b,
+            reward_last_updated_timestamp: e.whirlpool.reward_last_updated_timestamp,
+            reward_infos: e.whirlpool.reward_infos.map(orca_whirlpool_reward_from_pb),
+        },
+        ..Default::default()
+    }
+}
+
+pub(crate) fn orca_position_account_from_pb(
+    e: sol_parser_sdk::core::events::OrcaPositionAccountEvent,
+    meta: EventMetadata,
+) -> OrcaPositionAccountEvent {
+    OrcaPositionAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        position: OrcaPositionAccount {
+            whirlpool: e.position.whirlpool,
+            position_mint: e.position.position_mint,
+            liquidity: e.position.liquidity,
+            tick_lower_index: e.position.tick_lower_index,
+            tick_upper_index: e.position.tick_upper_index,
+            fee_growth_checkpoint_a: e.position.fee_growth_checkpoint_a,
+            fee_owed_a: e.position.fee_owed_a,
+            fee_growth_checkpoint_b: e.position.fee_growth_checkpoint_b,
+            fee_owed_b: e.position.fee_owed_b,
+            reward_infos: e.position.reward_infos.map(orca_position_reward_from_pb),
+        },
+        ..Default::default()
+    }
+}
+
+pub(crate) fn orca_tick_array_account_from_pb(
+    e: sol_parser_sdk::core::events::OrcaTickArrayAccountEvent,
+    meta: EventMetadata,
+) -> OrcaTickArrayAccountEvent {
+    OrcaTickArrayAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        tick_array: OrcaTickArrayAccount {
+            start_tick_index: e.tick_array.start_tick_index,
+            ticks: e.tick_array.ticks.into_iter().map(orca_tick_from_pb).collect(),
+            whirlpool: e.tick_array.whirlpool,
+        },
+        ..Default::default()
+    }
+}
+
+pub(crate) fn orca_fee_tier_account_from_pb(
+    e: sol_parser_sdk::core::events::OrcaFeeTierAccountEvent,
+    meta: EventMetadata,
+) -> OrcaFeeTierAccountEvent {
+    OrcaFeeTierAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        fee_tier: OrcaFeeTierAccount {
+            whirlpools_config: e.fee_tier.whirlpools_config,
+            tick_spacing: e.fee_tier.tick_spacing,
+            default_fee_rate: e.fee_tier.default_fee_rate,
+        },
+        ..Default::default()
+    }
+}
+
+pub(crate) fn orca_whirlpools_config_account_from_pb(
+    e: sol_parser_sdk::core::events::OrcaWhirlpoolsConfigAccountEvent,
+    meta: EventMetadata,
+) -> OrcaWhirlpoolsConfigAccountEvent {
+    OrcaWhirlpoolsConfigAccountEvent {
+        metadata: meta,
+        pubkey: e.pubkey,
+        config: OrcaWhirlpoolsConfigAccount {
+            fee_authority: e.config.fee_authority,
+            collect_protocol_fees_authority: e.config.collect_protocol_fees_authority,
+            reward_emissions_super_authority: e.config.reward_emissions_super_authority,
+            default_protocol_fee_rate: e.config.default_protocol_fee_rate,
+        },
+        ..Default::default()
+    }
+}
+
+pub(crate) fn meteora_dbc_swap_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDbcSwapEvent,
+    meta: EventMetadata,
+) -> MeteoraDbcSwapEvent {
+    MeteoraDbcSwapEvent {
+        metadata: meta,
+        pool: e.pool,
+        config: e.config,
+        trade_direction: e.trade_direction,
+        has_referral: e.has_referral,
+        amount_in: e.amount_in,
+        minimum_amount_out: e.minimum_amount_out,
+        actual_input_amount: e.actual_input_amount,
+        output_amount: e.output_amount,
+        next_sqrt_price: e.next_sqrt_price,
+        trading_fee: e.trading_fee,
+        protocol_fee: e.protocol_fee,
+        referral_fee: e.referral_fee,
+        current_timestamp: e.current_timestamp,
+    }
+}
+
+pub(crate) fn meteora_dbc_initialize_pool_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDbcInitializePoolEvent,
+    meta: EventMetadata,
+) -> MeteoraDbcInitializePoolEvent {
+    MeteoraDbcInitializePoolEvent {
+        metadata: meta,
+        pool: e.pool,
+        config: e.config,
+        creator: e.creator,
+        base_mint: e.base_mint,
+        pool_type: e.pool_type,
+        activation_point: e.activation_point,
+    }
+}
+
+pub(crate) fn meteora_dbc_curve_complete_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDbcCurveCompleteEvent,
+    meta: EventMetadata,
+) -> MeteoraDbcCurveCompleteEvent {
+    MeteoraDbcCurveCompleteEvent {
+        metadata: meta,
+        pool: e.pool,
+        config: e.config,
+        base_reserve: e.base_reserve,
+        quote_reserve: e.quote_reserve,
     }
 }
 

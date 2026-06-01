@@ -66,6 +66,7 @@ impl YellowstoneGrpc {
         x_token: Option<String>,
         config: StreamClientConfig,
     ) -> AnyResult<Self> {
+        sol_parser_sdk::warmup_parser();
         let _ = rustls::crypto::ring::default_provider().install_default().ok();
         let subscription_manager =
             SubscriptionManager::new(endpoint.clone(), x_token.clone(), config.clone());
@@ -133,6 +134,7 @@ impl YellowstoneGrpc {
     ///
     /// # Returns
     /// Returns `AnyResult<()>`, `Ok(())` on success, error information on failure
+    #[allow(clippy::too_many_arguments)]
     pub async fn subscribe_events_immediate<F>(
         &self,
         protocols: Vec<Protocol>,

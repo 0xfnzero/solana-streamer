@@ -69,8 +69,7 @@ pub fn parse_grpc_transaction_events(
     let recv_us = transaction_pretty.recv_us;
     let grpc_tx = transaction_pretty.grpc_tx;
     let block_time_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
-    let update =
-        SubscribeUpdateTransaction { slot, transaction: Some(grpc_tx), ..Default::default() };
+    let update = SubscribeUpdateTransaction { slot, transaction: Some(grpc_tx) };
     let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
     let sdk_events = parse_subscribe_update_transaction_low_latency(
         &update,
@@ -116,7 +115,7 @@ pub async fn process_grpc_transaction(
                 AccountParseResult::Event(mut event) => {
                     event.metadata_mut().handle_us = elapsed_micros_since(account_pretty.recv_us);
                     let processing_time_us = event.metadata().handle_us as f64;
-                    callback(event);
+                    callback(*event);
                     update_metrics(MetricsEventType::Account, 1, processing_time_us);
                     return Ok(());
                 }
