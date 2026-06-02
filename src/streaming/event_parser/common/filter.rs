@@ -178,7 +178,7 @@ enum FilterMapMode {
 fn push_streamer_event_sdk_grpc_types(
     t: &EventType,
     out: &mut Vec<SdkGrpcEventType>,
-    mode: FilterMapMode,
+    _mode: FilterMapMode,
 ) -> bool {
     use EventType as St;
     use SdkGrpcEventType as Sdk;
@@ -194,27 +194,14 @@ fn push_streamer_event_sdk_grpc_types(
         }
         St::PumpFunTrade => {
             out.push(Sdk::PumpFunTrade);
-            out.push(Sdk::PumpFunBuy);
-            out.push(Sdk::PumpFunSell);
-            out.push(Sdk::PumpFunBuyExactSolIn);
         }
         St::PumpFunBuy => {
-            if matches!(mode, FilterMapMode::Include) {
-                out.push(Sdk::PumpFunTrade);
-            }
             out.push(Sdk::PumpFunBuy);
-            out.push(Sdk::PumpFunBuyExactSolIn);
         }
         St::PumpFunBuyExactSolIn => {
-            if matches!(mode, FilterMapMode::Include) {
-                out.push(Sdk::PumpFunTrade);
-            }
             out.push(Sdk::PumpFunBuyExactSolIn);
         }
         St::PumpFunSell => {
-            if matches!(mode, FilterMapMode::Include) {
-                out.push(Sdk::PumpFunTrade);
-            }
             out.push(Sdk::PumpFunSell);
         }
         St::PumpFunMigrate => out.push(Sdk::PumpFunMigrate),
@@ -459,11 +446,7 @@ fn event_type_matches(filter_type: &EventType, event_type: &EventType) -> bool {
                 | (EventType::PumpFunTrade, EventType::PumpFunBuy)
                 | (EventType::PumpFunTrade, EventType::PumpFunSell)
                 | (EventType::PumpFunTrade, EventType::PumpFunBuyExactSolIn)
-                | (EventType::PumpFunBuy, EventType::PumpFunTrade)
-                | (EventType::PumpFunSell, EventType::PumpFunTrade)
-                | (EventType::PumpFunBuyExactSolIn, EventType::PumpFunTrade)
                 | (EventType::PumpFunBuy, EventType::PumpFunBuyExactSolIn)
-                | (EventType::PumpFunBuyExactSolIn, EventType::PumpFunBuy)
                 | (EventType::TokenAccount, EventType::TokenInfo)
                 | (EventType::RaydiumClmmSwap, EventType::RaydiumClmmSwapV2)
                 | (EventType::RaydiumClmmSwapV2, EventType::RaydiumClmmSwap)
@@ -584,11 +567,12 @@ mod tests {
     fn build_sdk_filter_pumpfun_buy_only() {
         let f = EventTypeFilter { include: vec![EventType::PumpFunBuy], ..Default::default() };
         let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
-        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunTrade));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuyExactSolIn));
-        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunTrade));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
         assert!(f.passes_event_type(&EventType::PumpFunBuy));
+        assert!(f.passes_event_type(&EventType::PumpFunBuyExactSolIn));
         assert!(!f.passes_event_type(&EventType::PumpFunSell));
     }
 
@@ -600,6 +584,7 @@ mod tests {
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuyExactSolIn));
+        assert!(f.passes_event_type(&EventType::PumpFunTrade));
         assert!(f.passes_event_type(&EventType::PumpFunBuy));
         assert!(f.passes_event_type(&EventType::PumpFunSell));
         assert!(f.passes_event_type(&EventType::PumpFunBuyExactSolIn));
@@ -639,7 +624,7 @@ mod tests {
             include: vec![EventType::PumpFunBuyExactSolIn],
             ..Default::default()
         };
-        assert!(f.passes_event_type(&EventType::PumpFunBuy));
+        assert!(!f.passes_event_type(&EventType::PumpFunBuy));
         assert!(f.passes_event_type(&EventType::PumpFunBuyExactSolIn));
     }
 
@@ -672,11 +657,11 @@ mod tests {
             ..Default::default()
         };
         let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
-        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
-        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunTrade));
         assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuyExactSolIn));
-        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
-        assert!(f.passes_event_type(&EventType::PumpFunBuy));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunTrade));
+        assert!(!sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
+        assert!(!f.passes_event_type(&EventType::PumpFunBuy));
         assert!(!f.passes_event_type(&EventType::PumpFunSell));
         assert!(f.passes_event_type(&EventType::PumpFunBuyExactSolIn));
     }

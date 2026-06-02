@@ -667,25 +667,6 @@ pub(crate) fn pumpswap_liquidity_removed_to_withdraw(
         ..Default::default()
     }
 }
-pub(crate) fn pumpfun_trade_from_parser(
-    t: sol_parser_sdk::core::events::PumpFunTradeEvent,
-    bt: Option<&Timestamp>,
-    recv_wall_us: i64,
-) -> DexEvent {
-    let event_type = pumpfun_trade_event_type(&t);
-    pumpfun_trade_from_parser_with_event_type(t, bt, recv_wall_us, event_type)
-}
-
-pub(crate) fn pumpfun_trade_event_type(
-    t: &sol_parser_sdk::core::events::PumpFunTradeEvent,
-) -> EventType {
-    match t.ix_name.as_str() {
-        "buy_exact_sol_in" => EventType::PumpFunBuyExactSolIn,
-        _ if t.is_buy => EventType::PumpFunBuy,
-        _ => EventType::PumpFunSell,
-    }
-}
-
 pub(crate) fn pumpfun_trade_from_parser_with_event_type(
     t: sol_parser_sdk::core::events::PumpFunTradeEvent,
     bt: Option<&Timestamp>,

@@ -23,7 +23,12 @@ pub(crate) fn convert_parser_event(
     recv_wall_us: i64,
 ) -> Option<DexEvent> {
     match ev {
-        PbDexEvent::PumpFunTrade(t) => Some(pumpfun_trade_from_parser(t, bt, recv_wall_us)),
+        PbDexEvent::PumpFunTrade(t) => Some(pumpfun_trade_from_parser_with_event_type(
+            t,
+            bt,
+            recv_wall_us,
+            EventType::PumpFunTrade,
+        )),
         PbDexEvent::PumpFunBuy(t) => Some(pumpfun_trade_from_parser_with_event_type(
             t,
             bt,

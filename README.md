@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.5" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.8" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.5"
+solana-streamer-sdk = "1.5.8"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.5"
+solana-streamer-sdk = "1.5.8"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.5", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.8", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.5+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.8+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.8
+
+Version 1.5.8 uses `sol-parser-sdk 0.5.8` from crates.io. It inherits the Pump.fun ShredStream filter-family semantics from the parser SDK: `PumpFunBuy` covers `buy`, `buy_v2`, `buy_exact_sol_in`, and `buy_exact_quote_in_v2`; `PumpFunSell` covers `sell` and `sell_v2`; and `PumpFunTrade` covers all buy/sell instructions while the parser can emit unified trade events when only the generic trade filter is requested.
 
 ### Upgrading to v1.5.5
 

@@ -123,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.5" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.8" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.5"
+solana-streamer-sdk = "1.5.8"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.5"
+solana-streamer-sdk = "1.5.8"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.5", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.8", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.5+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.8+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.8
+
+v1.5.8 使用 crates.io 上的 `sol-parser-sdk 0.5.8`。该版本继承 parser SDK 的 Pump.fun ShredStream 过滤大类语义：`PumpFunBuy` 覆盖 `buy`、`buy_v2`、`buy_exact_sol_in`、`buy_exact_quote_in_v2`；`PumpFunSell` 覆盖 `sell`、`sell_v2`；`PumpFunTrade` 覆盖所有 buy/sell 指令，并且当只请求通用 trade filter 时，parser 可统一输出 trade 事件。
 
 ### 升级到 v1.5.5
 

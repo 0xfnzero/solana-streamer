@@ -93,6 +93,7 @@ mod tests {
         match ev {
             DexEvent::PumpFunTradeEvent(st) => {
                 assert_eq!(st.metadata.slot, 42);
+                assert_eq!(st.metadata.event_type, EventType::PumpFunTrade);
                 assert_eq!(st.metadata.recv_us, 999);
                 assert_eq!(st.sol_amount, 100);
                 assert_eq!(st.token_amount, 200);
