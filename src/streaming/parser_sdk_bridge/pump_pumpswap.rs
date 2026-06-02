@@ -60,6 +60,7 @@ pub(crate) fn pumpfun_create_token_from_parser(
         is_cashback_enabled: c.is_cashback_enabled,
         quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
         virtual_quote_reserves: c.virtual_quote_reserves,
+        ix_name: "create".to_string(),
         ..Default::default()
     }
 }
@@ -87,6 +88,7 @@ pub(crate) fn pumpfun_create_token_from_parser_v2(
         is_cashback_enabled: c.is_cashback_enabled,
         quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
         virtual_quote_reserves: c.virtual_quote_reserves,
+        ix_name: "create_v2".to_string(),
         mint_authority: c.mint_authority,
         associated_bonding_curve: c.associated_bonding_curve,
         global: c.global,

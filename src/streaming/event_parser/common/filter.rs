@@ -192,6 +192,12 @@ fn push_streamer_event_sdk_grpc_types(
             out.push(Sdk::PumpFunCreate);
             out.push(Sdk::PumpFunCreateV2);
         }
+        St::PumpFunTrade => {
+            out.push(Sdk::PumpFunTrade);
+            out.push(Sdk::PumpFunBuy);
+            out.push(Sdk::PumpFunSell);
+            out.push(Sdk::PumpFunBuyExactSolIn);
+        }
         St::PumpFunBuy => {
             if matches!(mode, FilterMapMode::Include) {
                 out.push(Sdk::PumpFunTrade);
@@ -450,6 +456,12 @@ fn event_type_matches(filter_type: &EventType, event_type: &EventType) -> bool {
             (filter_type, event_type),
             (EventType::PumpFunCreateToken, EventType::PumpFunCreateV2Token)
                 | (EventType::PumpFunCreateV2Token, EventType::PumpFunCreateToken)
+                | (EventType::PumpFunTrade, EventType::PumpFunBuy)
+                | (EventType::PumpFunTrade, EventType::PumpFunSell)
+                | (EventType::PumpFunTrade, EventType::PumpFunBuyExactSolIn)
+                | (EventType::PumpFunBuy, EventType::PumpFunTrade)
+                | (EventType::PumpFunSell, EventType::PumpFunTrade)
+                | (EventType::PumpFunBuyExactSolIn, EventType::PumpFunTrade)
                 | (EventType::PumpFunBuy, EventType::PumpFunBuyExactSolIn)
                 | (EventType::PumpFunBuyExactSolIn, EventType::PumpFunBuy)
                 | (EventType::TokenAccount, EventType::TokenInfo)
@@ -581,6 +593,19 @@ mod tests {
     }
 
     #[test]
+    fn pumpfun_trade_filter_matches_concrete_trade_events() {
+        let f = EventTypeFilter { include: vec![EventType::PumpFunTrade], ..Default::default() };
+        let sdk_f = build_sdk_parse_event_filter(Some(&f)).expect("mapped");
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunTrade));
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuy));
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunSell));
+        assert!(sdk_f.should_include(SdkGrpcEventType::PumpFunBuyExactSolIn));
+        assert!(f.passes_event_type(&EventType::PumpFunBuy));
+        assert!(f.passes_event_type(&EventType::PumpFunSell));
+        assert!(f.passes_event_type(&EventType::PumpFunBuyExactSolIn));
+    }
+
+    #[test]
     fn pumpfun_create_filter_matches_create_v2_for_backward_compat() {
         let f =
             EventTypeFilter { include: vec![EventType::PumpFunCreateToken], ..Default::default() };
@@ -669,6 +694,7 @@ mod tests {
             EventType::BlockMeta,
             EventType::PumpFunCreateToken,
             EventType::PumpFunCreateV2Token,
+            EventType::PumpFunTrade,
             EventType::PumpFunBuy,
             EventType::PumpFunBuyExactSolIn,
             EventType::PumpFunSell,

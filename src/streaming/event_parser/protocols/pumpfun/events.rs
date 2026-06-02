@@ -32,6 +32,9 @@ pub struct PumpFunCreateTokenEvent {
     pub quote_mint: Pubkey,
     #[borsh(skip)]
     pub virtual_quote_reserves: u64,
+    /// Original PumpFun instruction name: "create" or "create_v2".
+    #[borsh(skip)]
+    pub ix_name: String,
     #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]

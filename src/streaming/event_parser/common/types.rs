@@ -82,6 +82,7 @@ pub enum EventType {
     // PumpFun events
     PumpFunCreateToken,
     PumpFunCreateV2Token,
+    PumpFunTrade,
     PumpFunBuy,
     PumpFunBuyExactSolIn,
     PumpFunSell,

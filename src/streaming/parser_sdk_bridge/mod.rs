@@ -174,6 +174,7 @@ mod tests {
                 assert_eq!(st.mint, mint);
                 assert_eq!(st.global, global);
                 assert_eq!(st.event_authority, event_authority);
+                assert_eq!(st.ix_name, "create_v2");
                 assert!(st.is_mayhem_mode);
                 assert!(st.is_cashback_enabled);
             }
