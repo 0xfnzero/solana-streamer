@@ -123,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.8" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.9" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.8"
+solana-streamer-sdk = "1.5.9"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.8"
+solana-streamer-sdk = "1.5.9"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.8", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.9", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.8+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.9+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.9
+
+v1.5.9 使用 crates.io 上的 `sol-parser-sdk 0.5.9`。该版本继承 Yellowstone gRPC stop 生命周期修复：`stop()` 现在会通知、abort 并等待当前订阅任务结束，订阅生命周期切换会串行化，并且 gRPC 流错误日志会标记为 `Grpc Stream error`，便于和 ShredStream 日志区分。
 
 ### 升级到 v1.5.8
 

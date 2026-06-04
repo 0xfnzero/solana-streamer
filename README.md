@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.8" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.9" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.8"
+solana-streamer-sdk = "1.5.9"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.8"
+solana-streamer-sdk = "1.5.9"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.8", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.9", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.8+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.9+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.9
+
+Version 1.5.9 uses `sol-parser-sdk 0.5.9` from crates.io. It inherits the Yellowstone gRPC stop lifecycle fix: `stop()` now signals, aborts, and awaits the active subscription task, subscription lifecycle transitions are serialized, and gRPC stream errors are labeled as `Grpc Stream error` for easier log separation from ShredStream.
 
 ### Upgrading to v1.5.8
 
