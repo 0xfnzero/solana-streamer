@@ -163,6 +163,9 @@ pub struct PumpSwapCreatePoolEvent {
     pub coin_creator: Pubkey,
     pub is_mayhem_mode: bool,
     #[borsh(skip)]
+    #[serde(default)]
+    pub is_cashback_coin: bool,
+    #[borsh(skip)]
     pub user_pool_token_account: Pubkey,
     #[borsh(skip)]
     pub pool_base_token_account: Pubkey,

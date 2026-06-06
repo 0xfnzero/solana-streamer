@@ -217,6 +217,7 @@ mod tests {
             base_mint: Pubkey::new_unique(),
             quote_mint: Pubkey::new_unique(),
             is_mayhem_mode: true,
+            is_cashback_coin: true,
             ..Default::default()
         };
 
@@ -226,6 +227,7 @@ mod tests {
             DexEvent::PumpSwapCreatePoolEvent(st) => {
                 assert_eq!(st.metadata.event_type, EventType::PumpSwapCreatePool);
                 assert!(st.is_mayhem_mode);
+                assert!(st.is_cashback_coin);
             }
             _ => panic!("expected PumpSwapCreatePoolEvent"),
         }

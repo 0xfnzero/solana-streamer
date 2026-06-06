@@ -123,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.10" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.11" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.10"
+solana-streamer-sdk = "1.5.11"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.10"
+solana-streamer-sdk = "1.5.11"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.10", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.11", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.10+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.11+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.11
+
+v1.5.11 使用 crates.io 上的 `sol-parser-sdk 0.5.11`。PumpSwap `PumpSwapCreatePoolEvent` 现在会在 `create_pool` instruction args 可用时携带 `is_cashback_coin`，包括 ShredStream 外层指令解析。log-only 的 `CreatePoolEvent` payload 因为链上 log event IDL 不包含该字段，仍会保持默认 `false`。`AccountPumpSwapPool` 仍是读取池子账户状态里该标记的权威来源。
 
 ### 升级到 v1.5.10
 
@@ -427,10 +431,11 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 ]));
 ```
 
-`PumpSwapCreatePool` 对齐链上 `CreatePoolEvent` IDL，包含
-`is_mayhem_mode`，但不包含 `is_cashback_coin`。如果需要 cashback 标记，
-请订阅 `AccountPumpSwapPool`，并读取
-`PumpSwapPoolAccountEvent.pool.is_cashback_coin`。
+`PumpSwapCreatePool` 包含 `is_mayhem_mode`。对于 `is_cashback_coin`，
+ShredStream/外层指令解析会从 `create_pool` instruction args 读取；
+log-only 的 `CreatePoolEvent` payload 因为 IDL 不包含该字段，会保持默认
+`false`。账户里的权威值也可通过
+`PumpSwapPoolAccountEvent.pool.is_cashback_coin` 读取。
 
 ## 动态订阅管理
 

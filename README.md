@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.10" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.11" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.10"
+solana-streamer-sdk = "1.5.11"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.10"
+solana-streamer-sdk = "1.5.11"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.10", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.11", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.10+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.11+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.11
+
+Version 1.5.11 uses `sol-parser-sdk 0.5.11` from crates.io. PumpSwap `PumpSwapCreatePoolEvent` now carries `is_cashback_coin` when it is available from the `create_pool` instruction args, including ShredStream outer-instruction parsing. Log-only `CreatePoolEvent` payloads still default this field to `false` because the on-chain log event IDL does not carry it. `AccountPumpSwapPool` remains the authoritative account-state source for the pool flag.
 
 ### Upgrading to v1.5.10
 
@@ -428,9 +432,11 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 ]));
 ```
 
-`PumpSwapCreatePool` follows the on-chain `CreatePoolEvent` IDL and includes
-`is_mayhem_mode`, but it does not include `is_cashback_coin`. To read the
-cashback flag, subscribe to `AccountPumpSwapPool` and use
+`PumpSwapCreatePool` includes `is_mayhem_mode`. For `is_cashback_coin`,
+ShredStream/outer-instruction parsing reads the flag from the `create_pool`
+instruction args, while log-only `CreatePoolEvent` payloads keep the default
+`false` because the log event IDL does not carry this field. The authoritative
+account value is also available from
 `PumpSwapPoolAccountEvent.pool.is_cashback_coin`.
 
 ## Dynamic Subscription Management

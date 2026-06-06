@@ -426,6 +426,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.user_quote_token_account = cpie.user_quote_token_account;
                 e.coin_creator = cpie.coin_creator;
                 e.is_mayhem_mode = cpie.is_mayhem_mode;
+                e.is_cashback_coin |= cpie.is_cashback_coin;
             }
             _ => {}
         },
