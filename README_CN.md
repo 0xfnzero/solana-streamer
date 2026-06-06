@@ -123,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.9" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.10" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.9"
+solana-streamer-sdk = "1.5.10"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.9"
+solana-streamer-sdk = "1.5.10"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.9", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.10", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.9+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.10+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.10
+
+v1.5.10 使用 crates.io 上的 `sol-parser-sdk 0.5.10`。PumpSwap `CreatePoolEvent` 现在与链上 IDL 对齐：暴露 `is_mayhem_mode`，但不暴露 `is_cashback_coin`。如果需要 cashback 标记，请订阅 `AccountPumpSwapPool`，并读取 `PumpSwapPoolAccountEvent.pool.is_cashback_coin`。PumpSwap CreatePool log payload 长度检查现在包含最后的 `is_mayhem_mode` 字节。
 
 ### 升级到 v1.5.9
 
@@ -408,6 +412,7 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::PumpFeesUpdateFeeShares,
     EventType::PumpSwapCreatePool,
+    EventType::AccountPumpSwapPool,
     EventType::PumpSwapDeposit,
     EventType::PumpSwapWithdraw,
     EventType::RaydiumCpmmInitialize,
@@ -421,6 +426,11 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::MeteoraDlmmAddLiquidity,
 ]));
 ```
+
+`PumpSwapCreatePool` 对齐链上 `CreatePoolEvent` IDL，包含
+`is_mayhem_mode`，但不包含 `is_cashback_coin`。如果需要 cashback 标记，
+请订阅 `AccountPumpSwapPool`，并读取
+`PumpSwapPoolAccountEvent.pool.is_cashback_coin`。
 
 ## 动态订阅管理
 

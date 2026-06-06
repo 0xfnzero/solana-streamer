@@ -612,6 +612,7 @@ pub(crate) fn pumpswap_create_pool_from_parser(
         user_base_token_account: c.user_base_token_account,
         user_quote_token_account: c.user_quote_token_account,
         coin_creator: c.coin_creator,
+        is_mayhem_mode: c.is_mayhem_mode,
         ..Default::default()
     }
 }

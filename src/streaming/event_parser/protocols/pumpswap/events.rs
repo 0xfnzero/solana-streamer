@@ -161,6 +161,7 @@ pub struct PumpSwapCreatePoolEvent {
     pub user_base_token_account: Pubkey,
     pub user_quote_token_account: Pubkey,
     pub coin_creator: Pubkey,
+    pub is_mayhem_mode: bool,
     #[borsh(skip)]
     pub user_pool_token_account: Pubkey,
     #[borsh(skip)]
@@ -169,7 +170,7 @@ pub struct PumpSwapCreatePoolEvent {
     pub pool_quote_token_account: Pubkey,
 }
 
-pub const PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE: usize = 325;
+pub const PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE: usize = 326;
 
 /// 存款事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]

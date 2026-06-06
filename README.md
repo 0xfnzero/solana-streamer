@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.9" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.10" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.9"
+solana-streamer-sdk = "1.5.10"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.9"
+solana-streamer-sdk = "1.5.10"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.9", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.10", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.9+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.10+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.10
+
+Version 1.5.10 uses `sol-parser-sdk 0.5.10` from crates.io. PumpSwap `CreatePoolEvent` now matches the on-chain IDL: it exposes `is_mayhem_mode` but does not expose `is_cashback_coin`. To read the cashback flag, subscribe to `AccountPumpSwapPool` and use `PumpSwapPoolAccountEvent.pool.is_cashback_coin`. The PumpSwap CreatePool log payload length check now includes the final `is_mayhem_mode` byte.
 
 ### Upgrading to v1.5.9
 
@@ -409,6 +413,7 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::PumpFeesUpdateFeeShares,
     EventType::PumpSwapCreatePool,
+    EventType::AccountPumpSwapPool,
     EventType::PumpSwapDeposit,
     EventType::PumpSwapWithdraw,
     EventType::RaydiumCpmmInitialize,
@@ -422,6 +427,11 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
     EventType::MeteoraDlmmAddLiquidity,
 ]));
 ```
+
+`PumpSwapCreatePool` follows the on-chain `CreatePoolEvent` IDL and includes
+`is_mayhem_mode`, but it does not include `is_cashback_coin`. To read the
+cashback flag, subscribe to `AccountPumpSwapPool` and use
+`PumpSwapPoolAccountEvent.pool.is_cashback_coin`.
 
 ## Dynamic Subscription Management
 

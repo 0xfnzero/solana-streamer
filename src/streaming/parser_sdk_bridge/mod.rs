@@ -43,6 +43,8 @@ mod tests {
     use sol_parser_sdk::core::events::{
         EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap, OrcaWhirlpoolSwapEvent as PbOrcaSwap,
         PumpFunCreateV2TokenEvent as PbPumpCreateV2, PumpFunTradeEvent as PbPumpTrade,
+        PumpSwapCreatePoolEvent as PbPumpSwapCreatePool, PumpSwapPool as PbPumpSwapPool,
+        PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount,
         RaydiumLaunchlabTradeEvent as PbBonkTrade, TokenInfoEvent as PbTokenInfo,
         TradeDirection as PbBonkDir,
     };
@@ -197,6 +199,81 @@ mod tests {
                 assert_eq!(st.ix_name, "buy_exact_quote_in_v2");
             }
             _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn converts_pumpswap_create_pool_flags() {
+        let c = PbPumpSwapCreatePool {
+            metadata: EventMetadata {
+                signature: Signature::default(),
+                slot: 42,
+                tx_index: 7,
+                block_time_us: 1_000_000,
+                grpc_recv_us: 88,
+                recent_blockhash: None,
+            },
+            pool: Pubkey::new_unique(),
+            base_mint: Pubkey::new_unique(),
+            quote_mint: Pubkey::new_unique(),
+            is_mayhem_mode: true,
+            ..Default::default()
+        };
+
+        let ev =
+            convert_parser_event(PbDexEvent::PumpSwapCreatePool(c), None, 999).expect("convert");
+        match ev {
+            DexEvent::PumpSwapCreatePoolEvent(st) => {
+                assert_eq!(st.metadata.event_type, EventType::PumpSwapCreatePool);
+                assert!(st.is_mayhem_mode);
+            }
+            _ => panic!("expected PumpSwapCreatePoolEvent"),
+        }
+    }
+
+    #[test]
+    fn converts_pumpswap_pool_account_cashback_flag() {
+        let pool_pubkey = Pubkey::new_unique();
+        let e = PbPumpSwapPoolAccount {
+            metadata: EventMetadata {
+                signature: Signature::default(),
+                slot: 42,
+                tx_index: 7,
+                block_time_us: 1_000_000,
+                grpc_recv_us: 88,
+                recent_blockhash: None,
+            },
+            pubkey: pool_pubkey,
+            executable: false,
+            lamports: 123,
+            owner: Pubkey::new_unique(),
+            rent_epoch: 0,
+            pool: PbPumpSwapPool {
+                pool_bump: 7,
+                index: 42,
+                creator: Pubkey::new_unique(),
+                base_mint: Pubkey::new_unique(),
+                quote_mint: Pubkey::new_unique(),
+                lp_mint: Pubkey::new_unique(),
+                pool_base_token_account: Pubkey::new_unique(),
+                pool_quote_token_account: Pubkey::new_unique(),
+                lp_supply: 999,
+                coin_creator: Pubkey::new_unique(),
+                is_mayhem_mode: true,
+                is_cashback_coin: true,
+            },
+        };
+
+        let ev =
+            convert_parser_event(PbDexEvent::PumpSwapPoolAccount(e), None, 999).expect("convert");
+        match ev {
+            DexEvent::PumpSwapPoolAccountEvent(st) => {
+                assert_eq!(st.metadata.event_type, EventType::AccountPumpSwapPool);
+                assert_eq!(st.pubkey, pool_pubkey);
+                assert!(st.pool.is_mayhem_mode);
+                assert!(st.pool.is_cashback_coin);
+            }
+            _ => panic!("expected PumpSwapPoolAccountEvent"),
         }
     }
 
