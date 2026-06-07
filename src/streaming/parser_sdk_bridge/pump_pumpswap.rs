@@ -20,6 +20,7 @@ use crate::streaming::event_parser::protocols::pumpswap::events::{
 };
 use crate::streaming::event_parser::DexEvent;
 use prost_types::Timestamp;
+use sol_parser_sdk::core::events::normalize_pumpfun_quote_mint as normalize_sdk_pumpfun_quote_mint;
 use solana_sdk::{pubkey, pubkey::Pubkey};
 
 use super::adapt::adapt_pm;
@@ -27,10 +28,12 @@ use super::program_ids::{pump_program, pumpswap_program};
 
 const PUMPFUN_SOLSCAN_SOL_QUOTE_MINT: Pubkey =
     pubkey!("So11111111111111111111111111111111111111111");
+const PUMPFUN_WSOL_QUOTE_MINT: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
 
 #[inline]
 fn normalize_pumpfun_quote_mint(quote_mint: Pubkey) -> Pubkey {
-    if quote_mint == Pubkey::default() {
+    let quote_mint = normalize_sdk_pumpfun_quote_mint(quote_mint);
+    if quote_mint == PUMPFUN_WSOL_QUOTE_MINT {
         PUMPFUN_SOLSCAN_SOL_QUOTE_MINT
     } else {
         quote_mint
@@ -846,6 +849,27 @@ mod tests {
     fn pumpfun_default_quote_mint_uses_solscan_sol_sentinel() {
         let ev = pumpfun_trade_from_parser_with_event_type(
             sol_parser_sdk::core::events::PumpFunTradeEvent { is_buy: true, ..Default::default() },
+            None,
+            0,
+            EventType::PumpFunBuy,
+        );
+
+        match ev {
+            DexEvent::PumpFunTradeEvent(t) => {
+                assert_eq!(t.quote_mint.to_string(), "So11111111111111111111111111111111111111111");
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn pumpfun_wsol_quote_mint_uses_solscan_sol_sentinel() {
+        let ev = pumpfun_trade_from_parser_with_event_type(
+            sol_parser_sdk::core::events::PumpFunTradeEvent {
+                is_buy: true,
+                quote_mint: PUMPFUN_WSOL_QUOTE_MINT,
+                ..Default::default()
+            },
             None,
             0,
             EventType::PumpFunBuy,
