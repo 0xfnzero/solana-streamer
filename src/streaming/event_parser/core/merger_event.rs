@@ -6,16 +6,9 @@ use solana_sdk::{pubkey, pubkey::Pubkey};
 
 const PUMPFUN_SOLSCAN_SOL_QUOTE_MINT: Pubkey =
     pubkey!("So11111111111111111111111111111111111111111");
-const PUMPFUN_WSOL_QUOTE_MINT: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
-
 #[inline]
 fn normalize_pumpfun_quote_mint(quote_mint: Pubkey) -> Pubkey {
-    let quote_mint = normalize_sdk_pumpfun_quote_mint(quote_mint);
-    if quote_mint == PUMPFUN_WSOL_QUOTE_MINT {
-        PUMPFUN_SOLSCAN_SOL_QUOTE_MINT
-    } else {
-        quote_mint
-    }
+    normalize_sdk_pumpfun_quote_mint(quote_mint)
 }
 
 #[inline]
@@ -932,21 +925,20 @@ mod tests {
     }
 
     #[test]
-    fn pumpfun_merge_treats_wsol_quote_as_sol_sentinel() {
+    fn pumpfun_merge_preserves_wsol_quote_mint() {
+        let quote_mint = sol_parser_sdk::core::events::PUMPFUN_WSOL_QUOTE_MINT;
         let mut instruction_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
             quote_mint: PUMPFUN_SOLSCAN_SOL_QUOTE_MINT,
             ..Default::default()
         });
-        let cpi_log_event = DexEvent::PumpFunTradeEvent(PumpFunTradeEvent {
-            quote_mint: PUMPFUN_WSOL_QUOTE_MINT,
-            ..Default::default()
-        });
+        let cpi_log_event =
+            DexEvent::PumpFunTradeEvent(PumpFunTradeEvent { quote_mint, ..Default::default() });
 
         merge(&mut instruction_event, cpi_log_event);
 
         match instruction_event {
             DexEvent::PumpFunTradeEvent(t) => {
-                assert_eq!(t.quote_mint, PUMPFUN_SOLSCAN_SOL_QUOTE_MINT)
+                assert_eq!(t.quote_mint, quote_mint)
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }

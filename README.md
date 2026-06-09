@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.11" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.13" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.11"
+solana-streamer-sdk = "1.5.13"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.11"
+solana-streamer-sdk = "1.5.13"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.11", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.13", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.11+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.13+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.13
+
+Version 1.5.13 uses `sol-parser-sdk 0.5.13` from crates.io. Pump.fun gRPC and ShredStream create/trade outputs now preserve real WSOL quote mints (`So11111111111111111111111111111111111111112`). The Solscan SOL sentinel (`So11111111111111111111111111111111111111111`) is used only when legacy data omits a quote mint.
 
 ### Upgrading to v1.5.11
 
