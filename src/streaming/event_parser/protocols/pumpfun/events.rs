@@ -31,6 +31,10 @@ pub struct PumpFunCreateTokenEvent {
     #[borsh(skip)]
     pub quote_mint: Pubkey,
     #[borsh(skip)]
+    pub quote_vault: Pubkey,
+    #[borsh(skip)]
+    pub quote_token_program: Pubkey,
+    #[borsh(skip)]
     pub virtual_quote_reserves: u64,
     /// Original PumpFun instruction name: "create" or "create_v2".
     #[borsh(skip)]
@@ -92,6 +96,10 @@ pub struct PumpFunCreateV2TokenEvent {
     pub is_cashback_enabled: bool,
     #[borsh(skip)]
     pub quote_mint: Pubkey,
+    #[borsh(skip)]
+    pub quote_vault: Pubkey,
+    #[borsh(skip)]
+    pub quote_token_program: Pubkey,
     #[borsh(skip)]
     pub virtual_quote_reserves: u64,
     #[borsh(skip)]

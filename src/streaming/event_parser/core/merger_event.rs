@@ -176,6 +176,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                     e.token_program = cpie.token_program;
                 }
                 fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
@@ -198,6 +200,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_u64(&mut e.token_total_supply, cpie.token_total_supply);
                 fill_pubkey(&mut e.token_program, cpie.token_program);
                 fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
@@ -237,6 +241,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                     e.token_program = cpie.token_program;
                 }
                 fill_pumpfun_quote_mint(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;

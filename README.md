@@ -124,29 +124,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.13" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.14" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.13"
+solana-streamer-sdk = "1.5.14"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.13"
+solana-streamer-sdk = "1.5.14"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.13", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.14", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.13+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.14+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.14
+
+Version 1.5.14 uses `sol-parser-sdk 0.5.14` from crates.io. Pump.fun canonical create events now expose `quote_mint`, `quote_vault`, and `quote_token_program` for `create_v2` quote pools, including USDC pools, across gRPC/RPC parser bridge and ShredStream-backed SDK output.
 
 ### Upgrading to v1.5.13
 

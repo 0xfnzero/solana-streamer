@@ -152,6 +152,8 @@ mod tests {
         let global = Pubkey::new_unique();
         let event_authority = Pubkey::new_unique();
         let quote_mint = sol_parser_sdk::core::events::PUMPFUN_WSOL_QUOTE_MINT;
+        let quote_vault = Pubkey::new_unique();
+        let quote_token_program = Pubkey::new_unique();
         let c = PbPumpCreateV2 {
             metadata: EventMetadata {
                 signature: Signature::default(),
@@ -167,6 +169,8 @@ mod tests {
             global,
             event_authority,
             quote_mint,
+            quote_vault,
+            quote_token_program,
             is_mayhem_mode: true,
             is_cashback_enabled: true,
             ..Default::default()
@@ -180,6 +184,8 @@ mod tests {
                 assert_eq!(st.global, global);
                 assert_eq!(st.event_authority, event_authority);
                 assert_eq!(st.quote_mint, quote_mint);
+                assert_eq!(st.quote_vault, quote_vault);
+                assert_eq!(st.quote_token_program, quote_token_program);
                 assert_eq!(st.ix_name, "create_v2");
                 assert!(st.is_mayhem_mode);
                 assert!(st.is_cashback_enabled);

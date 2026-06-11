@@ -123,29 +123,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.13" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.14" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.13"
+solana-streamer-sdk = "1.5.14"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.13"
+solana-streamer-sdk = "1.5.14"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.13", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.14", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.13+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.14+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.14
+
+v1.5.14 使用 crates.io 上的 `sol-parser-sdk 0.5.14`。Pump.fun canonical create 事件现在会为 `create_v2` quote 池暴露 `quote_mint`、`quote_vault`、`quote_token_program`，包括 USDC 池；gRPC/RPC parser bridge 和 ShredStream-backed SDK 输出都会保留这些字段。
 
 ### 升级到 v1.5.13
 

@@ -53,6 +53,8 @@ pub(crate) fn pumpfun_create_token_from_parser(
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
         quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
+        quote_vault: c.quote_vault,
+        quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
         ix_name: "create".to_string(),
         ..Default::default()
@@ -81,6 +83,8 @@ pub(crate) fn pumpfun_create_token_from_parser_v2(
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
         quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
+        quote_vault: c.quote_vault,
+        quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
         ix_name: "create_v2".to_string(),
         mint_authority: c.mint_authority,
