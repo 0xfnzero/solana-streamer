@@ -38,7 +38,36 @@ fn default_cases() -> Vec<Case> {
             signature: "H6azwLqtRtrnVNC5iwcjYM9idU3e9SRyLZXTwjfJGJxA4X7dZL7vyhFAJNvQy7bb6bmQNmFHUt1KkkPPmhdge3G",
             expected_create_v2_quote: Some(PUMPFUN_SOLSCAN_SOL_QUOTE_MINT),
         },
+        Case {
+            name: "19-account create_v2 explicit USDC quote",
+            signature: "3MVawF6EPtG7rEPXdsyQfQUBLv3epRVNpNS4tRE4uwTPMqLNPqhuABwxU3QZH4uD6CuVupcpGchpNRK5HTbHRLNK",
+            expected_create_v2_quote: Some(usdc_mint()),
+        },
+        Case {
+            name: "20-account create_v2 explicit WSOL quote",
+            signature: "oY9YQbie16Bw11GsqbAPVnW6YjMHAj3kP9sufjcuQjdfcU86iUY8CiSaDrvu4QXJFnGY4jqQc2Kc1YVuAzujvyv",
+            expected_create_v2_quote: Some(PUMPFUN_WSOL_QUOTE_MINT),
+        },
+        Case {
+            name: "19-account create_v2 explicit WSOL quote with later buy",
+            signature: "3jWGFYXT5V33Qc2roEBFDRAWHeybDowr53dSdnYSRkrPdYybU7oyEH9BfgSRxkgFHVKmUjv4e5T33AEnhJvBCuP2",
+            expected_create_v2_quote: Some(PUMPFUN_WSOL_QUOTE_MINT),
+        },
+        Case {
+            name: "19-account create_v2 explicit USDC quote exact quote buy",
+            signature: "2dZAucKwr4n5Lqu3BtJ4P8JsjCDtUXJzthadddfURraEJRTgn6XWaTNUNBbgUfP5c2wcVdubqViQhr48eWsgRqPX",
+            expected_create_v2_quote: Some(usdc_mint()),
+        },
+        Case {
+            name: "20-account create_v2 explicit WSOL quote with jit account",
+            signature: "4h9kYjzYpqqyYZuFnjf14zRwrGyChCuKAYVy6a4ZBig19bydEYsHwp6VbiKqTzT3pLf6NXnf6E25dn1NiU8LR4YB",
+            expected_create_v2_quote: Some(PUMPFUN_WSOL_QUOTE_MINT),
+        },
     ]
+}
+
+fn usdc_mint() -> Pubkey {
+    Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap()
 }
 
 fn cases_from_env() -> Option<Vec<Case>> {

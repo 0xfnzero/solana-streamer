@@ -150,7 +150,7 @@ If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk
 
 ### Upgrading to v1.5.15
 
-Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `4464880`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19-account quote-pool creates, and account filling selects the actual create/create_v2 instruction before reading quote fields.
+Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `d81bfdb`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19-account quote-pool creates, and account filling selects the actual create/create_v2 instruction before reading quote fields.
 
 ### Upgrading to v1.5.14
 
