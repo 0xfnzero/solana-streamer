@@ -39,6 +39,11 @@ fn default_cases() -> Vec<Case> {
             expected_create_v2_quote: Some(PUMPFUN_SOLSCAN_SOL_QUOTE_MINT),
         },
         Case {
+            name: "19-account create_v2 explicit WSOL quote exact quote buy",
+            signature: "5HwZKTwcGFjSBPugSX5hE9JSq5wKmUooK3tLXuEoyDDzrTvHu7op3XDbhBXuteiC5EePNPh8TC1j6Fns47YvnyeG",
+            expected_create_v2_quote: Some(PUMPFUN_WSOL_QUOTE_MINT),
+        },
+        Case {
             name: "19-account create_v2 explicit USDC quote",
             signature: "3MVawF6EPtG7rEPXdsyQfQUBLv3epRVNpNS4tRE4uwTPMqLNPqhuABwxU3QZH4uD6CuVupcpGchpNRK5HTbHRLNK",
             expected_create_v2_quote: Some(usdc_mint()),
