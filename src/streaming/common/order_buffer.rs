@@ -43,7 +43,8 @@ impl SlotBuffer {
 
         let mut result = Vec::with_capacity(flush_slots.values().map(Vec::len).sum());
         for (_slot, mut events) in flush_slots {
-            events.sort_unstable_by_key(|(idx, _)| *idx);
+            // Stable sort: events of one transaction share a tx_index and must keep parser order.
+            events.sort_by_key(|(idx, _)| *idx);
             result.extend(events.into_iter().map(|(_, event)| event));
         }
 
@@ -58,7 +59,8 @@ impl SlotBuffer {
         let mut result = Vec::with_capacity(all_slots.values().map(Vec::len).sum());
 
         for (_slot, mut events) in all_slots {
-            events.sort_unstable_by_key(|(idx, _)| *idx);
+            // Stable sort: events of one transaction share a tx_index and must keep parser order.
+            events.sort_by_key(|(idx, _)| *idx);
             result.extend(events.into_iter().map(|(_, event)| event));
         }
 
@@ -75,16 +77,32 @@ impl SlotBuffer {
             .unwrap_or(false)
     }
 
-    pub fn push_streaming(&mut self, slot: u64, tx_index: u64, event: DexEvent) -> Vec<DexEvent> {
+    /// Push every event that belongs to a single `(slot, tx_index)` at once and return the
+    /// events that are now ready to deliver in order.
+    ///
+    /// All events parsed out of one transaction share that transaction's `tx_index`, so they
+    /// must be admitted as a group. Admitting them one-by-one would advance the per-`tx_index`
+    /// watermark past `tx_index` after the first event, and every remaining event of the same
+    /// transaction would then look "already delivered" and be dropped silently.
+    pub fn push_streaming(
+        &mut self,
+        slot: u64,
+        tx_index: u64,
+        events: Vec<DexEvent>,
+    ) -> Vec<DexEvent> {
         let mut result = Vec::new();
+        if events.is_empty() {
+            return result;
+        }
 
         if slot > self.current_slot && self.current_slot > 0 {
             let keep_slots = self.slots.split_off(&slot);
             let flush_slots = std::mem::replace(&mut self.slots, keep_slots);
             result.reserve(flush_slots.values().map(Vec::len).sum());
-            for (old_slot, mut events) in flush_slots {
-                events.sort_unstable_by_key(|(idx, _)| *idx);
-                result.extend(events.into_iter().map(|(_, event)| event));
+            for (old_slot, mut buffered) in flush_slots {
+                // Stable sort: events of one transaction share a tx_index and must keep parser order.
+                buffered.sort_by_key(|(idx, _)| *idx);
+                result.extend(buffered.into_iter().map(|(_, event)| event));
                 self.streaming_watermarks.remove(&old_slot);
             }
         }
@@ -96,15 +114,23 @@ impl SlotBuffer {
         let next_expected = *self.streaming_watermarks.get(&slot).unwrap_or(&0);
 
         if tx_index == next_expected {
-            result.push(event);
+            result.reserve(events.len());
+            result.extend(events);
             let mut watermark = next_expected + 1;
 
             let remove_empty_slot = if let Some(buffered) = self.slots.get_mut(&slot) {
-                buffered.sort_unstable_by_key(|(idx, _)| *idx);
+                // Stable sort: events of one transaction share a tx_index and must keep parser order.
+                buffered.sort_by_key(|(idx, _)| *idx);
+                // Drain whole transactions whose tx_index is contiguous with the watermark.
+                // A single tx_index may hold several events, so advance the watermark per
+                // distinct index rather than per event.
                 let mut ready_count = 0;
                 while ready_count < buffered.len() && buffered[ready_count].0 == watermark {
-                    watermark += 1;
-                    ready_count += 1;
+                    let idx = watermark;
+                    while ready_count < buffered.len() && buffered[ready_count].0 == idx {
+                        ready_count += 1;
+                    }
+                    watermark = idx + 1;
                 }
                 result.reserve(ready_count);
                 for (_, event) in buffered.drain(..ready_count) {
@@ -122,7 +148,11 @@ impl SlotBuffer {
             if self.slots.is_empty() {
                 self.last_flush_time = Some(Instant::now());
             }
-            self.slots.entry(slot).or_default().push((tx_index, event));
+            let buffered = self.slots.entry(slot).or_default();
+            buffered.reserve(events.len());
+            for event in events {
+                buffered.push((tx_index, event));
+            }
         }
 
         if !result.is_empty() {
@@ -135,7 +165,8 @@ impl SlotBuffer {
         let flush_slots = std::mem::take(&mut self.slots);
         let mut result = Vec::with_capacity(flush_slots.values().map(Vec::len).sum());
         for (slot, mut events) in flush_slots {
-            events.sort_unstable_by_key(|(idx, _)| *idx);
+            // Stable sort: events of one transaction share a tx_index and must keep parser order.
+            events.sort_by_key(|(idx, _)| *idx);
             result.extend(events.into_iter().map(|(_, event)| event));
             self.streaming_watermarks.remove(&slot);
         }
@@ -179,7 +210,8 @@ impl MicroBatchBuffer {
             return Vec::new();
         }
 
-        self.events.sort_unstable_by_key(|(slot, tx_index, _)| (*slot, *tx_index));
+        // Stable sort: events of one transaction share (slot, tx_index) and must keep parser order.
+        self.events.sort_by_key(|(slot, tx_index, _)| (*slot, *tx_index));
         let mut result = Vec::with_capacity(self.events.len());
         result.extend(self.events.drain(..).map(|(_, _, event)| event));
         self.window_start_us = 0;
@@ -237,10 +269,38 @@ mod tests {
     fn streaming_order_drains_only_contiguous_ready_prefix() {
         let mut buffer = SlotBuffer::new();
 
-        assert!(buffer.push_streaming(10, 3, event(103)).is_empty());
-        assert!(buffer.push_streaming(10, 1, event(101)).is_empty());
-        assert_eq!(ids(buffer.push_streaming(10, 0, event(100))), vec![100, 101]);
-        assert_eq!(ids(buffer.push_streaming(10, 2, event(102))), vec![102, 103]);
+        assert!(buffer.push_streaming(10, 3, vec![event(103)]).is_empty());
+        assert!(buffer.push_streaming(10, 1, vec![event(101)]).is_empty());
+        assert_eq!(ids(buffer.push_streaming(10, 0, vec![event(100)])), vec![100, 101]);
+        assert_eq!(ids(buffer.push_streaming(10, 2, vec![event(102)])), vec![102, 103]);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn streaming_order_keeps_every_event_of_a_multi_event_transaction() {
+        let mut buffer = SlotBuffer::new();
+
+        // One transaction (tx_index 0) parsed into three events must all be delivered.
+        assert_eq!(
+            ids(buffer.push_streaming(10, 0, vec![event(100), event(101), event(102)])),
+            vec![100, 101, 102]
+        );
+        // A later transaction in the same slot still delivers in order.
+        assert_eq!(ids(buffer.push_streaming(10, 1, vec![event(110)])), vec![110]);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn streaming_order_releases_buffered_multi_event_transactions_in_order() {
+        let mut buffer = SlotBuffer::new();
+
+        // tx_index 1 arrives first (two events) and must wait for tx_index 0.
+        assert!(buffer.push_streaming(10, 1, vec![event(110), event(111)]).is_empty());
+        // tx_index 0 (two events) arrives and releases itself plus the buffered tx_index 1.
+        assert_eq!(
+            ids(buffer.push_streaming(10, 0, vec![event(100), event(101)])),
+            vec![100, 101, 110, 111]
+        );
         assert!(buffer.is_empty());
     }
 

@@ -464,9 +464,13 @@ fn handle_ordered_transaction(
             }
         }
         OrderMode::StreamingOrdered => {
-            for event in events {
-                let (slot, tx_index) = event_order_key(&event, fallback_slot, fallback_tx_index);
-                deliver_events(callback.clone(), slot_buffer.push_streaming(slot, tx_index, event));
+            // Events parsed from one transaction share its (slot, tx_index); push them as a
+            // single group so the streaming watermark advances per transaction and no event of
+            // a multi-event transaction is dropped.
+            for ((slot, tx_index), group) in
+                group_events_by_order_key(events, fallback_slot, fallback_tx_index)
+            {
+                deliver_events(callback.clone(), slot_buffer.push_streaming(slot, tx_index, group));
             }
         }
         OrderMode::MicroBatch => {
@@ -539,6 +543,25 @@ fn flush_ordered_on_disconnect(
 fn event_order_key(event: &DexEvent, fallback_slot: u64, fallback_tx_index: u64) -> (u64, u64) {
     let metadata = event.metadata();
     (metadata.slot.max(fallback_slot), metadata.tx_index.unwrap_or(fallback_tx_index))
+}
+
+/// Group consecutive events that share the same `(slot, tx_index)` order key, preserving order.
+/// Events of a single transaction carry the same key, so this normally yields one group, but it
+/// stays correct if a transaction ever spans multiple keys.
+fn group_events_by_order_key(
+    events: Vec<DexEvent>,
+    fallback_slot: u64,
+    fallback_tx_index: u64,
+) -> Vec<((u64, u64), Vec<DexEvent>)> {
+    let mut groups: Vec<((u64, u64), Vec<DexEvent>)> = Vec::new();
+    for event in events {
+        let key = event_order_key(&event, fallback_slot, fallback_tx_index);
+        match groups.last_mut() {
+            Some((last_key, group)) if *last_key == key => group.push(event),
+            _ => groups.push((key, vec![event])),
+        }
+    }
+    groups
 }
 
 #[inline]
