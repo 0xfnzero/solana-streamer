@@ -149,7 +149,7 @@ solana-streamer-sdk = { version = "1.5.15", default-features = false, features =
 
 ### 升级到 v1.5.15
 
-v1.5.15 跟随 GitHub rev `d81bfdb` 上的 `sol-parser-sdk 0.5.15`。Pump.fun `create_v2` 现在会区分 16 账户 SOL sentinel 创建和 19 账户 quote-pool 创建；填充账户时会先选择实际的 create/create_v2 指令，再读取 quote 字段。
+v1.5.15 跟随 GitHub rev `36ec202` 上的 `sol-parser-sdk 0.5.15`。Pump.fun `create_v2` 现在会区分 16 账户 SOL sentinel 创建和 19/20 账户 quote-pool 创建；填充账户时会先选择实际的 create/create_v2 指令，再读取 quote 字段。gRPC/RPC inner instruction 解析现在会按 program id + discriminator 守卫解析所有 SDK 已支持 DEX 的 8-byte 普通 CPI instruction，PumpSwap `create_pool` 因此能从 instruction args 读取 `is_cashback_coin` 并与 log 事件合并。ShredStream 仍只解析外层指令，但外层 discriminator gate 已和 SDK 统一，避免支持协议之间规则分叉。
 
 ### 升级到 v1.5.14
 

@@ -150,7 +150,7 @@ If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk
 
 ### Upgrading to v1.5.15
 
-Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `62da4af`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19/20-account quote-pool creates, models Yellowstone gRPC loaded writable/readonly addresses correctly, rejects PumpFun program-account fillers as quote mints, and keeps ShredStream from guessing ALT-loaded quote mints when the static transaction keys do not contain them. PumpSwap `create_pool` CPI instructions in gRPC/RPC transaction parsing now also read `is_cashback_coin` from the 8-byte instruction args and merge it into log-derived `CreatePoolEvent` output.
+Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `36ec202`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19/20-account quote-pool creates, models Yellowstone gRPC loaded writable/readonly addresses correctly, rejects PumpFun program-account fillers as quote mints, and keeps ShredStream from guessing ALT-loaded quote mints when the static transaction keys do not contain them. gRPC/RPC inner instruction parsing now handles guarded 8-byte ordinary CPI instructions for all SDK-supported DEX parsers, so PumpSwap `create_pool` reads `is_cashback_coin` from instruction args before merging with log-derived `CreatePoolEvent` output. ShredStream remains outer-instruction only, but its outer discriminator gate is shared with the SDK parser and no longer diverges for supported DEX protocols.
 
 ### Upgrading to v1.5.14
 
