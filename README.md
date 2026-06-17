@@ -150,7 +150,7 @@ If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk
 
 ### Upgrading to v1.5.15
 
-Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `51ab313`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19/20-account quote-pool creates, models Yellowstone gRPC loaded writable/readonly addresses correctly, rejects PumpFun program-account fillers as quote mints, and keeps ShredStream from guessing ALT-loaded quote mints when the static transaction keys do not contain them.
+Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `cfda256`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19/20-account quote-pool creates, models Yellowstone gRPC loaded writable/readonly addresses correctly, rejects PumpFun program-account fillers as quote mints, and keeps ShredStream from guessing ALT-loaded quote mints when the static transaction keys do not contain them. PumpSwap `create_pool` CPI instructions in gRPC/RPC transaction parsing now also read `is_cashback_coin` from the 8-byte instruction args and merge it into log-derived `CreatePoolEvent` output.
 
 ### Upgrading to v1.5.14
 
