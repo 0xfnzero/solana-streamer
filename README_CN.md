@@ -63,6 +63,17 @@
 - [📞 联系方式](#-联系方式)
 - [⚠️ 重要注意事项](#️-重要注意事项)
 
+## 这个 SDK 适合什么场景
+
+`solana-streamer-sdk` 是面向 Solana Bot、索引服务、跟单系统、狙击机器人和 DEX 监控工具的 Rust 事件流层，在 Yellowstone gRPC、ShredStream、RPC 交易解析和底层 `sol-parser-sdk` 解析核心之上提供稳定 API。
+
+| 方向 | 覆盖范围 |
+|------|----------|
+| 输入来源 | Yellowstone gRPC、Jito ShredStream、已获取的 RPC 交易、编码交易数据 |
+| DEX 协议 | PumpFun、PumpSwap、Pump Fees、Raydium LaunchLab、Raydium CPMM、Raydium CLMM、Raydium AMM V4、Meteora DAMM v2、Meteora DLMM、Meteora DBC、Orca Whirlpool |
+| 使用场景 | 实时 DEX 事件流、代币发射监控、跟单交易、账户状态订阅、Bot 信号管道 |
+| 解析后端 | `sol-parser-sdk`，默认 Borsh 解析，并可为低延迟场景启用 zero-copy 后端 |
+
 ## 🚀 项目特性
 
 ### 核心功能

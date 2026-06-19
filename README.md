@@ -64,6 +64,17 @@
 - [📞 Contact](#-contact)
 - [⚠️ Important Notes](#️-important-notes)
 
+## What This SDK Is For
+
+`solana-streamer-sdk` is a Rust event streaming layer for Solana bots, indexers, copy-trading systems, sniper bots, and DEX monitoring tools. It provides a stable API over Yellowstone gRPC, ShredStream, RPC transaction parsing, and the underlying `sol-parser-sdk` parser core.
+
+| Area | Coverage |
+|------|----------|
+| Input sources | Yellowstone gRPC, Jito ShredStream, fetched RPC transactions, encoded transaction data |
+| DEX protocols | PumpFun, PumpSwap, Pump Fees, Raydium LaunchLab, Raydium CPMM, Raydium CLMM, Raydium AMM V4, Meteora DAMM v2, Meteora DLMM, Meteora DBC, Orca Whirlpool |
+| Use cases | Real-time DEX event streaming, token launch monitoring, copy trading, account-state subscriptions, bot signal pipelines |
+| Parser backend | `sol-parser-sdk` with default Borsh parsing and optional zero-copy backend for latency-sensitive workloads |
+
 ## 🚀 Project Features
 
 ### Core Capabilities
