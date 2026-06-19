@@ -34,7 +34,7 @@ futures = "0.3.32"
 bincode = "1.3"
 anyhow = "1.0.102"
 yellowstone-grpc-client = "12.1.0"
-yellowstone-grpc-proto = "12.4.0"
+yellowstone-grpc-proto = "=12.4.0"
 tokio = { version = "1.50.0", features = ["full", "rt-multi-thread"]}
 tonic = { version = "0.14.5", features = ["transport"] }
 rustls = { version = "0.23.37", features = ["ring"], default-features = false }
