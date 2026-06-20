@@ -135,29 +135,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.15" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.16" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.15"
+solana-streamer-sdk = "1.5.16"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.15"
+solana-streamer-sdk = "1.5.16"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.15", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.16", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.15+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v1.5.16
+
+Version 1.5.16 fixes `StreamingOrdered` delivery for transactions that parse into multiple events. Events from the same `(slot, tx_index)` are admitted as a group, the streaming watermark advances once per transaction, and stable sorting preserves parser order for equal transaction indexes. It also pins `yellowstone-grpc-proto` to the `12.4.x` API used by `sol-parser-sdk 0.5.15` so CI and clean installs do not resolve an incompatible newer proto crate.
 
 ### Upgrading to v1.5.15
 

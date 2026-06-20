@@ -134,29 +134,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.15" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.16" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.15"
+solana-streamer-sdk = "1.5.16"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.15"
+solana-streamer-sdk = "1.5.16"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.15", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "1.5.16", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.15+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v1.5.16
+
+v1.5.16 修复 `StreamingOrdered` 模式下同一交易解析出多个事件时的投递问题。同一 `(slot, tx_index)` 的事件会作为一组进入缓冲，streaming watermark 每笔交易只推进一次，并用 stable sort 保留相同交易索引下的解析器输出顺序。同时将 `yellowstone-grpc-proto` 固定到 `sol-parser-sdk 0.5.15` 使用的 `12.4.x` API，避免 CI 和干净安装解析到不兼容的新 proto crate。
 
 ### 升级到 v1.5.15
 
