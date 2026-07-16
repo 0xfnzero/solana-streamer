@@ -44,6 +44,11 @@ pub struct PumpSwapBuyEvent {
     pub ix_name: String,
     pub cashback_fee_basis_points: u64,
     pub cashback: u64,
+    pub buyback_fee_basis_points: u64,
+    pub buyback_fee: u64,
+    pub virtual_quote_reserves: i128,
+    pub can_boost: bool,
+    pub base_supply: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]
@@ -105,6 +110,11 @@ pub struct PumpSwapSellEvent {
     pub coin_creator_fee: u64,
     pub cashback_fee_basis_points: u64,
     pub cashback: u64,
+    pub buyback_fee_basis_points: u64,
+    pub buyback_fee: u64,
+    pub virtual_quote_reserves: i128,
+    pub can_boost: bool,
+    pub base_supply: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]

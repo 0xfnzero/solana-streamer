@@ -342,6 +342,11 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.ix_name = cpie.ix_name.clone();
                 e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
                 e.cashback = cpie.cashback;
+                e.buyback_fee_basis_points = cpie.buyback_fee_basis_points;
+                e.buyback_fee = cpie.buyback_fee;
+                e.virtual_quote_reserves = cpie.virtual_quote_reserves;
+                e.can_boost = cpie.can_boost;
+                e.base_supply = cpie.base_supply;
                 e.is_pump_pool = cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
@@ -387,6 +392,11 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.coin_creator_fee = cpie.coin_creator_fee;
                 e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
                 e.cashback = cpie.cashback;
+                e.buyback_fee_basis_points = cpie.buyback_fee_basis_points;
+                e.buyback_fee = cpie.buyback_fee;
+                e.virtual_quote_reserves = cpie.virtual_quote_reserves;
+                e.can_boost = cpie.can_boost;
+                e.base_supply = cpie.base_supply;
                 e.is_pump_pool = cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
@@ -858,6 +868,7 @@ mod tests {
     use crate::streaming::event_parser::protocols::pumpfun::events::{
         PumpFeesShareholder, PumpFunTradeEvent,
     };
+    use crate::streaming::event_parser::protocols::pumpswap::events::PumpSwapSellEvent;
 
     #[test]
     fn pumpfun_merge_keeps_instruction_context_and_copies_latest_trade_tail() {
@@ -910,6 +921,30 @@ mod tests {
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }
+    }
+
+    #[test]
+    fn pumpswap_merge_preserves_signed_virtual_quote_reserves() {
+        let mut instruction_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent::default());
+        let log_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent {
+            virtual_quote_reserves: -500,
+            buyback_fee_basis_points: 11,
+            buyback_fee: 22,
+            can_boost: true,
+            base_supply: 33,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, log_event);
+
+        let DexEvent::PumpSwapSellEvent(event) = instruction_event else {
+            panic!("expected PumpSwapSellEvent");
+        };
+        assert_eq!(event.virtual_quote_reserves, -500);
+        assert_eq!(event.buyback_fee_basis_points, 11);
+        assert_eq!(event.buyback_fee, 22);
+        assert!(event.can_boost);
+        assert_eq!(event.base_supply, 33);
     }
 
     #[test]

@@ -185,7 +185,7 @@ pub(crate) fn pumpswap_pool_from_pb(p: sol_parser_sdk::core::events::PumpSwapPoo
         coin_creator: p.coin_creator,
         is_mayhem_mode: p.is_mayhem_mode,
         is_cashback_coin: p.is_cashback_coin,
-        reserved: [0u8; 7],
+        virtual_quote_reserves: p.virtual_quote_reserves,
     }
 }
 
