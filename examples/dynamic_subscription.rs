@@ -21,8 +21,6 @@ const MONITORING_DURATION_SECS: u64 = 10;
 /// Demonstrates dynamic subscription updates and filter changes in real-time
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
-
     println!("Connecting to Yellowstone gRPC at {}", GRPC_ENDPOINT);
     let client =
         Arc::new(YellowstoneGrpc::new(GRPC_ENDPOINT.to_string(), API_KEY.map(|s| s.to_string()))?);
@@ -30,20 +28,19 @@ async fn main() -> Result<()> {
     let event_counter = Arc::new(AtomicU64::new(0));
     let counter = event_counter.clone();
 
-    let callback =
-        move |event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
-            let count = counter.fetch_add(1, Ordering::Relaxed);
+    let callback = move |event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
+        let count = counter.fetch_add(1, Ordering::Relaxed);
 
-            let protocol = match event.metadata().event_type {
-                EventType::PumpFunBuy | EventType::PumpFunSell => "PumpFun",
-                EventType::RaydiumCpmmSwapBaseInput | EventType::RaydiumCpmmSwapBaseOutput => {
-                    "RaydiumCpmm"
-                }
-                _ => "Unknown",
-            };
-
-            println!("Event #{}: {:11} - {:.8}...", count + 1, protocol, event.metadata().signature);
+        let protocol = match event.metadata().event_type {
+            EventType::PumpFunBuy | EventType::PumpFunSell => "PumpFun",
+            EventType::RaydiumCpmmSwapBaseInput | EventType::RaydiumCpmmSwapBaseOutput => {
+                "RaydiumCpmm"
+            }
+            _ => "Unknown",
         };
+
+        println!("Event #{}: {:11} - {:.8}...", count + 1, protocol, event.metadata().signature);
+    };
 
     println!("\n=== Phase 1: PumpFun only ===");
     let pumpfun_filter = TransactionFilter {
@@ -53,14 +50,12 @@ async fn main() -> Result<()> {
     };
 
     let account_filter = AccountFilter { account: vec![], owner: vec![], filters: vec![] };
-    let trade_event_filter = EventTypeFilter {
-        include: vec![
-            EventType::PumpFunBuy,
-            EventType::PumpFunSell,
-            EventType::RaydiumCpmmSwapBaseInput,
-            EventType::RaydiumCpmmSwapBaseOutput,
-        ],
-    };
+    let trade_event_filter = EventTypeFilter::include_only(vec![
+        EventType::PumpFunBuy,
+        EventType::PumpFunSell,
+        EventType::RaydiumCpmmSwapBaseInput,
+        EventType::RaydiumCpmmSwapBaseOutput,
+    ]);
 
     if let Err(e) = client
         .subscribe_events_immediate(
@@ -326,8 +321,7 @@ async fn main() -> Result<()> {
 
     println!("\n=== Subscription enforcement ===");
 
-    let test_callback =
-        |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {};
+    let test_callback = |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {};
 
     match client
         .subscribe_events_immediate(
@@ -357,10 +351,9 @@ async fn main() -> Result<()> {
 
     let client2_counter = Arc::new(AtomicU64::new(0));
     let counter2 = client2_counter.clone();
-    let client2_callback =
-        move |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
-            counter2.fetch_add(1, Ordering::Relaxed);
-        };
+    let client2_callback = move |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
+        counter2.fetch_add(1, Ordering::Relaxed);
+    };
 
     match client2
         .subscribe_events_immediate(
@@ -446,10 +439,9 @@ async fn main() -> Result<()> {
 
     let client4_counter = Arc::new(AtomicU64::new(0));
     let counter4 = client4_counter.clone();
-    let client4_callback =
-        move |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
-            counter4.fetch_add(1, Ordering::Relaxed);
-        };
+    let client4_callback = move |_event: solana_streamer_sdk::streaming::event_parser::DexEvent| {
+        counter4.fetch_add(1, Ordering::Relaxed);
+    };
 
     match client4
         .subscribe_events_immediate(

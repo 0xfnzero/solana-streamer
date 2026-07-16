@@ -374,6 +374,68 @@ pub struct MeteoraDammV2InitializePoolWithDynamicConfigEvent {
     pub config: Pubkey,
 }
 
+/// DAMM v2 Add Liquidity（parser-sdk / CPI 日志字段对齐）
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2AddLiquidityEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub token_a_amount: u64,
+    pub token_b_amount: u64,
+    #[borsh(skip)]
+    pub liquidity_delta: u128,
+    #[borsh(skip)]
+    pub token_a_amount_threshold: u64,
+    #[borsh(skip)]
+    pub token_b_amount_threshold: u64,
+    #[borsh(skip)]
+    pub total_amount_a: u64,
+    #[borsh(skip)]
+    pub total_amount_b: u64,
+}
+
+/// DAMM v2 Remove Liquidity
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2RemoveLiquidityEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub token_a_amount: u64,
+    pub token_b_amount: u64,
+    #[borsh(skip)]
+    pub liquidity_delta: u128,
+    #[borsh(skip)]
+    pub token_a_amount_threshold: u64,
+    #[borsh(skip)]
+    pub token_b_amount_threshold: u64,
+}
+
+/// DAMM v2 Create Position
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2CreatePositionEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub owner: Pubkey,
+    pub position: Pubkey,
+    pub position_nft_mint: Pubkey,
+}
+
+/// DAMM v2 Close Position
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2ClosePositionEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub owner: Pubkey,
+    pub position: Pubkey,
+    pub position_nft_mint: Pubkey,
+}
+
 /// Event discriminators
 pub mod discriminators {
     // Instruction discriminators
@@ -401,17 +463,3 @@ pub mod discriminators {
 
 /// Decode swap event from CPI log
 pub const METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE: usize = 180;
-pub fn meteora_damm_v2_swap_event_decode(data: &[u8]) -> Option<MeteoraDammV2SwapEvent> {
-    if data.len() < METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<MeteoraDammV2SwapEvent>(&data[..METEORA_DAMM_V2_SWAP_EVENT_LOG_SIZE]).ok()
-}
-
-/// Decode initialize pool event from CPI log
-/// Note: discriminator (16 bytes) is already removed by the caller
-pub fn meteora_damm_v2_initialize_pool_event_decode(
-    data: &[u8],
-) -> Option<MeteoraDammV2InitializePoolEvent> {
-    borsh::from_slice::<MeteoraDammV2InitializePoolEvent>(&data).ok()
-}

@@ -3,7 +3,7 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::signature::Signature;
 
-/// Block metadata event
+/// Block元数据事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BlockMetaEvent {
     #[borsh(skip)]
@@ -13,12 +13,7 @@ pub struct BlockMetaEvent {
 }
 
 impl BlockMetaEvent {
-    pub fn new(
-        slot: u64,
-        block_hash: String,
-        block_time_ms: i64,
-        recv_us: i64,
-    ) -> Self {
+    pub fn new(slot: u64, block_hash: String, block_time_ms: i64, recv_us: i64) -> Self {
         let metadata = EventMetadata::new(
             Signature::default(),
             slot,
@@ -31,6 +26,7 @@ impl BlockMetaEvent {
             None,
             recv_us,
             None,
+            None, // recent_blockhash not applicable for block meta
         );
         Self { metadata, slot, block_hash }
     }

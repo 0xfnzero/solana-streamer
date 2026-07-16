@@ -7,7 +7,7 @@ use crate::{
 };
 use futures::{SinkExt, StreamExt};
 use log::error;
-use solana_program::pubkey;
+use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
 use yellowstone_grpc_proto::geyser::SubscribeUpdateTransactionInfo;
 use yellowstone_grpc_proto::geyser::{
@@ -16,6 +16,7 @@ use yellowstone_grpc_proto::geyser::{
 
 const SYSTEM_PROGRAM_ID: Pubkey = pubkey!("11111111111111111111111111111111");
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SystemEvent {
     NewTransfer(TransferInfo),
@@ -59,8 +60,11 @@ impl YellowstoneGrpc {
                         let created_at = msg.created_at;
                         match msg.update_oneof {
                             Some(UpdateOneof::Transaction(sut)) => {
-                                let transaction_pretty =
-                                    factory::create_transaction_pretty_pooled(sut, created_at);
+                                let Some(transaction_pretty) =
+                                    factory::try_create_transaction_pretty_pooled(sut, created_at)
+                                else {
+                                    continue;
+                                };
                                 let event_pretty = EventPretty::Transaction(transaction_pretty);
                                 if let Err(e) =
                                     Self::process_system_transaction(event_pretty, &*callback).await
@@ -98,15 +102,12 @@ impl YellowstoneGrpc {
     where
         F: Fn(SystemEvent) + Send + Sync,
     {
-        match event_pretty {
-            EventPretty::Transaction(transaction_pretty) => {
-                callback(SystemEvent::NewTransfer(TransferInfo {
-                    slot: transaction_pretty.slot,
-                    signature: transaction_pretty.signature.to_string(),
-                    tx: Some(transaction_pretty.grpc_tx),
-                }));
-            }
-            _ => {}
+        if let EventPretty::Transaction(transaction_pretty) = event_pretty {
+            callback(SystemEvent::NewTransfer(TransferInfo {
+                slot: transaction_pretty.slot,
+                signature: transaction_pretty.signature.to_string(),
+                tx: Some(transaction_pretty.grpc_tx),
+            }));
         }
         Ok(())
     }

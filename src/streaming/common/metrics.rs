@@ -194,13 +194,19 @@ impl PerformanceMetrics {
     }
 }
 
+impl Default for PerformanceMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// High-performance metrics system
 #[derive(Debug)]
 pub struct HighPerformanceMetrics {
     start_nanos: AtomicU64,
     event_metrics: [AtomicEventMetrics; 3],
     processing_stats: AtomicProcessingTimeStats,
-    // Dropped events metrics
+    // 丢弃事件指标
     dropped_events_count: AtomicU64,
 }
 
@@ -219,7 +225,7 @@ impl HighPerformanceMetrics {
         }
     }
 
-    /// Get uptime (seconds)
+    /// 获取运行时长（秒）
     #[inline]
     pub fn get_uptime_seconds(&self) -> f64 {
         let now_nanos =
@@ -244,7 +250,7 @@ impl HighPerformanceMetrics {
         (now_nanos - start) as f64 / 1_000_000_000.0
     }
 
-    /// Get event metrics snapshot
+    /// 获取事件指标快照
     #[inline]
     pub fn get_event_metrics(&self, event_type: EventType) -> EventMetricsSnapshot {
         let index = event_type.as_index();
@@ -254,19 +260,19 @@ impl HighPerformanceMetrics {
         EventMetricsSnapshot { process_count, events_processed, processing_stats }
     }
 
-    /// Get processing time statistics
+    /// 获取处理时间统计
     #[inline]
     pub fn get_processing_stats(&self) -> ProcessingTimeStats {
         self.processing_stats.get_stats()
     }
 
-    /// Get dropped events count
+    /// 获取丢弃事件计数
     #[inline]
     pub fn get_dropped_events_count(&self) -> u64 {
         self.dropped_events_count.load(Ordering::Relaxed)
     }
 
-    /// Update window metrics (called by background task)
+    /// 更新窗口指标（后台任务调用）
     fn update_window_metrics(&self, event_type: EventType, window_duration_nanos: u64) {
         let now_nanos =
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
@@ -291,7 +297,7 @@ static BACKGROUND_TASK_STARTED: AtomicBool = AtomicBool::new(false);
 /// Metrics enabled flag
 static METRICS_ENABLED: AtomicBool = AtomicBool::new(true);
 
-/// High-performance metrics manager (Singleton)
+/// 高性能指标管理器 (Singleton)
 #[derive(Clone, Copy)]
 pub struct MetricsManager;
 
@@ -334,7 +340,7 @@ impl MetricsManager {
         METRICS_ENABLED.load(Ordering::Relaxed)
     }
 
-    /// Record process count (non-blocking)
+    /// 记录处理次数（非阻塞）
     #[inline]
     pub fn record_process(&self, event_type: EventType) {
         if self.is_enabled() {
@@ -342,7 +348,7 @@ impl MetricsManager {
         }
     }
 
-    /// Record event processing (non-blocking)
+    /// 记录事件处理（非阻塞）
     #[inline]
     pub fn record_events(&self, event_type: EventType, count: u64, processing_time_us: f64) {
         if !self.is_enabled() {
@@ -351,17 +357,17 @@ impl MetricsManager {
 
         let index = event_type.as_index();
 
-        // Atomically update event count
+        // 原子更新事件计数
         GLOBAL_METRICS.event_metrics[index].add_events_processed(count);
 
-        // Atomically update processing time statistics for this event type
+        // 原子更新该事件类型的处理时间统计
         GLOBAL_METRICS.event_metrics[index].update_processing_stats(processing_time_us, count);
 
-        // Maintain compatibility with global processing time statistics
+        // 保持全局处理时间统计的兼容性
         GLOBAL_METRICS.processing_stats.update(processing_time_us, count);
     }
 
-    /// Record slow processing operation
+    /// 记录慢处理操作
     #[inline]
     pub fn log_slow_processing(&self, processing_time_us: f64, event_count: usize) {
         if processing_time_us > SLOW_PROCESSING_THRESHOLD_US {
@@ -369,12 +375,12 @@ impl MetricsManager {
         }
     }
 
-    /// Check and warn about high latency (calibrated gRPC latency)
+    /// 检查并警告高延迟 (校准后的 gRPC latency)
     /// latency = recv_time - (block_time + 500ms)
     #[inline]
     pub fn check_and_warn_high_latency(&self, recv_us: i64, block_time_ms: i64) {
         let recv_ms = recv_us / 1000;
-        // Calibrate latency: recv_time - (block_time + 500ms)
+        // 校准延迟: recv_time - (block_time + 500ms)
         let adjusted_latency_ms = recv_ms - (block_time_ms + SOLANA_BLOCK_TIME_ADJUSTMENT_MS);
 
         if adjusted_latency_ms > MAX_LATENCY_THRESHOLD_MS {
@@ -388,38 +394,38 @@ impl MetricsManager {
         }
     }
 
-    /// Get uptime
+    /// 获取运行时长
     pub fn get_uptime(&self) -> std::time::Duration {
         std::time::Duration::from_secs_f64(GLOBAL_METRICS.get_uptime_seconds())
     }
 
-    /// Get event metrics
+    /// 获取事件指标
     pub fn get_event_metrics(&self, event_type: EventType) -> EventMetricsSnapshot {
         GLOBAL_METRICS.get_event_metrics(event_type)
     }
 
-    /// Get processing time statistics
+    /// 获取处理时间统计
     pub fn get_processing_stats(&self) -> ProcessingTimeStats {
         GLOBAL_METRICS.get_processing_stats()
     }
 
-    /// Get dropped events count
+    /// 获取丢弃事件计数
     pub fn get_dropped_events_count(&self) -> u64 {
         GLOBAL_METRICS.get_dropped_events_count()
     }
 
-    /// Print performance metrics (non-blocking)
+    /// 打印性能指标（非阻塞）
     pub fn print_metrics(&self) {
         println!("\n📊 Performance Metrics");
         println!("   Run Time: {:?}", self.get_uptime());
 
-        // Print dropped events metrics
+        // 打印丢弃事件指标
         let dropped_count = self.get_dropped_events_count();
         if dropped_count > 0 {
             println!("\n⚠️  Dropped Events: {}", dropped_count);
         }
 
-        // Print event metrics table (including processing time statistics)
+        // 打印事件指标表格（包含处理时间统计）
         println!("┌─────────────┬──────────────┬──────────────────┬─────────────┬─────────────┐");
         println!("│ Event Type  │ Process Count│ Events Processed │ Last(μs)    │ Avg(μs)     │");
         println!("├─────────────┼──────────────┼──────────────────┼─────────────┼─────────────┤");
@@ -440,7 +446,7 @@ impl MetricsManager {
         println!();
     }
 
-    /// Start automatic performance monitoring task
+    /// 启动自动性能监控任务
     pub async fn start_auto_monitoring(&self) -> Option<tokio::task::JoinHandle<()>> {
         if !self.is_enabled() {
             return None;
@@ -458,7 +464,7 @@ impl MetricsManager {
         Some(handle)
     }
 
-    /// Get complete performance metrics (compatibility method)
+    /// 获取完整的性能指标（兼容性方法）
     pub fn get_metrics(&self) -> PerformanceMetrics {
         PerformanceMetrics {
             uptime: self.get_uptime(),
@@ -470,25 +476,25 @@ impl MetricsManager {
         }
     }
 
-    /// Compatibility method - add transaction process count
+    /// 兼容性方法 - 添加交易处理计数
     #[inline]
     pub fn add_tx_process_count(&self) {
         self.record_process(EventType::Transaction);
     }
 
-    /// Compatibility method - add account process count
+    /// 兼容性方法 - 添加账户处理计数
     #[inline]
     pub fn add_account_process_count(&self) {
         self.record_process(EventType::Account);
     }
 
-    /// Compatibility method - add block meta process count
+    /// 兼容性方法 - 添加区块元数据处理计数
     #[inline]
     pub fn add_block_meta_process_count(&self) {
         self.record_process(EventType::BlockMeta);
     }
 
-    /// Compatibility method - update metrics
+    /// 兼容性方法 - 更新指标
     #[inline]
     pub fn update_metrics(
         &self,
@@ -500,7 +506,7 @@ impl MetricsManager {
         self.log_slow_processing(processing_time_us, events_processed as usize);
     }
 
-    /// Update metrics and check latency
+    /// 更新指标并检查延迟
     #[inline]
     pub fn update_metrics_with_latency(
         &self,
@@ -514,40 +520,40 @@ impl MetricsManager {
         self.update_metrics(event_type, events_processed, processing_time_us);
     }
 
-    /// Increment dropped events count
+    /// 增加丢弃事件计数
     #[inline]
     pub fn increment_dropped_events(&self) {
         if !self.is_enabled() {
             return;
         }
 
-        // Atomically increment dropped events count
+        // 原子地增加丢弃事件计数
         let new_count = GLOBAL_METRICS.dropped_events_count.fetch_add(1, Ordering::Relaxed) + 1;
 
-        // Log warning every 1000 dropped events
-        if new_count % 1000 == 0 {
+        // 每丢弃1000个事件记录一次警告日志
+        if new_count.is_multiple_of(1000) {
             log::debug!("Dropped events count reached: {}", new_count);
         }
     }
 
-    /// Batch increment dropped events count
+    /// 批量增加丢弃事件计数
     #[inline]
     pub fn increment_dropped_events_by(&self, count: u64) {
         if !self.is_enabled() || count == 0 {
             return;
         }
 
-        // Atomically increment dropped events count
+        // 原子地增加丢弃事件计数
         let new_count =
             GLOBAL_METRICS.dropped_events_count.fetch_add(count, Ordering::Relaxed) + count;
 
-        // Log batch dropped events
+        // 记录批量丢弃事件的日志
         if count > 1 {
             log::debug!("Dropped batch of {} events, total dropped: {}", count, new_count);
         }
 
-        // Log warning every 1000 dropped events
-        if new_count % 1000 == 0 || (new_count / 1000) != ((new_count - count) / 1000) {
+        // 每丢弃1000个事件记录一次警告日志
+        if new_count.is_multiple_of(1000) || (new_count / 1000) != ((new_count - count) / 1000) {
             log::debug!("Dropped events count reached: {}", new_count);
         }
     }

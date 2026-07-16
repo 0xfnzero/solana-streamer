@@ -9,13 +9,13 @@ use yellowstone_grpc_proto::{
     prost_types::Timestamp,
 };
 
-/// Generic object pool trait
+/// 通用对象池特征
 pub trait ObjectPool<T> {
     fn acquire(&self) -> PooledObject<T>;
     fn return_object(&self, obj: Box<T>);
 }
 
-/// Smart pointer with automatic return
+/// 带自动归还的智能指针
 pub struct PooledObject<T> {
     object: Option<Box<T>>,
     pool: Arc<Mutex<VecDeque<Box<T>>>>,
@@ -36,7 +36,7 @@ impl<T> Drop for PooledObject<T> {
             if pool.len() < self.max_size {
                 pool.push_back(obj);
             }
-            // Discard when exceeding max capacity
+            // 超过最大容量时直接丢弃
         }
     }
 }
@@ -55,7 +55,7 @@ impl<T> std::ops::DerefMut for PooledObject<T> {
     }
 }
 
-/// AccountPretty object pool
+/// AccountPretty 对象池
 pub struct AccountPrettyPool {
     pool: Arc<Mutex<VecDeque<Box<AccountPretty>>>>,
     max_size: usize,
@@ -65,7 +65,7 @@ impl AccountPrettyPool {
     pub fn new(initial_size: usize, max_size: usize) -> Self {
         let mut pool = VecDeque::with_capacity(initial_size);
 
-        // Pre-allocate objects
+        // 预分配对象
         for _ in 0..initial_size {
             pool.push_back(Box::new(AccountPretty::default()));
         }
@@ -84,7 +84,7 @@ impl AccountPrettyPool {
     }
 }
 
-/// AccountPretty with automatic return
+/// 带自动归还的 AccountPretty
 pub struct PooledAccountPretty {
     account: Box<AccountPretty>,
     pool: Arc<Mutex<VecDeque<Box<AccountPretty>>>>,
@@ -92,24 +92,56 @@ pub struct PooledAccountPretty {
 }
 
 impl PooledAccountPretty {
-    /// Reset data from gRPC update
-    pub fn reset_from_update(&mut self, account_update: SubscribeUpdateAccount) {
-        let account_info = account_update.account.unwrap();
+    /// 从 gRPC 更新重置数据
+    pub fn reset_from_update(&mut self, account_update: SubscribeUpdateAccount) -> bool {
+        let Some(account_info) = account_update.account else {
+            log::debug!("drop account update without account payload");
+            return false;
+        };
 
         self.account.slot = account_update.slot;
         self.account.signature = if let Some(txn_signature) = account_info.txn_signature {
-            Signature::try_from(txn_signature.as_slice()).expect("valid signature")
+            if txn_signature.len() != 64 {
+                log::debug!("drop account update with invalid signature length");
+                return false;
+            }
+            match Signature::try_from(txn_signature.as_slice()) {
+                Ok(sig) => sig,
+                Err(_) => {
+                    log::debug!("drop account update with invalid transaction signature");
+                    return false;
+                }
+            }
         } else {
             Signature::default()
         };
-        self.account.pubkey =
-            Pubkey::try_from(account_info.pubkey.as_slice()).expect("valid pubkey");
+        if account_info.pubkey.len() != 32 {
+            log::debug!("drop account update with invalid account pubkey length");
+            return false;
+        }
+        self.account.pubkey = match Pubkey::try_from(account_info.pubkey.as_slice()) {
+            Ok(pubkey) => pubkey,
+            Err(_) => {
+                log::debug!("drop account update with invalid account pubkey");
+                return false;
+            }
+        };
         self.account.executable = account_info.executable;
         self.account.lamports = account_info.lamports;
-        self.account.owner = Pubkey::try_from(account_info.owner.as_slice()).expect("valid pubkey");
+        if account_info.owner.len() != 32 {
+            log::debug!("drop account update with invalid owner pubkey length");
+            return false;
+        }
+        self.account.owner = match Pubkey::try_from(account_info.owner.as_slice()) {
+            Ok(owner) => owner,
+            Err(_) => {
+                log::debug!("drop account update with invalid owner pubkey");
+                return false;
+            }
+        };
         self.account.rent_epoch = account_info.rent_epoch;
 
-        // Optimize data field reuse
+        // 优化数据字段的重用
         let new_data = account_info.data;
         if self.account.data.capacity() >= new_data.len() {
             self.account.data.clear();
@@ -119,6 +151,7 @@ impl PooledAccountPretty {
         }
 
         self.account.recv_us = get_high_perf_clock();
+        true
     }
 }
 
@@ -126,7 +159,7 @@ impl Drop for PooledAccountPretty {
     fn drop(&mut self) {
         let mut pool = self.pool.lock().unwrap();
         if pool.len() < self.max_size {
-            // Clear sensitive data
+            // 清理敏感数据
             self.account.data.clear();
             self.account.signature = Signature::default();
             self.account.pubkey = Pubkey::default();
@@ -150,7 +183,7 @@ impl std::ops::DerefMut for PooledAccountPretty {
     }
 }
 
-/// BlockMetaPretty object pool
+/// BlockMetaPretty 对象池
 pub struct BlockMetaPrettyPool {
     pool: Arc<Mutex<VecDeque<Box<BlockMetaPretty>>>>,
     max_size: usize,
@@ -160,7 +193,7 @@ impl BlockMetaPrettyPool {
     pub fn new(initial_size: usize, max_size: usize) -> Self {
         let mut pool = VecDeque::with_capacity(initial_size);
 
-        // Pre-allocate objects
+        // 预分配对象
         for _ in 0..initial_size {
             pool.push_back(Box::new(BlockMetaPretty::default()));
         }
@@ -179,7 +212,7 @@ impl BlockMetaPrettyPool {
     }
 }
 
-/// BlockMetaPretty with automatic return
+/// 带自动归还的 BlockMetaPretty
 pub struct PooledBlockMetaPretty {
     block_meta: Box<BlockMetaPretty>,
     pool: Arc<Mutex<VecDeque<Box<BlockMetaPretty>>>>,
@@ -187,7 +220,7 @@ pub struct PooledBlockMetaPretty {
 }
 
 impl PooledBlockMetaPretty {
-    /// Reset data from gRPC update
+    /// 从 gRPC 更新重置数据
     pub fn reset_from_update(
         &mut self,
         block_update: SubscribeUpdateBlockMeta,
@@ -204,7 +237,7 @@ impl Drop for PooledBlockMetaPretty {
     fn drop(&mut self) {
         let mut pool = self.pool.lock().unwrap();
         if pool.len() < self.max_size {
-            // Clear data
+            // 清理数据
             self.block_meta.block_hash.clear();
             self.block_meta.block_time = None;
             pool.push_back(std::mem::take(&mut self.block_meta));
@@ -226,7 +259,7 @@ impl std::ops::DerefMut for PooledBlockMetaPretty {
     }
 }
 
-/// TransactionPretty object pool
+/// TransactionPretty 对象池
 pub struct TransactionPrettyPool {
     pool: Arc<Mutex<VecDeque<Box<TransactionPretty>>>>,
     max_size: usize,
@@ -236,7 +269,7 @@ impl TransactionPrettyPool {
     pub fn new(initial_size: usize, max_size: usize) -> Self {
         let mut pool = VecDeque::with_capacity(initial_size);
 
-        // Pre-allocate objects
+        // 预分配对象
         for _ in 0..initial_size {
             pool.push_back(Box::new(TransactionPretty::default()));
         }
@@ -259,7 +292,7 @@ impl TransactionPrettyPool {
     }
 }
 
-/// TransactionPretty with automatic return
+/// 带自动归还的 TransactionPretty
 pub struct PooledTransactionPretty {
     transaction: Box<TransactionPretty>,
     pool: Arc<Mutex<VecDeque<Box<TransactionPretty>>>>,
@@ -267,23 +300,37 @@ pub struct PooledTransactionPretty {
 }
 
 impl PooledTransactionPretty {
-    /// Reset data from gRPC update
+    /// 从 gRPC 更新重置数据
     pub fn reset_from_update(
         &mut self,
         tx_update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,
-    ) {
-        let tx = tx_update.transaction.expect("should be defined");
+    ) -> bool {
+        let Some(tx) = tx_update.transaction else {
+            log::debug!("drop transaction update without transaction payload");
+            return false;
+        };
+
+        if tx.signature.len() != 64 {
+            log::debug!("drop transaction update with invalid signature length");
+            return false;
+        }
 
         self.transaction.slot = tx_update.slot;
-        self.transaction.transaction_index = Some(tx.index);
+        self.transaction.tx_index = Some(tx.index);
         self.transaction.block_time = block_time;
-        self.transaction.block_hash.clear(); // Reset block_hash
-        self.transaction.signature =
-            Signature::try_from(tx.signature.as_slice()).expect("valid signature");
+        self.transaction.block_hash.clear(); // 重置 block_hash
+        self.transaction.signature = match Signature::try_from(tx.signature.as_slice()) {
+            Ok(signature) => signature,
+            Err(_) => {
+                log::debug!("drop transaction update with invalid signature");
+                return false;
+            }
+        };
         self.transaction.is_vote = tx.is_vote;
         self.transaction.recv_us = get_high_perf_clock();
         self.transaction.grpc_tx = tx;
+        true
     }
 }
 
@@ -291,7 +338,7 @@ impl Drop for PooledTransactionPretty {
     fn drop(&mut self) {
         let mut pool = self.pool.lock().unwrap();
         if pool.len() < self.max_size {
-            // Clear data
+            // 清理数据
             self.transaction.block_hash.clear();
             self.transaction.block_time = None;
             self.transaction.signature = Signature::default();
@@ -314,7 +361,7 @@ impl std::ops::DerefMut for PooledTransactionPretty {
     }
 }
 
-/// EventPretty object pool (composite pool)
+/// EventPretty 对象池（组合池）
 pub struct EventPrettyPool {
     account_pool: AccountPrettyPool,
     block_pool: BlockMetaPrettyPool,
@@ -330,23 +377,29 @@ impl EventPrettyPool {
         }
     }
 
-    /// Get account event object
+    /// 获取账户事件对象
     pub fn acquire_account(&self) -> PooledAccountPretty {
         self.account_pool.acquire()
     }
 
-    /// Get block event object
+    /// 获取区块事件对象
     pub fn acquire_block(&self) -> PooledBlockMetaPretty {
         self.block_pool.acquire()
     }
 
-    /// Get transaction event object
+    /// 获取交易事件对象
     pub fn acquire_transaction(&self) -> PooledTransactionPretty {
         self.transaction_pool.acquire()
     }
 }
 
-/// Object pool manager (singleton)
+impl Default for EventPrettyPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// 对象池管理器（单例）
 pub struct PoolManager {
     event_pool: EventPrettyPool,
 }
@@ -367,18 +420,28 @@ impl Default for PoolManager {
     }
 }
 
-/// Factory functions for creating optimized EventPretty
+/// 工厂函数用于创建优化的 EventPretty
 impl EventPrettyPool {
-    /// Create account event - optimized with object pool
-    pub fn create_account_event_optimized(&self, update: SubscribeUpdateAccount) -> AccountPretty {
+    /// 创建账户事件 - 使用对象池优化
+    pub fn try_create_account_event_optimized(
+        &self,
+        update: SubscribeUpdateAccount,
+    ) -> Option<AccountPretty> {
         let mut pooled_account = self.acquire_account();
-        pooled_account.reset_from_update(update);
-        // Move data instead of cloning to avoid unnecessary memory allocation
-        let result = std::mem::replace(pooled_account.deref_mut(), AccountPretty::default());
-        result
+        if !pooled_account.reset_from_update(update) {
+            return None;
+        }
+        // 移动数据而不是克隆，避免多余的内存分配
+        let result = std::mem::take(pooled_account.deref_mut());
+        Some(result)
     }
 
-    /// Create block event - optimized with object pool
+    /// 创建账户事件 - 使用对象池优化
+    pub fn create_account_event_optimized(&self, update: SubscribeUpdateAccount) -> AccountPretty {
+        self.try_create_account_event_optimized(update).unwrap_or_default()
+    }
+
+    /// 创建区块事件 - 使用对象池优化
     pub fn create_block_event_optimized(
         &self,
         update: SubscribeUpdateBlockMeta,
@@ -386,40 +449,57 @@ impl EventPrettyPool {
     ) -> BlockMetaPretty {
         let mut pooled_block = self.acquire_block();
         pooled_block.reset_from_update(update, block_time);
-        // Move data instead of cloning
-        let result = std::mem::replace(pooled_block.deref_mut(), BlockMetaPretty::default());
+        // 移动数据而不是克隆
+        let result = std::mem::take(pooled_block.deref_mut());
         result
     }
 
-    /// Create transaction event - optimized with object pool
+    /// 创建交易事件 - 使用对象池优化
+    pub fn try_create_transaction_event_optimized(
+        &self,
+        update: SubscribeUpdateTransaction,
+        block_time: Option<Timestamp>,
+    ) -> Option<TransactionPretty> {
+        let mut pooled_tx = self.acquire_transaction();
+        if !pooled_tx.reset_from_update(update, block_time) {
+            return None;
+        }
+        // 移动数据而不是克隆
+        let result = std::mem::take(pooled_tx.deref_mut());
+        Some(result)
+    }
+
+    /// 创建交易事件 - 使用对象池优化
     pub fn create_transaction_event_optimized(
         &self,
         update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,
     ) -> TransactionPretty {
-        let mut pooled_tx = self.acquire_transaction();
-        pooled_tx.reset_from_update(update, block_time);
-        // Move data instead of cloning
-        let result = std::mem::replace(pooled_tx.deref_mut(), TransactionPretty::default());
-        result
+        self.try_create_transaction_event_optimized(update, block_time).unwrap_or_default()
     }
 }
 
-// Global pool manager instance
-lazy_static::lazy_static! {
-    pub static ref GLOBAL_POOL_MANAGER: PoolManager = PoolManager::new();
-}
+// 全局池管理器实例
+pub static GLOBAL_POOL_MANAGER: std::sync::LazyLock<PoolManager> =
+    std::sync::LazyLock::new(PoolManager::new);
 
-/// Convenient global factory functions
+/// 便捷的全局工厂函数
 pub mod factory {
     use super::*;
 
-    /// Create account event using object pool (recommended for high-performance scenarios)
+    /// 尝试使用对象池创建账户事件，坏 gRPC update 返回 None
+    pub fn try_create_account_pretty_pooled(
+        update: SubscribeUpdateAccount,
+    ) -> Option<AccountPretty> {
+        GLOBAL_POOL_MANAGER.get_event_pool().try_create_account_event_optimized(update)
+    }
+
+    /// 使用对象池创建账户事件（推荐用于高性能场景）
     pub fn create_account_pretty_pooled(update: SubscribeUpdateAccount) -> AccountPretty {
         GLOBAL_POOL_MANAGER.get_event_pool().create_account_event_optimized(update)
     }
 
-    /// Create block event using object pool (recommended for high-performance scenarios)
+    /// 使用对象池创建区块事件（推荐用于高性能场景）
     pub fn create_block_meta_pretty_pooled(
         update: SubscribeUpdateBlockMeta,
         block_time: Option<Timestamp>,
@@ -427,7 +507,17 @@ pub mod factory {
         GLOBAL_POOL_MANAGER.get_event_pool().create_block_event_optimized(update, block_time)
     }
 
-    /// Create transaction event using object pool (recommended for high-performance scenarios)
+    /// 尝试使用对象池创建交易事件，坏 gRPC update 返回 None
+    pub fn try_create_transaction_pretty_pooled(
+        update: SubscribeUpdateTransaction,
+        block_time: Option<Timestamp>,
+    ) -> Option<TransactionPretty> {
+        GLOBAL_POOL_MANAGER
+            .get_event_pool()
+            .try_create_transaction_event_optimized(update, block_time)
+    }
+
+    /// 使用对象池创建交易事件（推荐用于高性能场景）
     pub fn create_transaction_pretty_pooled(
         update: SubscribeUpdateTransaction,
         block_time: Option<Timestamp>,

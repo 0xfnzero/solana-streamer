@@ -2,15 +2,6 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::streaming::{
-    event_parser::{
-        common::{EventMetadata, EventType},
-        protocols::pumpswap::{PumpSwapGlobalConfigAccountEvent, PumpSwapPoolAccountEvent},
-        DexEvent,
-    },
-    grpc::AccountPretty,
-};
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct GlobalConfig {
     pub admin: Pubkey,
@@ -20,40 +11,13 @@ pub struct GlobalConfig {
     pub protocol_fee_recipients: [Pubkey; 8],
     pub coin_creator_fee_basis_points: u64,
     pub admin_set_coin_creator_authority: Pubkey,
+    pub whitelist_pda: Pubkey,
+    pub reserved_fee_recipient: Pubkey,
+    pub mayhem_mode_enabled: bool,
+    pub reserved_fee_recipients: [Pubkey; 7],
 }
 
-pub const GLOBAL_CONFIG_SIZE: usize = 32 + 8 + 8 + 1 + 32 * 8 + 8 + 32;
-
-pub fn global_config_decode(data: &[u8]) -> Option<GlobalConfig> {
-    if data.len() < GLOBAL_CONFIG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<GlobalConfig>(&data[..GLOBAL_CONFIG_SIZE]).ok()
-}
-
-pub fn global_config_parser(
-    account: &AccountPretty,
-    mut metadata: EventMetadata,
-) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountPumpSwapGlobalConfig;
-
-    if account.data.len() < GLOBAL_CONFIG_SIZE + 8 {
-        return None;
-    }
-    if let Some(config) = global_config_decode(&account.data[8..GLOBAL_CONFIG_SIZE + 8]) {
-        Some(DexEvent::PumpSwapGlobalConfigAccountEvent(PumpSwapGlobalConfigAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            global_config: config,
-        }))
-    } else {
-        None
-    }
-}
+pub const GLOBAL_CONFIG_SIZE: usize = 32 + 8 + 8 + 1 + 32 * 8 + 8 + 32 + 32 + 32 + 1 + 32 * 7;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct Pool {
@@ -67,34 +31,15 @@ pub struct Pool {
     pub pool_quote_token_account: Pubkey,
     pub lp_supply: u64,
     pub coin_creator: Pubkey,
+    pub is_mayhem_mode: bool,
+    pub is_cashback_coin: bool,
+    /// On-chain reserved tail (7 bytes); keep in sync with pump_amm pool account layout.
+    pub reserved: [u8; 7],
 }
 
-pub const POOL_SIZE: usize = 1 + 2 + 32 * 6 + 8 + 32;
+/// Legacy pool account body (before `is_cashback_coin` + reserved).
+pub const POOL_BODY_LEGACY: usize = 1 + 2 + 32 * 6 + 8 + 32 + 1;
+/// Current pool account body including flags and reserved.
+pub const POOL_BODY: usize = POOL_BODY_LEGACY + 1 + 7;
 
-pub fn pool_decode(data: &[u8]) -> Option<Pool> {
-    if data.len() < POOL_SIZE {
-        return None;
-    }
-    borsh::from_slice::<Pool>(&data[..POOL_SIZE]).ok()
-}
-
-pub fn pool_parser(account: &AccountPretty, mut metadata: EventMetadata) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountPumpSwapPool;
-
-    if account.data.len() < POOL_SIZE + 8 {
-        return None;
-    }
-    if let Some(pool) = pool_decode(&account.data[8..POOL_SIZE + 8]) {
-        Some(DexEvent::PumpSwapPoolAccountEvent(PumpSwapPoolAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            pool: pool,
-        }))
-    } else {
-        None
-    }
-}
+pub const POOL_SIZE: usize = POOL_BODY;

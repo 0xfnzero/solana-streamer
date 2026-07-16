@@ -2,18 +2,6 @@ use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
-use crate::streaming::{
-    event_parser::{
-        common::{EventMetadata, EventType},
-        protocols::raydium_clmm::{
-            RaydiumClmmAmmConfigAccountEvent, RaydiumClmmPoolStateAccountEvent,
-            RaydiumClmmTickArrayStateAccountEvent,
-        },
-        DexEvent,
-    },
-    grpc::AccountPretty,
-};
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct AmmConfig {
     pub bump: u8,
@@ -30,34 +18,6 @@ pub struct AmmConfig {
 
 pub const AMM_CONFIG_SIZE: usize = 1 + 2 + 32 + 4 * 2 + 2 + 4 * 2 + 32 + 8 * 3;
 
-pub fn amm_config_decode(data: &[u8]) -> Option<AmmConfig> {
-    if data.len() < AMM_CONFIG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<AmmConfig>(&data[..AMM_CONFIG_SIZE]).ok()
-}
-
-pub fn amm_config_parser(account: &AccountPretty, mut metadata: EventMetadata) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountRaydiumClmmAmmConfig;
-
-    if account.data.len() < AMM_CONFIG_SIZE + 8 {
-        return None;
-    }
-    if let Some(amm_config) = amm_config_decode(&account.data[8..AMM_CONFIG_SIZE + 8]) {
-        Some(DexEvent::RaydiumClmmAmmConfigAccountEvent(RaydiumClmmAmmConfigAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            amm_config: amm_config,
-        }))
-    } else {
-        None
-    }
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct RewardInfo {
     pub reward_state: u8,
@@ -65,7 +25,7 @@ pub struct RewardInfo {
     pub end_time: u64,
     pub last_update_time: u64,
     pub emissions_per_second_x64: u128,
-    pub reward_total_emissioned: u64,
+    pub reward_total_emitted: u64,
     pub reward_claimed: u64,
     pub token_mint: Pubkey,
     pub token_vault: Pubkey,
@@ -73,18 +33,50 @@ pub struct RewardInfo {
     pub reward_growth_global_x64: u128,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct DynamicFeeInfo {
+    pub filter_period: u16,
+    pub decay_period: u16,
+    pub reduction_factor: u16,
+    pub dynamic_fee_control: u32,
+    pub max_volatility_accumulator: u32,
+    pub tick_spacing_index_reference: i32,
+    pub volatility_reference: u32,
+    pub volatility_accumulator: u32,
+    pub last_update_timestamp: u64,
+    #[serde(with = "serde_big_array::BigArray")]
+    pub padding: [u8; 46],
+}
+
+impl Default for DynamicFeeInfo {
+    fn default() -> Self {
+        Self {
+            filter_period: 0,
+            decay_period: 0,
+            reduction_factor: 0,
+            dynamic_fee_control: 0,
+            max_volatility_accumulator: 0,
+            tick_spacing_index_reference: 0,
+            volatility_reference: 0,
+            volatility_accumulator: 0,
+            last_update_timestamp: 0,
+            padding: [0; 46],
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PoolState {
     pub bump: [u8; 1],
     pub amm_config: Pubkey,
     pub owner: Pubkey,
-    pub token_mint0: Pubkey,
-    pub token_mint1: Pubkey,
-    pub token_vault0: Pubkey,
-    pub token_vault1: Pubkey,
+    pub token_mint_0: Pubkey,
+    pub token_mint_1: Pubkey,
+    pub token_vault_0: Pubkey,
+    pub token_vault_1: Pubkey,
     pub observation_key: Pubkey,
-    pub mint_decimals0: u8,
-    pub mint_decimals1: u8,
+    pub mint_decimals_0: u8,
+    pub mint_decimals_1: u8,
     pub tick_spacing: u16,
     pub liquidity: u128,
     pub sqrt_price_x64: u128,
@@ -95,57 +87,25 @@ pub struct PoolState {
     pub fee_growth_global1_x64: u128,
     pub protocol_fees_token0: u64,
     pub protocol_fees_token1: u64,
-    pub swap_in_amount_token0: u128,
-    pub swap_out_amount_token1: u128,
-    pub swap_in_amount_token1: u128,
-    pub swap_out_amount_token0: u128,
+    pub padding5: [u128; 4],
     pub status: u8,
-    pub padding: [u8; 7],
+    pub fee_on: u8,
+    pub padding: [u8; 6],
     pub reward_infos: [RewardInfo; 3],
     pub tick_array_bitmap: [u64; 16],
-    pub total_fees_token0: u64,
-    pub total_fees_claimed_token0: u64,
-    pub total_fees_token1: u64,
-    pub total_fees_claimed_token1: u64,
+    pub padding6: [u64; 4],
     pub fund_fees_token0: u64,
     pub fund_fees_token1: u64,
     pub open_time: u64,
     pub recent_epoch: u64,
-    pub padding1: [u64; 24],
+    pub dynamic_fee_info: DynamicFeeInfo,
+    pub padding1: [u64; 14],
     pub padding2: [u64; 32],
 }
 
 pub const POOL_STATE_SIZE: usize = 1536;
 
-pub fn pool_state_decode(data: &[u8]) -> Option<PoolState> {
-    if data.len() < POOL_STATE_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PoolState>(&data[..POOL_STATE_SIZE]).ok()
-}
-
-pub fn pool_state_parser(account: &AccountPretty, mut metadata: EventMetadata) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountRaydiumClmmPoolState;
-
-    if account.data.len() < POOL_STATE_SIZE + 8 {
-        return None;
-    }
-    if let Some(pool_state) = pool_state_decode(&account.data[8..POOL_STATE_SIZE + 8]) {
-        Some(DexEvent::RaydiumClmmPoolStateAccountEvent(RaydiumClmmPoolStateAccountEvent {
-            metadata,
-            pubkey: account.pubkey,
-            executable: account.executable,
-            lamports: account.lamports,
-            owner: account.owner,
-            rent_epoch: account.rent_epoch,
-            pool_state: pool_state,
-        }))
-    } else {
-        None
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct TickState {
     pub tick: i32,
     pub liquidity_net: i128,
@@ -153,21 +113,11 @@ pub struct TickState {
     pub fee_growth_outside0_x64: u128,
     pub fee_growth_outside1_x64: u128,
     pub reward_growths_outside_x64: [u128; 3],
-    pub padding: [u32; 13],
-}
-
-impl Default for TickState {
-    fn default() -> Self {
-        Self {
-            tick: 0,
-            liquidity_net: 0,
-            liquidity_gross: 0,
-            fee_growth_outside0_x64: 0,
-            fee_growth_outside1_x64: 0,
-            reward_growths_outside_x64: [0; 3],
-            padding: [0; 13],
-        }
-    }
+    pub order_phase: u64,
+    pub orders_amount: u64,
+    pub part_filled_orders_remaining: u64,
+    pub unfilled_ratio_x64: u128,
+    pub padding: [u32; 3],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
@@ -196,38 +146,3 @@ impl Default for TickArrayState {
 }
 
 pub const TICK_ARRAY_STATE_SIZE: usize = 10232;
-
-pub fn tick_array_state_decode(data: &[u8]) -> Option<TickArrayState> {
-    if data.len() < TICK_ARRAY_STATE_SIZE {
-        return None;
-    }
-    borsh::from_slice::<TickArrayState>(&data[..TICK_ARRAY_STATE_SIZE]).ok()
-}
-
-pub fn tick_array_state_parser(
-    account: &AccountPretty,
-    mut metadata: EventMetadata,
-) -> Option<DexEvent> {
-    metadata.event_type = EventType::AccountRaydiumClmmTickArrayState;
-
-    if account.data.len() < TICK_ARRAY_STATE_SIZE + 8 {
-        return None;
-    }
-    if let Some(tick_array_state) =
-        tick_array_state_decode(&account.data[8..TICK_ARRAY_STATE_SIZE + 8])
-    {
-        Some(DexEvent::RaydiumClmmTickArrayStateAccountEvent(
-            RaydiumClmmTickArrayStateAccountEvent {
-                metadata,
-                pubkey: account.pubkey,
-                executable: account.executable,
-                lamports: account.lamports,
-                owner: account.owner,
-                rent_epoch: account.rent_epoch,
-                tick_array_state: tick_array_state,
-            },
-        ))
-    } else {
-        None
-    }
-}

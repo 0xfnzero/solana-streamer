@@ -1,5 +1,4 @@
 use futures::{channel::mpsc, sink::Sink, Stream};
-use maplit::hashmap;
 use std::{collections::HashMap, time::Duration};
 use tonic::{transport::channel::ClientTlsConfig, Status};
 use yellowstone_grpc_client::{GeyserGrpcClient, Interceptor};
@@ -53,14 +52,13 @@ impl SubscriptionManager {
         impl Stream<Item = Result<SubscribeUpdate, Status>>,
         SubscribeRequest,
     )> {
-        let blocks_meta =
-            if event_type_filter.is_some() && event_type_filter.unwrap().include_block_event() {
-                hashmap! { "".to_owned() => SubscribeRequestFilterBlocksMeta {} }
-            } else if event_type_filter.is_none() {
-                hashmap! { "".to_owned() => SubscribeRequestFilterBlocksMeta {} }
-            } else {
-                hashmap! {}
-            };
+        // When no filter is set, subscribe to block meta like before; if a filter exists,
+        // only keep block meta when the filter includes block-related event types.
+        let blocks_meta = if event_type_filter.is_none_or(|f| f.include_block_event()) {
+            HashMap::from([("".to_owned(), SubscribeRequestFilterBlocksMeta {})])
+        } else {
+            HashMap::new()
+        };
         let subscribe_request = SubscribeRequest {
             accounts: accounts.unwrap_or_default(),
             transactions: transactions.unwrap_or_default(),
@@ -83,10 +81,10 @@ impl SubscriptionManager {
         account_filter: Vec<AccountFilter>,
         event_type_filter: Option<&EventTypeFilter>,
     ) -> Option<AccountsFilterMap> {
-        if event_type_filter.is_some() && !event_type_filter.unwrap().include_account_event() {
+        if event_type_filter.is_some_and(|f| !f.include_account_event()) {
             return None;
         }
-        if account_filter.len() == 0 {
+        if account_filter.is_empty() {
             return None;
         }
         let mut accounts = HashMap::new();
@@ -98,6 +96,7 @@ impl SubscriptionManager {
                     owner: af.owner.clone(),
                     filters: af.filters.clone(),
                     nonempty_txn_signature: None,
+                    cuckoo_accounts_filter: None,
                 },
             );
         }
@@ -110,7 +109,7 @@ impl SubscriptionManager {
         transaction_filter: Vec<TransactionFilter>,
         event_type_filter: Option<&EventTypeFilter>,
     ) -> Option<TransactionsFilterMap> {
-        if event_type_filter.is_some() && !event_type_filter.unwrap().include_transaction_event() {
+        if event_type_filter.is_some_and(|f| !f.include_transaction_event()) {
             return None;
         }
         let mut transactions = HashMap::new();

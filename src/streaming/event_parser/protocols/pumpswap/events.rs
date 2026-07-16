@@ -5,7 +5,7 @@ use solana_sdk::pubkey::Pubkey;
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, Pool};
 
-/// Buy event
+/// 买入事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapBuyEvent {
     #[borsh(skip)]
@@ -38,8 +38,14 @@ pub struct PumpSwapBuyEvent {
     pub total_claimed_tokens: u64,
     pub current_sol_volume: u64,
     pub last_update_timestamp: i64,
+    /// Minimum base out (IDL extension; also set on `buy_exact_quote_in` from ix args).
     pub min_base_amount_out: u64,
+    /// Instruction name from event (`buy`, `buy_exact_quote_in`, …).
     pub ix_name: String,
+    pub cashback_fee_basis_points: u64,
+    pub cashback: u64,
+    #[borsh(skip)]
+    pub is_pump_pool: bool,
     #[borsh(skip)]
     pub base_mint: Pubkey,
     #[borsh(skip)]
@@ -56,85 +62,20 @@ pub struct PumpSwapBuyEvent {
     pub base_token_program: Pubkey,
     #[borsh(skip)]
     pub quote_token_program: Pubkey,
+    #[borsh(skip)]
+    pub pool_v2: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient_quote_token_account: Pubkey,
 }
 
-/// Buy event (ix: `buy_exact_quote_in`)
-///
-/// Same on-chain layout as `PumpSwapBuyEvent` (IDL `BuyEvent`),
-/// but represented as a different type to distinguish in the streamer.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
-pub struct PumpSwapBuyExactQuoteInEvent {
-    #[borsh(skip)]
-    pub metadata: EventMetadata,
-    pub timestamp: i64,
-    pub base_amount_out: u64,
-    pub max_quote_amount_in: u64,
-    pub user_base_token_reserves: u64,
-    pub user_quote_token_reserves: u64,
-    pub pool_base_token_reserves: u64,
-    pub pool_quote_token_reserves: u64,
-    pub quote_amount_in: u64,
-    pub lp_fee_basis_points: u64,
-    pub lp_fee: u64,
-    pub protocol_fee_basis_points: u64,
-    pub protocol_fee: u64,
-    pub quote_amount_in_with_lp_fee: u64,
-    pub user_quote_amount_in: u64,
-    pub pool: Pubkey,
-    pub user: Pubkey,
-    pub user_base_token_account: Pubkey,
-    pub user_quote_token_account: Pubkey,
-    pub protocol_fee_recipient: Pubkey,
-    pub protocol_fee_recipient_token_account: Pubkey,
-    pub coin_creator: Pubkey,
-    pub coin_creator_fee_basis_points: u64,
-    pub coin_creator_fee: u64,
-    pub track_volume: bool,
-    pub total_unclaimed_tokens: u64,
-    pub total_claimed_tokens: u64,
-    pub current_sol_volume: u64,
-    pub last_update_timestamp: i64,
-    pub min_base_amount_out: u64,
-    pub ix_name: String,
-    #[borsh(skip)]
-    pub spendable_quote_in: u64,
-    #[borsh(skip)]
-    pub base_mint: Pubkey,
-    #[borsh(skip)]
-    pub quote_mint: Pubkey,
-    #[borsh(skip)]
-    pub pool_base_token_account: Pubkey,
-    #[borsh(skip)]
-    pub pool_quote_token_account: Pubkey,
-    #[borsh(skip)]
-    pub coin_creator_vault_ata: Pubkey,
-    #[borsh(skip)]
-    pub coin_creator_vault_authority: Pubkey,
-    #[borsh(skip)]
-    pub base_token_program: Pubkey,
-    #[borsh(skip)]
-    pub quote_token_program: Pubkey,
-}
+/// Minimum bytes through `last_update_timestamp` (Anchor/Borsh layout, bool = 1 byte).
+pub const PUMP_SWAP_BUY_EVENT_LOG_MIN: usize = 385;
+/// Backwards-compatible name for the minimum BuyEvent payload size (legacy `borsh` slice length).
+pub const PUMP_SWAP_BUY_EVENT_LOG_SIZE: usize = PUMP_SWAP_BUY_EVENT_LOG_MIN;
 
-pub const PUMP_SWAP_BUY_EVENT_LOG_SIZE: usize = 385;
-
-pub fn pump_swap_buy_event_log_decode(data: &[u8]) -> Option<PumpSwapBuyEvent> {
-    if data.len() < PUMP_SWAP_BUY_EVENT_LOG_SIZE {
-        return None;
-    }
-    // Use the entire buffer to correctly deserialize the String ix_name field
-    borsh::from_slice::<PumpSwapBuyEvent>(data).ok()
-}
-
-pub fn pump_swap_buy_exact_quote_in_event_log_decode(data: &[u8]) -> Option<PumpSwapBuyExactQuoteInEvent> {
-    if data.len() < PUMP_SWAP_BUY_EVENT_LOG_SIZE {
-        return None;
-    }
-    // Use the entire buffer to correctly deserialize the String ix_name field
-    borsh::from_slice::<PumpSwapBuyExactQuoteInEvent>(data).ok()
-}
-
-/// Sell event
+/// 卖出事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapSellEvent {
     #[borsh(skip)]
@@ -162,6 +103,10 @@ pub struct PumpSwapSellEvent {
     pub coin_creator: Pubkey,
     pub coin_creator_fee_basis_points: u64,
     pub coin_creator_fee: u64,
+    pub cashback_fee_basis_points: u64,
+    pub cashback: u64,
+    #[borsh(skip)]
+    pub is_pump_pool: bool,
     #[borsh(skip)]
     pub base_mint: Pubkey,
     #[borsh(skip)]
@@ -178,18 +123,20 @@ pub struct PumpSwapSellEvent {
     pub base_token_program: Pubkey,
     #[borsh(skip)]
     pub quote_token_program: Pubkey,
+    #[borsh(skip)]
+    pub pool_v2: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient: Pubkey,
+    #[borsh(skip)]
+    pub fee_recipient_quote_token_account: Pubkey,
 }
 
-pub const PUMP_SWAP_SELL_EVENT_LOG_SIZE: usize = 352;
+pub const PUMP_SWAP_SELL_EVENT_LOG_MIN: usize = 352;
+pub const PUMP_SWAP_SELL_EVENT_WITH_CASHBACK: usize = 368;
+/// Backwards-compatible name for the pre-cashback SellEvent payload size.
+pub const PUMP_SWAP_SELL_EVENT_LOG_SIZE: usize = PUMP_SWAP_SELL_EVENT_LOG_MIN;
 
-pub fn pump_swap_sell_event_log_decode(data: &[u8]) -> Option<PumpSwapSellEvent> {
-    if data.len() < PUMP_SWAP_SELL_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PumpSwapSellEvent>(&data[..PUMP_SWAP_SELL_EVENT_LOG_SIZE]).ok()
-}
-
-/// Create pool event
+/// 创建池子事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapCreatePoolEvent {
     #[borsh(skip)]
@@ -214,6 +161,10 @@ pub struct PumpSwapCreatePoolEvent {
     pub user_base_token_account: Pubkey,
     pub user_quote_token_account: Pubkey,
     pub coin_creator: Pubkey,
+    pub is_mayhem_mode: bool,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub is_cashback_coin: bool,
     #[borsh(skip)]
     pub user_pool_token_account: Pubkey,
     #[borsh(skip)]
@@ -222,16 +173,9 @@ pub struct PumpSwapCreatePoolEvent {
     pub pool_quote_token_account: Pubkey,
 }
 
-pub const PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE: usize = 325;
+pub const PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE: usize = 326;
 
-pub fn pump_swap_create_pool_event_log_decode(data: &[u8]) -> Option<PumpSwapCreatePoolEvent> {
-    if data.len() < PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PumpSwapCreatePoolEvent>(&data[..PUMP_SWAP_CREATE_POOL_EVENT_LOG_SIZE]).ok()
-}
-
-/// Deposit event
+/// 存款事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapDepositEvent {
     #[borsh(skip)]
@@ -264,14 +208,7 @@ pub struct PumpSwapDepositEvent {
 
 pub const PUMP_SWAP_DEPOSIT_EVENT_LOG_SIZE: usize = 248;
 
-pub fn pump_swap_deposit_event_log_decode(data: &[u8]) -> Option<PumpSwapDepositEvent> {
-    if data.len() < PUMP_SWAP_DEPOSIT_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PumpSwapDepositEvent>(&data[..PUMP_SWAP_DEPOSIT_EVENT_LOG_SIZE]).ok()
-}
-
-/// Withdraw event
+/// 提款事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapWithdrawEvent {
     #[borsh(skip)]
@@ -304,14 +241,7 @@ pub struct PumpSwapWithdrawEvent {
 
 pub const PUMP_SWAP_WITHDRAW_EVENT_LOG_SIZE: usize = 248;
 
-pub fn pump_swap_withdraw_event_log_decode(data: &[u8]) -> Option<PumpSwapWithdrawEvent> {
-    if data.len() < PUMP_SWAP_WITHDRAW_EVENT_LOG_SIZE {
-        return None;
-    }
-    borsh::from_slice::<PumpSwapWithdrawEvent>(&data[..PUMP_SWAP_WITHDRAW_EVENT_LOG_SIZE]).ok()
-}
-
-/// Global config account event
+/// 全局配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapGlobalConfigAccountEvent {
     #[borsh(skip)]
@@ -324,7 +254,7 @@ pub struct PumpSwapGlobalConfigAccountEvent {
     pub global_config: GlobalConfig,
 }
 
-/// Pool account event
+/// 池
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapPoolAccountEvent {
     #[borsh(skip)]
@@ -337,9 +267,9 @@ pub struct PumpSwapPoolAccountEvent {
     pub pool: Pool,
 }
 
-/// Event discriminator constants
+/// 事件鉴别器常量
 pub mod discriminators {
-    // Event discriminators
+    // 事件鉴别器
     // pub const BUY_EVENT: &str = "0xe445a52e51cb9a1d67f4521f2cf57777";
     pub const BUY_EVENT: &[u8] =
         &[228, 69, 165, 46, 81, 203, 154, 29, 103, 244, 82, 31, 44, 245, 119, 119];
@@ -356,7 +286,7 @@ pub mod discriminators {
     pub const WITHDRAW_EVENT: &[u8] =
         &[228, 69, 165, 46, 81, 203, 154, 29, 22, 9, 133, 26, 160, 44, 71, 192];
 
-    // Instruction discriminators
+    // 指令鉴别器
     pub const BUY_IX: &[u8] = &[102, 6, 61, 18, 1, 218, 235, 234];
     pub const BUY_EXACT_QUOTE_IN_IX: &[u8] = &[198, 46, 21, 82, 180, 217, 232, 112];
     pub const SELL_IX: &[u8] = &[51, 230, 133, 164, 1, 127, 131, 173];
@@ -364,7 +294,7 @@ pub mod discriminators {
     pub const DEPOSIT_IX: &[u8] = &[242, 35, 198, 137, 82, 225, 242, 182];
     pub const WITHDRAW_IX: &[u8] = &[183, 18, 70, 156, 148, 109, 161, 34];
 
-    // Account discriminators
+    // 账户鉴别器
     pub const GLOBAL_CONFIG_ACCOUNT: &[u8] = &[149, 8, 156, 202, 160, 252, 176, 217];
     pub const POOL_ACCOUNT: &[u8] = &[241, 154, 109, 4, 17, 177, 109, 188];
 }

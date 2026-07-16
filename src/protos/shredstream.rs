@@ -47,10 +47,10 @@ pub mod shredstream_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value,
+        clippy::let_unit_value
     )]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct ShredstreamClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -94,9 +94,8 @@ pub mod shredstream_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::Body>,
-            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
+                Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             ShredstreamClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -135,22 +134,13 @@ pub mod shredstream_client {
         pub async fn send_heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::Heartbeat>,
-        ) -> std::result::Result<
-            tonic::Response<super::HeartbeatResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
+            })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/shredstream.Shredstream/SendHeartbeat",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/shredstream.Shredstream/SendHeartbeat");
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("shredstream.Shredstream", "SendHeartbeat"));
@@ -165,7 +155,7 @@ pub mod shredstream_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value,
+        clippy::let_unit_value
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with ShredstreamServer.
@@ -175,10 +165,7 @@ pub mod shredstream_server {
         async fn send_heartbeat(
             &self,
             request: tonic::Request<super::Heartbeat>,
-        ) -> std::result::Result<
-            tonic::Response<super::HeartbeatResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct ShredstreamServer<T> {
@@ -201,10 +188,7 @@ pub mod shredstream_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -259,13 +243,9 @@ pub mod shredstream_server {
                 "/shredstream.Shredstream/SendHeartbeat" => {
                     #[allow(non_camel_case_types)]
                     struct SendHeartbeatSvc<T: Shredstream>(pub Arc<T>);
-                    impl<T: Shredstream> tonic::server::UnaryService<super::Heartbeat>
-                    for SendHeartbeatSvc<T> {
+                    impl<T: Shredstream> tonic::server::UnaryService<super::Heartbeat> for SendHeartbeatSvc<T> {
                         type Response = super::HeartbeatResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::Heartbeat>,
@@ -299,25 +279,16 @@ pub mod shredstream_server {
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        let mut response = http::Response::new(
-                            tonic::body::Body::default(),
-                        );
-                        let headers = response.headers_mut();
-                        headers
-                            .insert(
-                                tonic::Status::GRPC_STATUS,
-                                (tonic::Code::Unimplemented as i32).into(),
-                            );
-                        headers
-                            .insert(
-                                http::header::CONTENT_TYPE,
-                                tonic::metadata::GRPC_CONTENT_TYPE,
-                            );
-                        Ok(response)
-                    })
-                }
+                _ => Box::pin(async move {
+                    let mut response = http::Response::new(tonic::body::Body::default());
+                    let headers = response.headers_mut();
+                    headers.insert(
+                        tonic::Status::GRPC_STATUS,
+                        (tonic::Code::Unimplemented as i32).into(),
+                    );
+                    headers.insert(http::header::CONTENT_TYPE, tonic::metadata::GRPC_CONTENT_TYPE);
+                    Ok(response)
+                }),
             }
         }
     }
@@ -346,10 +317,10 @@ pub mod shredstream_proxy_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value,
+        clippy::let_unit_value
     )]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct ShredstreamProxyClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -393,9 +364,8 @@ pub mod shredstream_proxy_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::Body>,
-            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
+                Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             ShredstreamProxyClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -437,23 +407,16 @@ pub mod shredstream_proxy_client {
             tonic::Response<tonic::codec::Streaming<super::Entry>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
+            })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/shredstream.ShredstreamProxy/SubscribeEntries",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("shredstream.ShredstreamProxy", "SubscribeEntries"),
-                );
+                .insert(GrpcMethod::new("shredstream.ShredstreamProxy", "SubscribeEntries"));
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -465,7 +428,7 @@ pub mod shredstream_proxy_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value,
+        clippy::let_unit_value
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with ShredstreamProxyServer.
@@ -474,16 +437,12 @@ pub mod shredstream_proxy_server {
         /// Server streaming response type for the SubscribeEntries method.
         type SubscribeEntriesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::Entry, tonic::Status>,
-            >
-            + std::marker::Send
+            > + std::marker::Send
             + 'static;
         async fn subscribe_entries(
             &self,
             request: tonic::Request<super::SubscribeEntriesRequest>,
-        ) -> std::result::Result<
-            tonic::Response<Self::SubscribeEntriesStream>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<Self::SubscribeEntriesStream>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct ShredstreamProxyServer<T> {
@@ -506,10 +465,7 @@ pub mod shredstream_proxy_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -564,25 +520,21 @@ pub mod shredstream_proxy_server {
                 "/shredstream.ShredstreamProxy/SubscribeEntries" => {
                     #[allow(non_camel_case_types)]
                     struct SubscribeEntriesSvc<T: ShredstreamProxy>(pub Arc<T>);
-                    impl<
-                        T: ShredstreamProxy,
-                    > tonic::server::ServerStreamingService<
-                        super::SubscribeEntriesRequest,
-                    > for SubscribeEntriesSvc<T> {
+                    impl<T: ShredstreamProxy>
+                        tonic::server::ServerStreamingService<super::SubscribeEntriesRequest>
+                        for SubscribeEntriesSvc<T>
+                    {
                         type Response = super::Entry;
                         type ResponseStream = T::SubscribeEntriesStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::SubscribeEntriesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ShredstreamProxy>::subscribe_entries(&inner, request)
-                                    .await
+                                <T as ShredstreamProxy>::subscribe_entries(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -609,25 +561,16 @@ pub mod shredstream_proxy_server {
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        let mut response = http::Response::new(
-                            tonic::body::Body::default(),
-                        );
-                        let headers = response.headers_mut();
-                        headers
-                            .insert(
-                                tonic::Status::GRPC_STATUS,
-                                (tonic::Code::Unimplemented as i32).into(),
-                            );
-                        headers
-                            .insert(
-                                http::header::CONTENT_TYPE,
-                                tonic::metadata::GRPC_CONTENT_TYPE,
-                            );
-                        Ok(response)
-                    })
-                }
+                _ => Box::pin(async move {
+                    let mut response = http::Response::new(tonic::body::Body::default());
+                    let headers = response.headers_mut();
+                    headers.insert(
+                        tonic::Status::GRPC_STATUS,
+                        (tonic::Code::Unimplemented as i32).into(),
+                    );
+                    headers.insert(http::header::CONTENT_TYPE, tonic::metadata::GRPC_CONTENT_TYPE);
+                    Ok(response)
+                }),
             }
         }
     }

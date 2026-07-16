@@ -6,6 +6,7 @@ pub mod pumpswap;
 pub mod raydium_amm_v4;
 pub mod raydium_clmm;
 pub mod raydium_cpmm;
+pub mod sol_parser_forward;
 pub mod types;
 pub use block::block_meta_event::BlockMetaEvent;
 pub use types::Protocol;

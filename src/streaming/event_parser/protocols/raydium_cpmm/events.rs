@@ -1,8 +1,6 @@
 use crate::streaming::event_parser::common::EventMetadata;
+use crate::streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig;
 use crate::streaming::event_parser::protocols::raydium_cpmm::types::PoolState;
-use crate::{
-    streaming::event_parser::protocols::raydium_cpmm::types::AmmConfig,
-};
 use borsh::BorshDeserialize;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
@@ -31,7 +29,6 @@ pub struct RaydiumCpmmSwapEvent {
     pub observation_state: Pubkey,
 }
 
-
 /// 存款
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct RaydiumCpmmDepositEvent {
@@ -45,14 +42,14 @@ pub struct RaydiumCpmmDepositEvent {
     pub authority: Pubkey,
     pub pool_state: Pubkey,
     pub owner_lp_token: Pubkey,
-    pub token0_account: Pubkey,
-    pub token1_account: Pubkey,
-    pub token0_vault: Pubkey,
-    pub token1_vault: Pubkey,
+    pub token_0_account: Pubkey,
+    pub token_1_account: Pubkey,
+    pub token_0_vault: Pubkey,
+    pub token_1_vault: Pubkey,
     pub token_program: Pubkey,
     pub token_program2022: Pubkey,
-    pub vault0_mint: Pubkey,
-    pub vault1_mint: Pubkey,
+    pub vault_0_mint: Pubkey,
+    pub vault_1_mint: Pubkey,
     pub lp_mint: Pubkey,
 }
 
@@ -69,19 +66,19 @@ pub struct RaydiumCpmmInitializeEvent {
     pub amm_config: Pubkey,
     pub authority: Pubkey,
     pub pool_state: Pubkey,
-    pub token0_mint: Pubkey,
-    pub token1_mint: Pubkey,
+    pub token_0_mint: Pubkey,
+    pub token_1_mint: Pubkey,
     pub lp_mint: Pubkey,
-    pub creator_token0: Pubkey,
-    pub creator_token1: Pubkey,
+    pub creator_token_0: Pubkey,
+    pub creator_token_1: Pubkey,
     pub creator_lp_token: Pubkey,
-    pub token0_vault: Pubkey,
-    pub token1_vault: Pubkey,
+    pub token_0_vault: Pubkey,
+    pub token_1_vault: Pubkey,
     pub create_pool_fee: Pubkey,
     pub observation_state: Pubkey,
     pub token_program: Pubkey,
-    pub token0_program: Pubkey,
-    pub token1_program: Pubkey,
+    pub token_0_program: Pubkey,
+    pub token_1_program: Pubkey,
     pub associated_token_program: Pubkey,
     pub system_program: Pubkey,
     pub rent: Pubkey,
@@ -100,14 +97,14 @@ pub struct RaydiumCpmmWithdrawEvent {
     pub authority: Pubkey,
     pub pool_state: Pubkey,
     pub owner_lp_token: Pubkey,
-    pub token0_account: Pubkey,
-    pub token1_account: Pubkey,
-    pub token0_vault: Pubkey,
-    pub token1_vault: Pubkey,
+    pub token_0_account: Pubkey,
+    pub token_1_account: Pubkey,
+    pub token_0_vault: Pubkey,
+    pub token_1_vault: Pubkey,
     pub token_program: Pubkey,
     pub token_program2022: Pubkey,
-    pub vault0_mint: Pubkey,
-    pub vault1_mint: Pubkey,
+    pub vault_0_mint: Pubkey,
+    pub vault_1_mint: Pubkey,
     pub lp_mint: Pubkey,
     pub memo_program: Pubkey,
 }
