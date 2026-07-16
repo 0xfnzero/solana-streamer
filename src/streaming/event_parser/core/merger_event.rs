@@ -43,6 +43,20 @@ fn fill_i64(to: &mut i64, from: i64) {
 }
 
 #[inline]
+fn overwrite_u64_if_present(to: &mut u64, from: u64) {
+    if from != 0 {
+        *to = from;
+    }
+}
+
+#[inline]
+fn overwrite_i128_if_present(to: &mut i128, from: i128) {
+    if from != 0 {
+        *to = from;
+    }
+}
+
+#[inline]
 fn fill_string(to: &mut String, from: String) {
     if to.is_empty() && !from.is_empty() {
         *to = from;
@@ -338,11 +352,27 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.total_claimed_tokens = cpie.total_claimed_tokens;
                 e.current_sol_volume = cpie.current_sol_volume;
                 e.last_update_timestamp = cpie.last_update_timestamp;
-                e.min_base_amount_out = cpie.min_base_amount_out;
-                e.ix_name = cpie.ix_name.clone();
-                e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
-                e.cashback = cpie.cashback;
-                e.is_pump_pool = cpie.is_pump_pool;
+                overwrite_u64_if_present(&mut e.min_base_amount_out, cpie.min_base_amount_out);
+                if !cpie.ix_name.is_empty() {
+                    e.ix_name = cpie.ix_name;
+                }
+                overwrite_u64_if_present(
+                    &mut e.cashback_fee_basis_points,
+                    cpie.cashback_fee_basis_points,
+                );
+                overwrite_u64_if_present(&mut e.cashback, cpie.cashback);
+                overwrite_u64_if_present(
+                    &mut e.buyback_fee_basis_points,
+                    cpie.buyback_fee_basis_points,
+                );
+                overwrite_u64_if_present(&mut e.buyback_fee, cpie.buyback_fee);
+                overwrite_i128_if_present(
+                    &mut e.virtual_quote_reserves,
+                    cpie.virtual_quote_reserves,
+                );
+                e.can_boost |= cpie.can_boost;
+                overwrite_u64_if_present(&mut e.base_supply, cpie.base_supply);
+                e.is_pump_pool |= cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
                 fill_pubkey(&mut e.pool_base_token_account, cpie.pool_base_token_account);
@@ -385,9 +415,23 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.coin_creator = cpie.coin_creator;
                 e.coin_creator_fee_basis_points = cpie.coin_creator_fee_basis_points;
                 e.coin_creator_fee = cpie.coin_creator_fee;
-                e.cashback_fee_basis_points = cpie.cashback_fee_basis_points;
-                e.cashback = cpie.cashback;
-                e.is_pump_pool = cpie.is_pump_pool;
+                overwrite_u64_if_present(
+                    &mut e.cashback_fee_basis_points,
+                    cpie.cashback_fee_basis_points,
+                );
+                overwrite_u64_if_present(&mut e.cashback, cpie.cashback);
+                overwrite_u64_if_present(
+                    &mut e.buyback_fee_basis_points,
+                    cpie.buyback_fee_basis_points,
+                );
+                overwrite_u64_if_present(&mut e.buyback_fee, cpie.buyback_fee);
+                overwrite_i128_if_present(
+                    &mut e.virtual_quote_reserves,
+                    cpie.virtual_quote_reserves,
+                );
+                e.can_boost |= cpie.can_boost;
+                overwrite_u64_if_present(&mut e.base_supply, cpie.base_supply);
+                e.is_pump_pool |= cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
                 fill_pubkey(&mut e.pool_base_token_account, cpie.pool_base_token_account);
@@ -858,6 +902,7 @@ mod tests {
     use crate::streaming::event_parser::protocols::pumpfun::events::{
         PumpFeesShareholder, PumpFunTradeEvent,
     };
+    use crate::streaming::event_parser::protocols::pumpswap::events::PumpSwapSellEvent;
 
     #[test]
     fn pumpfun_merge_keeps_instruction_context_and_copies_latest_trade_tail() {
@@ -910,6 +955,59 @@ mod tests {
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }
+    }
+
+    #[test]
+    fn pumpswap_merge_preserves_signed_virtual_quote_reserves() {
+        let mut instruction_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent::default());
+        let log_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent {
+            virtual_quote_reserves: -500,
+            buyback_fee_basis_points: 11,
+            buyback_fee: 22,
+            can_boost: true,
+            base_supply: 33,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, log_event);
+
+        let DexEvent::PumpSwapSellEvent(event) = instruction_event else {
+            panic!("expected PumpSwapSellEvent");
+        };
+        assert_eq!(event.virtual_quote_reserves, -500);
+        assert_eq!(event.buyback_fee_basis_points, 11);
+        assert_eq!(event.buyback_fee, 22);
+        assert!(event.can_boost);
+        assert_eq!(event.base_supply, 33);
+    }
+
+    #[test]
+    fn pumpswap_merge_does_not_erase_present_tail_with_legacy_defaults() {
+        let mut instruction_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent {
+            cashback_fee_basis_points: 10,
+            cashback: 20,
+            buyback_fee_basis_points: 30,
+            buyback_fee: 40,
+            virtual_quote_reserves: -500,
+            can_boost: true,
+            base_supply: 60,
+            is_pump_pool: true,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, DexEvent::PumpSwapSellEvent(PumpSwapSellEvent::default()));
+
+        let DexEvent::PumpSwapSellEvent(event) = instruction_event else {
+            panic!("expected PumpSwapSellEvent");
+        };
+        assert_eq!(event.cashback_fee_basis_points, 10);
+        assert_eq!(event.cashback, 20);
+        assert_eq!(event.buyback_fee_basis_points, 30);
+        assert_eq!(event.buyback_fee, 40);
+        assert_eq!(event.virtual_quote_reserves, -500);
+        assert!(event.can_boost);
+        assert_eq!(event.base_supply, 60);
+        assert!(event.is_pump_pool);
     }
 
     #[test]

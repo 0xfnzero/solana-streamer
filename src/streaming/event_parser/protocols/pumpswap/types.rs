@@ -33,13 +33,13 @@ pub struct Pool {
     pub coin_creator: Pubkey,
     pub is_mayhem_mode: bool,
     pub is_cashback_coin: bool,
-    /// On-chain reserved tail (7 bytes); keep in sync with pump_amm pool account layout.
-    pub reserved: [u8; 7],
+    #[serde(default)]
+    pub virtual_quote_reserves: i128,
 }
 
-/// Legacy pool account body (before `is_cashback_coin` + reserved).
-pub const POOL_BODY_LEGACY: usize = 1 + 2 + 32 * 6 + 8 + 32 + 1;
-/// Current pool account body including flags and reserved.
-pub const POOL_BODY: usize = POOL_BODY_LEGACY + 1 + 7;
+/// Legacy allocated pool account body.
+pub const POOL_BODY_LEGACY: usize = 244;
+/// Current serialized pool account body including signed virtual quote reserves.
+pub const POOL_BODY: usize = 253;
 
 pub const POOL_SIZE: usize = POOL_BODY;

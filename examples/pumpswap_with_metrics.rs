@@ -3,10 +3,14 @@
 //! Usage: cargo run --example pumpswap_with_metrics --release
 
 use solana_streamer_sdk::streaming::event_parser::protocols::pumpswap::parser::PUMPSWAP_PROGRAM_ID;
-use solana_streamer_sdk::streaming::event_parser::{DexEvent, Protocol};
+use solana_streamer_sdk::streaming::event_parser::{
+    common::filter::EventTypeFilter, common::EventType, DexEvent, Protocol,
+};
 use solana_streamer_sdk::streaming::grpc::ClientConfig;
-use solana_streamer_sdk::streaming::yellowstone_grpc::{
-    AccountFilter, TransactionFilter, YellowstoneGrpc,
+use solana_streamer_sdk::streaming::yellowstone_grpc::{TransactionFilter, YellowstoneGrpc};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
 };
 
 #[tokio::main]
@@ -29,22 +33,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         account_exclude: vec![],
         account_required: vec![],
     };
-    let account_filter = AccountFilter {
-        account: vec![],
-        owner: vec![PUMPSWAP_PROGRAM_ID.to_string()],
-        filters: vec![],
+    let event_count = Arc::new(AtomicU64::new(0));
+    let callback_count = event_count.clone();
+    let callback = move |_event: DexEvent| {
+        callback_count.fetch_add(1, Ordering::Relaxed);
     };
-
-    let callback = |event: DexEvent| {
-        println!("Event: {:?}", event.metadata().event_type);
-    };
+    let event_filter =
+        EventTypeFilter::include_only(vec![EventType::PumpSwapBuy, EventType::PumpSwapSell]);
 
     grpc.subscribe_events_immediate(
         vec![Protocol::PumpSwap],
         None,
         vec![transaction_filter],
-        vec![account_filter],
-        None,
+        vec![],
+        Some(event_filter),
         None,
         callback,
     )
@@ -53,5 +55,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Press Ctrl+C to stop...\n");
     tokio::signal::ctrl_c().await?;
     grpc.stop().await;
+    println!("Processed {} PumpSwap trade events", event_count.load(Ordering::Relaxed));
     Ok(())
 }

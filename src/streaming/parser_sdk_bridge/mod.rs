@@ -43,10 +43,10 @@ mod tests {
     use sol_parser_sdk::core::events::{
         EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap, OrcaWhirlpoolSwapEvent as PbOrcaSwap,
         PumpFunCreateV2TokenEvent as PbPumpCreateV2, PumpFunTradeEvent as PbPumpTrade,
-        PumpSwapCreatePoolEvent as PbPumpSwapCreatePool, PumpSwapPool as PbPumpSwapPool,
-        PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount,
-        RaydiumLaunchlabTradeEvent as PbBonkTrade, TokenInfoEvent as PbTokenInfo,
-        TradeDirection as PbBonkDir,
+        PumpSwapBuyEvent as PbPumpSwapBuy, PumpSwapCreatePoolEvent as PbPumpSwapCreatePool,
+        PumpSwapPool as PbPumpSwapPool, PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount,
+        PumpSwapSellEvent as PbPumpSwapSell, RaydiumLaunchlabTradeEvent as PbBonkTrade,
+        TokenInfoEvent as PbTokenInfo, TradeDirection as PbBonkDir,
     };
     use sol_parser_sdk::DexEvent as PbDexEvent;
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
@@ -243,6 +243,52 @@ mod tests {
     }
 
     #[test]
+    fn converts_pumpswap_buy_boost_tail() {
+        let event = PbPumpSwapBuy {
+            virtual_quote_reserves: i128::MIN,
+            buyback_fee_basis_points: 11,
+            buyback_fee: 22,
+            can_boost: true,
+            base_supply: 33,
+            ..Default::default()
+        };
+
+        let converted =
+            convert_parser_event(PbDexEvent::PumpSwapBuy(event), None, 999).expect("convert");
+        let DexEvent::PumpSwapBuyEvent(converted) = converted else {
+            panic!("expected PumpSwapBuyEvent");
+        };
+        assert_eq!(converted.virtual_quote_reserves, i128::MIN);
+        assert_eq!(converted.buyback_fee_basis_points, 11);
+        assert_eq!(converted.buyback_fee, 22);
+        assert!(converted.can_boost);
+        assert_eq!(converted.base_supply, 33);
+    }
+
+    #[test]
+    fn converts_pumpswap_sell_boost_tail() {
+        let event = PbPumpSwapSell {
+            virtual_quote_reserves: i128::MAX,
+            buyback_fee_basis_points: 44,
+            buyback_fee: 55,
+            can_boost: true,
+            base_supply: 66,
+            ..Default::default()
+        };
+
+        let converted =
+            convert_parser_event(PbDexEvent::PumpSwapSell(event), None, 999).expect("convert");
+        let DexEvent::PumpSwapSellEvent(converted) = converted else {
+            panic!("expected PumpSwapSellEvent");
+        };
+        assert_eq!(converted.virtual_quote_reserves, i128::MAX);
+        assert_eq!(converted.buyback_fee_basis_points, 44);
+        assert_eq!(converted.buyback_fee, 55);
+        assert!(converted.can_boost);
+        assert_eq!(converted.base_supply, 66);
+    }
+
+    #[test]
     fn converts_pumpswap_pool_account_cashback_flag() {
         let pool_pubkey = Pubkey::new_unique();
         let e = PbPumpSwapPoolAccount {
@@ -272,6 +318,7 @@ mod tests {
                 coin_creator: Pubkey::new_unique(),
                 is_mayhem_mode: true,
                 is_cashback_coin: true,
+                virtual_quote_reserves: -777,
             },
         };
 
@@ -283,6 +330,7 @@ mod tests {
                 assert_eq!(st.pubkey, pool_pubkey);
                 assert!(st.pool.is_mayhem_mode);
                 assert!(st.pool.is_cashback_coin);
+                assert_eq!(st.pool.virtual_quote_reserves, -777);
             }
             _ => panic!("expected PumpSwapPoolAccountEvent"),
         }

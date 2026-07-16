@@ -44,6 +44,16 @@ pub struct PumpSwapBuyEvent {
     pub ix_name: String,
     pub cashback_fee_basis_points: u64,
     pub cashback: u64,
+    #[serde(default)]
+    pub buyback_fee_basis_points: u64,
+    #[serde(default)]
+    pub buyback_fee: u64,
+    #[serde(default)]
+    pub virtual_quote_reserves: i128,
+    #[serde(default)]
+    pub can_boost: bool,
+    #[serde(default)]
+    pub base_supply: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]
@@ -105,6 +115,16 @@ pub struct PumpSwapSellEvent {
     pub coin_creator_fee: u64,
     pub cashback_fee_basis_points: u64,
     pub cashback: u64,
+    #[serde(default)]
+    pub buyback_fee_basis_points: u64,
+    #[serde(default)]
+    pub buyback_fee: u64,
+    #[serde(default)]
+    pub virtual_quote_reserves: i128,
+    #[serde(default)]
+    pub can_boost: bool,
+    #[serde(default)]
+    pub base_supply: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]
@@ -240,6 +260,39 @@ pub struct PumpSwapWithdrawEvent {
 }
 
 pub const PUMP_SWAP_WITHDRAW_EVENT_LOG_SIZE: usize = 248;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pumpswap_event_serde_preserves_signed_i128_extremes() {
+        for value in [i128::MIN, -1, i128::MAX] {
+            let event = PumpSwapBuyEvent { virtual_quote_reserves: value, ..Default::default() };
+            let json = serde_json::to_string(&event).unwrap();
+            let decoded: PumpSwapBuyEvent = serde_json::from_str(&json).unwrap();
+            assert_eq!(decoded.virtual_quote_reserves, value);
+        }
+    }
+
+    #[test]
+    fn pumpswap_event_serde_defaults_new_upgrade_tail() {
+        let mut value = serde_json::to_value(PumpSwapSellEvent::default()).unwrap();
+        let object = value.as_object_mut().unwrap();
+        object.remove("buyback_fee_basis_points");
+        object.remove("buyback_fee");
+        object.remove("virtual_quote_reserves");
+        object.remove("can_boost");
+        object.remove("base_supply");
+
+        let decoded: PumpSwapSellEvent = serde_json::from_value(value).unwrap();
+        assert_eq!(decoded.buyback_fee_basis_points, 0);
+        assert_eq!(decoded.buyback_fee, 0);
+        assert_eq!(decoded.virtual_quote_reserves, 0);
+        assert!(!decoded.can_boost);
+        assert_eq!(decoded.base_supply, 0);
+    }
+}
 
 /// 全局配置
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
