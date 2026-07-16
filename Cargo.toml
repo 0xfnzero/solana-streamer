@@ -21,7 +21,7 @@ sdk-perf-stats = ["sol-parser-sdk/perf-stats"]
 sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
 
 [dependencies]
-sol-parser-sdk = { version = "0.6.0", git = "https://github.com/0xfnzero/sol-parser-sdk", rev = "1002ffeeb3a65aff0a7a38bcc834ef01a9aebf1f", default-features = false }
+sol-parser-sdk = { version = "0.6.0", git = "https://github.com/0xfnzero/sol-parser-sdk", rev = "995d88991b56234a23fc1d0911fdd33caa063c67", default-features = false }
 solana-sdk = "3.0.0"
 solana-client = "3.1.12"
 solana-transaction-status = "3.1.12"
@@ -50,3 +50,6 @@ spl-token-2022 = { version = "10.0.0", default-features = false, features = ["no
 spl-token-group-interface = "=0.7.1"
 solana-commitment-config = { version = "3.1.1", features = ["serde"] }
 tonic-prost = "0.14.5"
+
+[dev-dependencies]
+serde_json = "1.0.149"

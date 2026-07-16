@@ -33,6 +33,7 @@ pub struct Pool {
     pub coin_creator: Pubkey,
     pub is_mayhem_mode: bool,
     pub is_cashback_coin: bool,
+    #[serde(default)]
     pub virtual_quote_reserves: i128,
 }
 

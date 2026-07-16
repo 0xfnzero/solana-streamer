@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn converts_pumpswap_buy_boost_tail() {
         let event = PbPumpSwapBuy {
-            virtual_quote_reserves: -123,
+            virtual_quote_reserves: i128::MIN,
             buyback_fee_basis_points: 11,
             buyback_fee: 22,
             can_boost: true,
@@ -258,7 +258,7 @@ mod tests {
         let DexEvent::PumpSwapBuyEvent(converted) = converted else {
             panic!("expected PumpSwapBuyEvent");
         };
-        assert_eq!(converted.virtual_quote_reserves, -123);
+        assert_eq!(converted.virtual_quote_reserves, i128::MIN);
         assert_eq!(converted.buyback_fee_basis_points, 11);
         assert_eq!(converted.buyback_fee, 22);
         assert!(converted.can_boost);
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn converts_pumpswap_sell_boost_tail() {
         let event = PbPumpSwapSell {
-            virtual_quote_reserves: 123,
+            virtual_quote_reserves: i128::MAX,
             buyback_fee_basis_points: 44,
             buyback_fee: 55,
             can_boost: true,
@@ -281,7 +281,7 @@ mod tests {
         let DexEvent::PumpSwapSellEvent(converted) = converted else {
             panic!("expected PumpSwapSellEvent");
         };
-        assert_eq!(converted.virtual_quote_reserves, 123);
+        assert_eq!(converted.virtual_quote_reserves, i128::MAX);
         assert_eq!(converted.buyback_fee_basis_points, 44);
         assert_eq!(converted.buyback_fee, 55);
         assert!(converted.can_boost);
