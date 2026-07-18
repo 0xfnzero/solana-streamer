@@ -394,7 +394,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
             DexEvent::PumpSwapSellEvent(cpie) => {
                 e.timestamp = cpie.timestamp;
                 e.base_amount_in = cpie.base_amount_in;
-                e.min_quote_amount_out = cpie.min_quote_amount_out;
+                overwrite_u64_if_present(&mut e.min_quote_amount_out, cpie.min_quote_amount_out);
                 e.user_base_token_reserves = cpie.user_base_token_reserves;
                 e.user_quote_token_reserves = cpie.user_quote_token_reserves;
                 e.pool_base_token_reserves = cpie.pool_base_token_reserves;
@@ -984,6 +984,7 @@ mod tests {
     #[test]
     fn pumpswap_merge_does_not_erase_present_tail_with_legacy_defaults() {
         let mut instruction_event = DexEvent::PumpSwapSellEvent(PumpSwapSellEvent {
+            min_quote_amount_out: 42,
             cashback_fee_basis_points: 10,
             cashback: 20,
             buyback_fee_basis_points: 30,
@@ -1000,6 +1001,7 @@ mod tests {
         let DexEvent::PumpSwapSellEvent(event) = instruction_event else {
             panic!("expected PumpSwapSellEvent");
         };
+        assert_eq!(event.min_quote_amount_out, 42);
         assert_eq!(event.cashback_fee_basis_points, 10);
         assert_eq!(event.cashback, 20);
         assert_eq!(event.buyback_fee_basis_points, 30);
