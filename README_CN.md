@@ -39,12 +39,6 @@
     <a href="https://t.me/fnzero_group">Telegram</a>
 </p>
 
-> ☕ **支持本项目**
->
-> 本 SDK 完全免费且开源。但维护和持续更新需要消耗大量 AI 算力与 Token。如果这个 SDK 对您的开发有帮助，欢迎每月捐赠任意数量的 SOL，您的支持将帮助这个项目持续运行！
->
-> **捐赠钱包：** `6oW7AXz1yRb57pYSxysuXnMs2aR1ha5rzGzReZ1MjPV8`
-
 ---
 
 ## 目录
@@ -134,29 +128,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.16" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.1" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "1.5.16"
+solana-streamer-sdk = "2.0.1"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "1.5.16"
+solana-streamer-sdk = "2.0.1"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "1.5.16", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "2.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.5.15+` 会优先使用 zero-copy 后端。
+如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v2.0.1
+
+v2.0.1 使用 crates.io 上的 `sol-parser-sdk 0.6.1`。PumpSwap Buy/Sell 事件现在会在 dispatcher 和 SDK bridge 路径中完整保留 cashback、buyback、带符号 virtual quote reserve、boost 和 base supply 尾部字段。默认和 zero-copy 解析后端会一致拒绝截断的当前布局，同时继续兼容历史布局。
 
 ### 升级到 v1.5.16
 

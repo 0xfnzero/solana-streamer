@@ -40,12 +40,6 @@
     <a href="https://discord.gg/vuazbGkqQE">Discord</a>
 </p>
 
-> ☕ **Support This Project**
->
-> This SDK is completely free and open source. However, maintaining and continuously updating it requires significant AI computing resources and token consumption. If this SDK helps with your development, consider making a monthly SOL donation — any amount is appreciated and helps keep this project alive!
->
-> **Donation Wallet:** `6oW7AXz1yRb57pYSxysuXnMs2aR1ha5rzGzReZ1MjPV8`
-
 ---
 
 ## Table of Contents
@@ -135,29 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "1.5.16" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.1" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "1.5.16"
+solana-streamer-sdk = "2.0.1"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "1.5.16"
+solana-streamer-sdk = "2.0.1"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "1.5.16", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "2.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.5.15+` uses the zero-copy backend.
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v2.0.1
+
+Version 2.0.1 uses `sol-parser-sdk 0.6.1` from crates.io. PumpSwap Buy/Sell events now preserve the complete current cashback, buyback, signed virtual quote reserve, boost, and base-supply tail through dispatcher and SDK bridge paths. Truncated current layouts are rejected consistently by the default and zero-copy parser backends while historical layouts remain supported.
 
 ### Upgrading to v1.5.16
 

@@ -198,3 +198,49 @@ fn pb_meta_from_streamer(sm: &EventMetadata) -> PbEventMetadata {
         recent_blockhash: sm.recent_blockhash.clone(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::streaming::event_parser::common::EventType;
+
+    #[test]
+    fn pumpswap_current_sell_tail_survives_dispatch_and_bridge() {
+        let mut payload = vec![0u8; 409];
+        payload[352..360].copy_from_slice(&11u64.to_le_bytes());
+        payload[360..368].copy_from_slice(&22u64.to_le_bytes());
+        payload[368..376].copy_from_slice(&33u64.to_le_bytes());
+        payload[376..384].copy_from_slice(&44u64.to_le_bytes());
+        payload[384..400].copy_from_slice(&i128::MIN.to_le_bytes());
+        payload[400] = 1;
+        payload[401..409].copy_from_slice(&55u64.to_le_bytes());
+
+        let event = EventDispatcher::dispatch_inner_instruction(
+            Protocol::PumpSwap,
+            &pump_amm_inner::discriminators::SELL,
+            &payload,
+            EventMetadata::default(),
+        )
+        .expect("current PumpSwap sell should dispatch");
+
+        let DexEvent::PumpSwapSellEvent(event) = event else {
+            panic!("expected PumpSwapSellEvent");
+        };
+        assert_eq!(event.metadata.event_type, EventType::PumpSwapSell);
+        assert_eq!(event.cashback_fee_basis_points, 11);
+        assert_eq!(event.cashback, 22);
+        assert_eq!(event.buyback_fee_basis_points, 33);
+        assert_eq!(event.buyback_fee, 44);
+        assert_eq!(event.virtual_quote_reserves, i128::MIN);
+        assert!(event.can_boost);
+        assert_eq!(event.base_supply, 55);
+
+        assert!(EventDispatcher::dispatch_inner_instruction(
+            Protocol::PumpSwap,
+            &pump_amm_inner::discriminators::SELL,
+            &payload[..408],
+            EventMetadata::default(),
+        )
+        .is_none());
+    }
+}
