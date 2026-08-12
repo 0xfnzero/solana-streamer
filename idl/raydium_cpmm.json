@@ -2762,6 +2762,13 @@
             }
           },
           {
+            "name": "last_update_timestamp",
+            "docs": [
+              "the last update timestamp"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "padding",
             "docs": [
               "padding for feature update"
@@ -2769,7 +2776,7 @@
             "type": {
               "array": [
                 "u64",
-                4
+                3
               ]
             }
           }

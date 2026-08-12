@@ -1109,6 +1109,79 @@
       "args": []
     },
     {
+      "name": "close_platform_global_access",
+      "docs": [
+        "Close a platform's permission to use a global config."
+      ],
+      "discriminator": [
+        123,
+        180,
+        184,
+        129,
+        111,
+        185,
+        187,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "address": "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        },
+        {
+          "name": "global_config"
+        },
+        {
+          "name": "platform_config"
+        },
+        {
+          "name": "platform_global_access",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  101,
+                  115,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "platform_config"
+              },
+              {
+                "kind": "account",
+                "path": "global_config"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "collect_fee",
       "docs": [
         "Collects accumulated fees from the pool",
@@ -1538,6 +1611,84 @@
           }
         }
       ]
+    },
+    {
+      "name": "create_platform_global_access",
+      "docs": [
+        "Create a platform permission to use a global config when authorization is enabled."
+      ],
+      "discriminator": [
+        162,
+        91,
+        146,
+        199,
+        93,
+        133,
+        234,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "address": "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        },
+        {
+          "name": "global_config"
+        },
+        {
+          "name": "platform_config"
+        },
+        {
+          "name": "platform_global_access",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  116,
+                  102,
+                  111,
+                  114,
+                  109,
+                  95,
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  101,
+                  115,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "platform_config"
+              },
+              {
+                "kind": "account",
+                "path": "global_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "create_platform_vesting_account",
@@ -4116,6 +4267,7 @@
         "* `param` - Parameter to update:",
         "- 0: Update trade_fee_rate",
         "- 1: Update fee owner",
+        "- 12: Toggle whether explicit platform authorization is required",
         "* `value` - New value for the selected parameter",
         ""
       ],
@@ -4355,6 +4507,19 @@
       ]
     },
     {
+      "name": "PlatformGlobalAccess",
+      "discriminator": [
+        174,
+        147,
+        132,
+        240,
+        137,
+        219,
+        243,
+        16
+      ]
+    },
+    {
       "name": "PoolState",
       "discriminator": [
         247,
@@ -4545,6 +4710,16 @@
       "code": 6021,
       "name": "InvalidTotalLockedAmount",
       "msg": "Total locked amount must great or equal to the platform vesting share amount"
+    },
+    {
+      "code": 6022,
+      "name": "PlatformGlobalAccessDenied",
+      "msg": "Platform is not authorized to use this global config"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidPlatformGlobalAccess",
+      "msg": "Invalid platform-global access account"
     }
   ],
   "types": [
@@ -4897,6 +5072,25 @@
             "type": "pubkey"
           },
           {
+            "name": "requires_platform_auth",
+            "docs": [
+              "Whether a platform must be explicitly authorized before using this global config"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "padding_alignment",
+            "docs": [
+              "padding alignment"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
             "name": "padding",
             "docs": [
               "padding for future updates"
@@ -4904,7 +5098,7 @@
             "type": {
               "array": [
                 "u64",
-                16
+                15
               ]
             }
           }
@@ -5336,6 +5530,38 @@
               "array": [
                 "u64",
                 50
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlatformGlobalAccess",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "global_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "platform_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "padding",
+            "docs": [
+              "padding for future updates"
+            ],
+            "type": {
+              "array": [
+                "u64",
+                8
               ]
             }
           }
