@@ -5,6 +5,7 @@ use crate::streaming::event_parser::core::account_event_parser::{
 use crate::streaming::event_parser::core::common_event_parser::{
     SetComputeUnitLimitEvent, SetComputeUnitPriceEvent,
 };
+use crate::streaming::event_parser::core::transaction_cost_event::TransactionCostEvent;
 use crate::streaming::event_parser::protocols::block::block_meta_event::BlockMetaEvent;
 use crate::streaming::event_parser::protocols::bonk::events::*;
 use crate::streaming::event_parser::protocols::meteora_damm_v2::events::*;
@@ -162,6 +163,8 @@ pub enum DexEvent {
     SetComputeUnitLimitEvent(SetComputeUnitLimitEvent),
     SetComputeUnitPriceEvent(SetComputeUnitPriceEvent),
     ParserSdkErrorEvent(ParserSdkErrorEvent),
+    // Appended to preserve existing serialized enum variant indices.
+    TransactionCostEvent(TransactionCostEvent),
 }
 
 /// Macro to generate metadata accessors for all DexEvent variants
@@ -301,4 +304,5 @@ impl_dex_event_metadata!(
     SetComputeUnitLimitEvent,
     SetComputeUnitPriceEvent,
     ParserSdkErrorEvent,
+    TransactionCostEvent,
 );

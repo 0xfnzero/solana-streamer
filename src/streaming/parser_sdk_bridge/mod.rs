@@ -508,6 +508,16 @@ mod tests {
             is_buy: true,
             trade_direction: PbBonkDir::Buy,
             exact_in: true,
+            global_config: Pubkey::default(),
+            platform_config: Pubkey::default(),
+            user_base_token: Pubkey::default(),
+            user_quote_token: Pubkey::default(),
+            base_vault: Pubkey::default(),
+            quote_vault: Pubkey::default(),
+            base_mint: Pubkey::default(),
+            quote_mint: Pubkey::default(),
+            base_token_program: Pubkey::default(),
+            quote_token_program: Pubkey::default(),
         };
         let dex =
             convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");
@@ -530,6 +540,16 @@ mod tests {
             is_buy: false,
             trade_direction: PbBonkDir::Sell,
             exact_in: false,
+            global_config: Pubkey::default(),
+            platform_config: Pubkey::default(),
+            user_base_token: Pubkey::default(),
+            user_quote_token: Pubkey::default(),
+            base_vault: Pubkey::default(),
+            quote_vault: Pubkey::default(),
+            base_mint: Pubkey::default(),
+            quote_mint: Pubkey::default(),
+            base_token_program: Pubkey::default(),
+            quote_token_program: Pubkey::default(),
         };
         let dex =
             convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");
