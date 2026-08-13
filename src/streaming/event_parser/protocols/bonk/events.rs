@@ -99,6 +99,12 @@ pub struct BonkPoolCreateEvent {
     pub global_config: Pubkey,
     #[borsh(skip)]
     pub platform_config: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub base_token_program: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub quote_token_program: Pubkey,
 }
 
 pub const BONK_POOL_CREATE_EVENT_LOG_SIZE: usize = 256;
