@@ -406,6 +406,25 @@ let event_type_filter = Some(EventTypeFilter::include_only(vec![
 let event_type_filter = Some(EventTypeFilter::exclude_only(vec![EventType::BlockMeta]));
 ```
 
+Transaction fee, priority-fee, and SWQoS tip parsing is strictly opt-in:
+
+```rust
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::TransactionCost,
+]));
+
+let callback = |event: DexEvent| {
+    if let DexEvent::TransactionCostEvent(cost) = event {
+        println!("tips: {:?}", cost.tip_payments);
+    }
+};
+```
+
+`None`, `EventTypeFilter::default()`, and `EventTypeFilter::all()` do not enable transaction-cost
+scanning. Each tip payment includes the matching SWQoS provider from the complete address registry
+shared with `sol-trade-sdk`.
+
 #### Performance Impact
 
 Event filtering can provide significant performance improvements:

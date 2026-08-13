@@ -121,12 +121,47 @@ pub(crate) fn build_sdk_parse_event_filter(
     }
     let mut raw: Vec<SdkGrpcEventType> = Vec::with_capacity(f.include.len());
     for et in &f.include {
+        if et == &EventType::TransactionCost {
+            continue;
+        }
         if !push_streamer_event_sdk_grpc_types(et, &mut raw, FilterMapMode::Include) {
             return None;
         }
     }
     dedup_sdk_grpc_event_types(&mut raw);
     Some(SdkGrpcEventTypeFilter::include_only(raw))
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct TransactionCostSelection {
+    pub requested: bool,
+    pub only: bool,
+}
+
+/// Empty/default filters intentionally do not enable transaction-cost scanning.
+#[inline]
+pub(crate) fn transaction_cost_selection(
+    filter: Option<&EventTypeFilter>,
+) -> TransactionCostSelection {
+    let Some(filter) = filter else {
+        return TransactionCostSelection::default();
+    };
+
+    let mut requested = false;
+    let mut only = true;
+    for event in &filter.include {
+        if event == &EventType::TransactionCost {
+            requested = true;
+        } else {
+            only = false;
+        }
+    }
+
+    if !requested || filter.exclude.contains(&EventType::TransactionCost) {
+        return TransactionCostSelection::default();
+    }
+
+    TransactionCostSelection { requested, only }
 }
 
 /// Build the SDK ShredStream hot-path filter. Unlike Yellowstone, ShredStream
@@ -513,6 +548,49 @@ mod tests {
         assert!(f.include_transaction_event());
         assert!(f.include_account_event());
         assert!(f.include_block_event());
+        assert_eq!(transaction_cost_selection(None), TransactionCostSelection::default());
+        assert_eq!(
+            transaction_cost_selection(Some(&EventTypeFilter::all())),
+            TransactionCostSelection::default()
+        );
+    }
+
+    #[test]
+    fn transaction_cost_is_strictly_opt_in() {
+        let cost_only = EventTypeFilter::include_only([EventType::TransactionCost]);
+        assert_eq!(
+            transaction_cost_selection(Some(&cost_only)),
+            TransactionCostSelection { requested: true, only: true }
+        );
+
+        let combined =
+            EventTypeFilter::include_only([EventType::PumpFunBuy, EventType::TransactionCost]);
+        assert_eq!(
+            transaction_cost_selection(Some(&combined)),
+            TransactionCostSelection { requested: true, only: false }
+        );
+
+        let excluded = EventTypeFilter::include_exclude(
+            [EventType::TransactionCost],
+            [EventType::TransactionCost],
+        );
+        assert_eq!(
+            transaction_cost_selection(Some(&excluded)),
+            TransactionCostSelection::default()
+        );
+    }
+
+    #[test]
+    fn transaction_cost_is_not_forwarded_to_the_dex_filter() {
+        let cost_only = EventTypeFilter::include_only([EventType::TransactionCost]);
+        let sdk_filter = build_sdk_parse_event_filter(Some(&cost_only)).expect("empty DEX filter");
+        assert!(!sdk_filter.should_include(SdkGrpcEventType::PumpFunBuy));
+
+        let combined =
+            EventTypeFilter::include_only([EventType::PumpFunBuy, EventType::TransactionCost]);
+        let sdk_filter = build_sdk_parse_event_filter(Some(&combined)).expect("PumpFun filter");
+        assert!(sdk_filter.should_include(SdkGrpcEventType::PumpFunBuy));
+        assert!(!sdk_filter.should_include(SdkGrpcEventType::PumpFunSell));
     }
 
     #[test]

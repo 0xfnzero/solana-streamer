@@ -219,6 +219,8 @@ pub enum EventType {
     SetComputeUnitPrice,
     ParserSdkError,
     Unknown,
+    // Appended to preserve existing Borsh enum discriminants.
+    TransactionCost,
 }
 
 pub const ACCOUNT_EVENT_TYPES: &[EventType] = &[

@@ -21,6 +21,7 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
             | DexEvent::BlockMetaEvent(_)
             | DexEvent::SetComputeUnitLimitEvent(_)
             | DexEvent::SetComputeUnitPriceEvent(_)
+            | DexEvent::TransactionCostEvent(_)
             | DexEvent::ParserSdkErrorEvent(_)
     )
 }

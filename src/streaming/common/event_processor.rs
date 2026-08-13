@@ -2,10 +2,11 @@ use crate::common::AnyResult;
 use crate::streaming::common::MetricsEventType;
 use crate::streaming::event_parser::common::filter::{
     build_sdk_parse_event_filter, build_sdk_shred_parse_event_filter, passes_event_type_filter,
-    EventTypeFilter,
+    transaction_cost_selection, EventTypeFilter,
 };
 use crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since;
 use crate::streaming::event_parser::core::common_event_parser::CommonEventParser;
+use crate::streaming::event_parser::core::transaction_cost_event::TransactionCostEvent;
 use crate::streaming::event_parser::{core::traits::DexEvent, Protocol};
 use crate::streaming::grpc::{EventPretty, MetricsManager};
 use crate::streaming::parser_sdk_bridge::{
@@ -69,21 +70,46 @@ pub fn parse_grpc_transaction_events(
     let recv_us = transaction_pretty.recv_us;
     let grpc_tx = transaction_pretty.grpc_tx;
     let block_time_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
-    let update = SubscribeUpdateTransaction { slot, transaction: Some(grpc_tx) };
-    let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
-    let sdk_events = parse_subscribe_update_transaction_low_latency(
-        &update,
-        recv_us,
-        block_time_us,
-        sdk_parse_filter.as_ref(),
-    );
-    let mut events = adapt_parser_events_list(
-        sdk_events,
-        block_time.as_ref(),
-        recv_us,
-        protocols,
-        event_type_filter,
-    );
+    let cost_selection = transaction_cost_selection(event_type_filter);
+    let transaction_cost = cost_selection
+        .requested
+        .then(|| {
+            let transaction = grpc_tx.transaction.as_ref()?;
+            let meta = grpc_tx.meta.as_ref()?;
+            sol_parser_sdk::parse_yellowstone_transaction_cost(transaction, meta)
+        })
+        .flatten();
+    let mut events = if cost_selection.only {
+        Vec::with_capacity(1)
+    } else {
+        let update = SubscribeUpdateTransaction { slot, transaction: Some(grpc_tx) };
+        let sdk_parse_filter = build_sdk_parse_event_filter(event_type_filter);
+        let sdk_events = parse_subscribe_update_transaction_low_latency(
+            &update,
+            recv_us,
+            block_time_us,
+            sdk_parse_filter.as_ref(),
+        );
+        adapt_parser_events_list(
+            sdk_events,
+            block_time.as_ref(),
+            recv_us,
+            protocols,
+            event_type_filter,
+        )
+    };
+
+    if let Some(cost) = transaction_cost {
+        events.push(DexEvent::TransactionCostEvent(TransactionCostEvent::from_parser(
+            cost,
+            transaction_pretty.signature,
+            slot,
+            transaction_pretty.tx_index,
+            block_time_us,
+            recv_us,
+            None,
+        )));
+    }
 
     for event in events.iter_mut() {
         event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
@@ -216,6 +242,27 @@ pub(crate) fn parse_shred_transaction_events(
     bot_wallet: Option<Pubkey>,
     mut on_event: impl FnMut(DexEvent),
 ) {
+    let cost_selection = transaction_cost_selection(event_type_filter);
+    if cost_selection.requested {
+        let cost = sol_parser_sdk::parse_shred_transaction_cost(tx);
+        let recent_blockhash = Some(tx.message.recent_blockhash().to_string());
+        let mut event = DexEvent::TransactionCostEvent(TransactionCostEvent::from_parser(
+            cost,
+            signature,
+            slot,
+            tx_index,
+            None,
+            recv_us,
+            recent_blockhash,
+        ));
+        event.metadata_mut().handle_us = elapsed_micros_since(recv_us);
+        on_event(event);
+    }
+
+    if cost_selection.only {
+        return;
+    }
+
     let sdk_parse_filter = build_sdk_shred_parse_event_filter(protocols, event_type_filter);
 
     SHRED_SDK_EVENTS.with(|slot_events| {
@@ -277,10 +324,17 @@ fn update_metrics_with_latency(
 
 #[cfg(test)]
 mod tests {
-    use super::process_shred_transaction;
+    use super::{parse_grpc_transaction_events, process_shred_transaction};
+    use crate::streaming::event_parser::common::filter::EventTypeFilter;
+    use crate::streaming::event_parser::common::EventType;
     use crate::streaming::event_parser::{DexEvent, Protocol};
+    use crate::streaming::grpc::TransactionPretty;
     use crate::streaming::shred::TransactionWithSlot;
-    use sol_parser_sdk::instr::program_ids::PUMPFUN_PROGRAM_ID;
+    use sol_parser_sdk::{
+        instr::program_ids::PUMPFUN_PROGRAM_ID,
+        transaction_cost::{GLAIVE_TIP_ACCOUNTS, JITO_TIP_ACCOUNTS},
+        SwqosProvider,
+    };
     use solana_sdk::hash::Hash;
     use solana_sdk::message::{
         compiled_instruction::CompiledInstruction, v0, MessageHeader, VersionedMessage,
@@ -289,6 +343,9 @@ mod tests {
     use solana_sdk::signature::Signature;
     use solana_sdk::transaction::VersionedTransaction;
     use std::sync::{Arc, Mutex};
+    use yellowstone_grpc_proto::prelude::{
+        CompiledInstruction as GrpcInstruction, Message, Transaction, TransactionStatusMeta,
+    };
 
     fn push_string(data: &mut Vec<u8>, value: &str) {
         data.extend_from_slice(&(value.len() as u32).to_le_bytes());
@@ -329,6 +386,68 @@ mod tests {
         }
     }
 
+    fn transfer(lamports: u64) -> Vec<u8> {
+        let mut data = 2u32.to_le_bytes().to_vec();
+        data.extend_from_slice(&lamports.to_le_bytes());
+        data
+    }
+
+    fn cost_only_shred_tx() -> VersionedTransaction {
+        let source = Pubkey::new_unique();
+        let system_program: Pubkey = "11111111111111111111111111111111".parse().unwrap();
+        VersionedTransaction {
+            signatures: vec![Signature::default()],
+            message: VersionedMessage::V0(v0::Message {
+                header: MessageHeader::default(),
+                account_keys: vec![
+                    source,
+                    system_program,
+                    JITO_TIP_ACCOUNTS[0],
+                    GLAIVE_TIP_ACCOUNTS[0],
+                ],
+                recent_blockhash: Hash::default(),
+                instructions: vec![
+                    CompiledInstruction::new_from_raw_parts(1, transfer(10), vec![0, 2]),
+                    CompiledInstruction::new_from_raw_parts(1, transfer(20), vec![0, 3]),
+                ],
+                address_table_lookups: Vec::new(),
+            }),
+        }
+    }
+
+    fn yellowstone_cost_transaction() -> TransactionPretty {
+        let source = Pubkey::new_unique();
+        let system_program: Pubkey = "11111111111111111111111111111111".parse().unwrap();
+        TransactionPretty {
+            slot: 42,
+            tx_index: Some(7),
+            signature: Signature::default(),
+            recv_us: 1_000_000,
+            grpc_tx: yellowstone_grpc_proto::geyser::SubscribeUpdateTransactionInfo {
+                signature: Signature::default().as_ref().to_vec(),
+                is_vote: false,
+                transaction: Some(Transaction {
+                    signatures: vec![Signature::default().as_ref().to_vec()],
+                    message: Some(Message {
+                        account_keys: [source, system_program, JITO_TIP_ACCOUNTS[0]]
+                            .iter()
+                            .map(|key| key.to_bytes().to_vec())
+                            .collect(),
+                        instructions: vec![GrpcInstruction {
+                            program_id_index: 1,
+                            accounts: vec![0, 2],
+                            data: transfer(50),
+                        }],
+                        ..Default::default()
+                    }),
+                }),
+                meta: Some(TransactionStatusMeta { fee: 5_000, ..Default::default() }),
+                index: 7,
+            },
+            ..Default::default()
+        }
+    }
+
     async fn parse_single_shred_create(tx_index: Option<u64>) -> DexEvent {
         let events = Arc::new(Mutex::new(Vec::new()));
         let captured = events.clone();
@@ -365,5 +484,53 @@ mod tests {
 
         assert!(matches!(event, DexEvent::PumpFunCreateTokenEvent(_)));
         assert_eq!(event.metadata().tx_index, Some(42));
+    }
+
+    #[tokio::test]
+    async fn shred_cost_parsing_is_opt_in_and_provider_aware() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = events.clone();
+        let callback = Arc::new(move |event| captured.lock().unwrap().push(event));
+        let filter = EventTypeFilter::include_only([EventType::TransactionCost]);
+
+        process_shred_transaction(
+            TransactionWithSlot::new(cost_only_shred_tx(), 42, 1_000_000, Some(7)),
+            &[],
+            Some(&filter),
+            callback,
+            None,
+        )
+        .await
+        .expect("process cost transaction");
+
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 1);
+        let DexEvent::TransactionCostEvent(cost) = &events[0] else {
+            panic!("expected transaction cost event");
+        };
+        assert_eq!(cost.tip_lamports, 30);
+        assert_eq!(cost.tip_lamports_for(SwqosProvider::Jito), 10);
+        assert_eq!(cost.tip_lamports_for(SwqosProvider::Glaive), 20);
+        assert!(!cost.tip_payments_confirmed);
+        assert_eq!(cost.metadata.tx_index, Some(7));
+    }
+
+    #[test]
+    fn yellowstone_cost_parsing_is_opt_in() {
+        let without_cost =
+            parse_grpc_transaction_events(yellowstone_cost_transaction(), &[], None, None);
+        assert!(without_cost.is_empty());
+
+        let filter = EventTypeFilter::include_only([EventType::TransactionCost]);
+        let with_cost =
+            parse_grpc_transaction_events(yellowstone_cost_transaction(), &[], Some(&filter), None);
+        assert_eq!(with_cost.len(), 1);
+        let DexEvent::TransactionCostEvent(cost) = &with_cost[0] else {
+            panic!("expected transaction cost event");
+        };
+        assert_eq!(cost.transaction_fee_lamports, Some(5_000));
+        assert_eq!(cost.tip_lamports, 50);
+        assert!(cost.tip_payments_confirmed);
+        assert_eq!(cost.metadata.tx_index, Some(7));
     }
 }

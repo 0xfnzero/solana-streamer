@@ -4,6 +4,7 @@ pub mod dispatcher;
 pub mod global_state;
 pub mod parser_cache;
 pub mod traits;
+pub mod transaction_cost_event;
 
 pub use dispatcher::EventDispatcher;
 pub use traits::DexEvent;

@@ -30,35 +30,67 @@ impl EventParser {
         }
 
         let block_us = block_time.map(|t| t.seconds * 1_000_000 + t.nanos as i64 / 1_000);
+        let cost_selection =
+            crate::streaming::event_parser::common::filter::transaction_cost_selection(
+                event_type_filter,
+            );
+        let transaction_cost = cost_selection
+            .requested
+            .then(|| {
+                let transaction = grpc_tx.transaction.as_ref()?;
+                let meta = grpc_tx.meta.as_ref()?;
+                sol_parser_sdk::parse_yellowstone_transaction_cost(transaction, meta)
+            })
+            .flatten();
         let update = yellowstone_grpc_proto::geyser::SubscribeUpdateTransaction {
             slot: slot.unwrap_or(0),
             transaction: Some(grpc_tx),
         };
-        let sdk_parse_filter =
-            crate::streaming::event_parser::common::filter::build_sdk_parse_event_filter(
-                event_type_filter,
-            );
-        let sdk_events = sol_parser_sdk::grpc::parse_subscribe_update_transaction_low_latency(
-            &update,
-            recv_us,
-            block_us,
-            sdk_parse_filter.as_ref(),
-        );
-        for sdk_event in sdk_events {
-            if let Some(mut event) = crate::streaming::parser_sdk_bridge::adapt_parser_event(
-                sdk_event,
-                block_time.as_ref(),
+        if !cost_selection.only {
+            let sdk_parse_filter =
+                crate::streaming::event_parser::common::filter::build_sdk_parse_event_filter(
+                    event_type_filter,
+                );
+            let sdk_events = sol_parser_sdk::grpc::parse_subscribe_update_transaction_low_latency(
+                &update,
                 recv_us,
-                protocols,
-                event_type_filter,
-            ) {
-                event.metadata_mut().handle_us =
-                    crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since(
-                        recv_us,
-                    );
-                event = helpers::process_event(event, bot_wallet);
-                callback(event);
+                block_us,
+                sdk_parse_filter.as_ref(),
+            );
+            for sdk_event in sdk_events {
+                if let Some(mut event) = crate::streaming::parser_sdk_bridge::adapt_parser_event(
+                    sdk_event,
+                    block_time.as_ref(),
+                    recv_us,
+                    protocols,
+                    event_type_filter,
+                ) {
+                    event.metadata_mut().handle_us =
+                        crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since(
+                            recv_us,
+                        );
+                    event = helpers::process_event(event, bot_wallet);
+                    callback(event);
+                }
             }
+        }
+        if let Some(cost) = transaction_cost {
+            let mut event = crate::streaming::event_parser::DexEvent::TransactionCostEvent(
+                crate::streaming::event_parser::core::transaction_cost_event::TransactionCostEvent::from_parser(
+                    cost,
+                    signature,
+                    slot.unwrap_or(0),
+                    tx_index,
+                    block_us,
+                    recv_us,
+                    None,
+                ),
+            );
+            event.metadata_mut().handle_us =
+                crate::streaming::event_parser::common::high_performance_clock::elapsed_micros_since(
+                    recv_us,
+                );
+            callback(event);
         }
         Ok(())
     }
