@@ -134,3 +134,31 @@ impl SubscriptionManager {
         &self.config
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sol_parser_sdk::instr::program_ids::METEORA_DLMM_PROGRAM_ID;
+
+    #[test]
+    fn meteora_dlmm_program_include_is_forwarded_unchanged() {
+        let manager = SubscriptionManager::new(
+            "https://localhost".to_string(),
+            None,
+            ClientConfig::default(),
+        );
+        let program = METEORA_DLMM_PROGRAM_ID.to_string();
+        let filters = manager
+            .get_subscribe_request_filter(
+                vec![TransactionFilter {
+                    account_include: vec![program.clone()],
+                    account_exclude: Vec::new(),
+                    account_required: Vec::new(),
+                }],
+                None,
+            )
+            .expect("transaction filter");
+
+        assert_eq!(filters["transaction_0"].account_include, vec![program]);
+    }
+}

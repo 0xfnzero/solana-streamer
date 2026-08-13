@@ -16,8 +16,6 @@ use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, P
 use sol_parser_sdk::core::events::{
     RaydiumLaunchlabTradeEvent as PbBonkTrade, TradeDirection as PbBonkTradeDirection,
 };
-use solana_sdk::pubkey::Pubkey;
-
 #[inline]
 pub(crate) fn pb_bonk_trade_direction(d: PbBonkTradeDirection) -> BonkTradeDirection {
     match d {
@@ -66,6 +64,16 @@ pub(crate) fn bonk_trade_from_parser(
         pool_status: PoolStatus::Trade,
         exact_in: b.exact_in,
         payer: b.user,
+        global_config: b.global_config,
+        platform_config: b.platform_config,
+        user_base_token: b.user_base_token,
+        user_quote_token: b.user_quote_token,
+        base_vault: b.base_vault,
+        quote_vault: b.quote_vault,
+        base_token_mint: b.base_mint,
+        quote_token_mint: b.quote_mint,
+        base_token_program: b.base_token_program,
+        quote_token_program: b.quote_token_program,
         ..Default::default()
     }
 }
@@ -77,8 +85,17 @@ pub(crate) fn bonk_pool_create_from_parser(
     BonkPoolCreateEvent {
         metadata: meta,
         pool_state: p.pool_state,
+        payer: p.payer,
         creator: p.creator,
-        config: Pubkey::default(),
+        config: Default::default(),
+        global_config: p.global_config,
+        platform_config: p.platform_config,
+        base_mint: p.base_mint,
+        quote_mint: p.quote_mint,
+        base_vault: p.base_vault,
+        quote_vault: p.quote_vault,
+        base_token_program: p.base_token_program,
+        quote_token_program: p.quote_token_program,
         base_mint_param: MintParams {
             decimals: p.base_mint_param.decimals,
             name: p.base_mint_param.name.clone(),
@@ -88,7 +105,6 @@ pub(crate) fn bonk_pool_create_from_parser(
         curve_param: CurveParams::default(),
         vesting_param: VestingParams::default(),
         amm_fee_on: None,
-        ..Default::default()
     }
 }
 
@@ -216,5 +232,96 @@ pub(crate) fn pumpswap_pool_account_from_parser(
         owner: e.owner,
         rent_epoch: e.rent_epoch,
         pool: pumpswap_pool_from_pb(e.pool),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sol_parser_sdk::core::events::{
+        BaseMintParam, EventMetadata as ParserEventMetadata, RaydiumLaunchlabPoolCreateEvent,
+        RaydiumLaunchlabTradeEvent, TradeDirection,
+    };
+    use solana_sdk::pubkey::Pubkey;
+
+    #[test]
+    fn launchlab_trade_preserves_complete_account_context() {
+        let keys: Vec<_> = (0..11).map(|_| Pubkey::new_unique()).collect();
+        let event = RaydiumLaunchlabTradeEvent {
+            metadata: ParserEventMetadata::default(),
+            pool_state: keys[0],
+            user: keys[1],
+            amount_in: 10,
+            amount_out: 20,
+            is_buy: true,
+            trade_direction: TradeDirection::Buy,
+            exact_in: true,
+            global_config: keys[2],
+            platform_config: keys[3],
+            user_base_token: keys[4],
+            user_quote_token: keys[5],
+            base_vault: keys[6],
+            quote_vault: keys[7],
+            base_mint: keys[8],
+            quote_mint: keys[9],
+            base_token_program: keys[10],
+            quote_token_program: Pubkey::new_unique(),
+        };
+        let quote_token_program = event.quote_token_program;
+
+        let mapped = bonk_trade_from_parser(event, EventMetadata::default());
+
+        assert_eq!(mapped.pool_state, keys[0]);
+        assert_eq!(mapped.payer, keys[1]);
+        assert_eq!(mapped.global_config, keys[2]);
+        assert_eq!(mapped.platform_config, keys[3]);
+        assert_eq!(mapped.user_base_token, keys[4]);
+        assert_eq!(mapped.user_quote_token, keys[5]);
+        assert_eq!(mapped.base_vault, keys[6]);
+        assert_eq!(mapped.quote_vault, keys[7]);
+        assert_eq!(mapped.base_token_mint, keys[8]);
+        assert_eq!(mapped.quote_token_mint, keys[9]);
+        assert_eq!(mapped.base_token_program, keys[10]);
+        assert_eq!(mapped.quote_token_program, quote_token_program);
+    }
+
+    #[test]
+    fn launchlab_pool_create_preserves_complete_account_context() {
+        let keys: Vec<_> = (0..11).map(|_| Pubkey::new_unique()).collect();
+        let event = RaydiumLaunchlabPoolCreateEvent {
+            metadata: ParserEventMetadata::default(),
+            base_mint_param: BaseMintParam {
+                symbol: "USD1".to_string(),
+                name: "USD1 pool".to_string(),
+                uri: String::new(),
+                decimals: 6,
+            },
+            pool_state: keys[0],
+            payer: keys[1],
+            creator: keys[2],
+            global_config: keys[3],
+            platform_config: keys[4],
+            base_mint: keys[5],
+            quote_mint: keys[6],
+            base_vault: keys[7],
+            quote_vault: keys[8],
+            base_token_program: keys[9],
+            quote_token_program: keys[10],
+        };
+
+        let mapped = bonk_pool_create_from_parser(event, EventMetadata::default());
+
+        assert_eq!(mapped.pool_state, keys[0]);
+        assert_eq!(mapped.payer, keys[1]);
+        assert_eq!(mapped.creator, keys[2]);
+        assert_eq!(mapped.config, Pubkey::default());
+        assert_eq!(mapped.global_config, keys[3]);
+        assert_eq!(mapped.platform_config, keys[4]);
+        assert_eq!(mapped.base_mint, keys[5]);
+        assert_eq!(mapped.quote_mint, keys[6]);
+        assert_eq!(mapped.base_vault, keys[7]);
+        assert_eq!(mapped.quote_vault, keys[8]);
+        assert_eq!(mapped.base_token_program, keys[9]);
+        assert_eq!(mapped.quote_token_program, keys[10]);
     }
 }

@@ -297,6 +297,17 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.trade_direction = cpie.trade_direction;
                 e.pool_status = cpie.pool_status;
                 e.exact_in = cpie.exact_in;
+                fill_pubkey(&mut e.payer, cpie.payer);
+                fill_pubkey(&mut e.global_config, cpie.global_config);
+                fill_pubkey(&mut e.platform_config, cpie.platform_config);
+                fill_pubkey(&mut e.user_base_token, cpie.user_base_token);
+                fill_pubkey(&mut e.user_quote_token, cpie.user_quote_token);
+                fill_pubkey(&mut e.base_vault, cpie.base_vault);
+                fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
+                fill_pubkey(&mut e.base_token_mint, cpie.base_token_mint);
+                fill_pubkey(&mut e.quote_token_mint, cpie.quote_token_mint);
+                fill_pubkey(&mut e.base_token_program, cpie.base_token_program);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
             }
             _ => {}
         },
@@ -309,6 +320,15 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.curve_param = cpie.curve_param;
                 e.vesting_param = cpie.vesting_param;
                 e.amm_fee_on = cpie.amm_fee_on;
+                fill_pubkey(&mut e.payer, cpie.payer);
+                fill_pubkey(&mut e.base_mint, cpie.base_mint);
+                fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
+                fill_pubkey(&mut e.base_vault, cpie.base_vault);
+                fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
+                fill_pubkey(&mut e.global_config, cpie.global_config);
+                fill_pubkey(&mut e.platform_config, cpie.platform_config);
+                fill_pubkey(&mut e.base_token_program, cpie.base_token_program);
+                fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
             }
             _ => {}
         },
@@ -899,6 +919,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::streaming::event_parser::protocols::bonk::events::BonkTradeEvent;
     use crate::streaming::event_parser::protocols::pumpfun::events::{
         PumpFeesShareholder, PumpFunTradeEvent,
     };
@@ -955,6 +976,37 @@ mod tests {
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }
+    }
+
+    #[test]
+    fn launchlab_merge_preserves_instruction_context_and_fills_missing_accounts() {
+        let quote_mint = Pubkey::new_unique();
+        let cpi_quote_mint = Pubkey::new_unique();
+        let global_config = Pubkey::new_unique();
+        let quote_token_program = Pubkey::new_unique();
+        let mut instruction_event = DexEvent::BonkTradeEvent(BonkTradeEvent {
+            quote_token_mint: quote_mint,
+            ..Default::default()
+        });
+        let cpi_event = DexEvent::BonkTradeEvent(BonkTradeEvent {
+            amount_in: 10,
+            amount_out: 20,
+            global_config,
+            quote_token_mint: cpi_quote_mint,
+            quote_token_program,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, cpi_event);
+
+        let DexEvent::BonkTradeEvent(event) = instruction_event else {
+            panic!("expected BonkTradeEvent");
+        };
+        assert_eq!(event.amount_in, 10);
+        assert_eq!(event.amount_out, 20);
+        assert_eq!(event.global_config, global_config);
+        assert_eq!(event.quote_token_mint, quote_mint);
+        assert_eq!(event.quote_token_program, quote_token_program);
     }
 
     #[test]
