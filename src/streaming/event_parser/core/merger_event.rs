@@ -811,6 +811,12 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
         // Meteora DLMM
         DexEvent::MeteoraDlmmSwapEvent(e) => match cpi_log_event {
             DexEvent::MeteoraDlmmSwapEvent(cpie) => {
+                if cpie.token_x_mint != Pubkey::default() {
+                    e.token_x_mint = cpie.token_x_mint;
+                }
+                if cpie.token_y_mint != Pubkey::default() {
+                    e.token_y_mint = cpie.token_y_mint;
+                }
                 if cpie.pool != Pubkey::default() {
                     e.pool = cpie.pool;
                 }

@@ -446,8 +446,12 @@ mod tests {
     fn converts_meteora_dlmm_swap_preserving_amounts() {
         let pool = Pubkey::new_unique();
         let from = Pubkey::new_unique();
+        let token_x_mint = Pubkey::new_unique();
+        let token_y_mint = Pubkey::new_unique();
         let pb = PbDlmmSwap {
             metadata: EventMetadata::default(),
+            token_x_mint,
+            token_y_mint,
             pool,
             from,
             start_bin_id: -5,
@@ -463,6 +467,8 @@ mod tests {
         let ev = convert_parser_event(PbDexEvent::MeteoraDlmmSwap(pb), None, 0).expect("convert");
         match ev {
             DexEvent::MeteoraDlmmSwapEvent(e) => {
+                assert_eq!(e.token_x_mint, token_x_mint);
+                assert_eq!(e.token_y_mint, token_y_mint);
                 assert_eq!(e.pool, pool);
                 assert_eq!(e.from, from);
                 assert_eq!(e.start_bin_id, -5);
