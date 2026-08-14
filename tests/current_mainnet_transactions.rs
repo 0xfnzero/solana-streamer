@@ -28,6 +28,8 @@ fn current_meteora_dlmm_swap_passes_exact_filter() {
     }
     const SIGNATURE: &str =
         "eEWaGsbRPoiD36Xf3epzSMmdtXX36va76b13YfsDV3ncsxQHBTjC68zZ8mbzFXTNWy3n3qKUAHjgHBconX4Gu1i";
+    const TOKEN_X_MINT: &str = "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs";
+    const TOKEN_Y_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
     let signature = Signature::from_str(SIGNATURE).expect("valid fixture signature");
     let filter = EventTypeFilter::include_only([EventType::MeteoraDlmmSwap]);
     let events = fetch_rpc_transaction_as_streamer_events(
@@ -46,6 +48,8 @@ fn current_meteora_dlmm_swap_passes_exact_filter() {
     };
     assert_eq!(swap.metadata.signature, signature);
     assert_eq!(swap.metadata.slot, 438_873_646);
+    assert_eq!(swap.token_x_mint.to_string(), TOKEN_X_MINT);
+    assert_eq!(swap.token_y_mint.to_string(), TOKEN_Y_MINT);
     assert_eq!(swap.amount_in, 2_738_183_783);
     assert_eq!(swap.amount_out, 81_555_062);
     assert_eq!(swap.fee, 18_486_656);

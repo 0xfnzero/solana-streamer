@@ -360,6 +360,8 @@ pub(crate) fn meteora_dlmm_swap_from_pb(
 ) -> MeteoraDlmmSwapEvent {
     MeteoraDlmmSwapEvent {
         metadata: meta,
+        token_x_mint: e.token_x_mint,
+        token_y_mint: e.token_y_mint,
         pool: e.pool,
         from: e.from,
         start_bin_id: e.start_bin_id,

@@ -310,6 +310,10 @@ pub struct MeteoraPoolsSetPoolFeesEvent {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeteoraDlmmSwapEvent {
     pub metadata: EventMetadata,
+    #[serde(default)]
+    pub token_x_mint: Pubkey,
+    #[serde(default)]
+    pub token_y_mint: Pubkey,
     pub pool: Pubkey,
     pub from: Pubkey,
     pub start_bin_id: i32,
