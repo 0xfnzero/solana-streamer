@@ -129,33 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.2" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.3" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "2.0.2"
+solana-streamer-sdk = "2.0.3"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "2.0.2"
+solana-streamer-sdk = "2.0.3"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "2.0.2", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "2.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
 
-### Upgrading to v2.0.2
+### Upgrading to v2.0.3
 
-Version 2.0.2 uses `sol-parser-sdk 0.6.6`. PumpFun trade events preserve the parser SDK's optional pre/post token balances in raw mint units and pre/post SOL balances in lamports, populated from transaction metadata without additional RPC calls. Meteora DLMM swaps also preserve `min_amount_out` separately from the executed `amount_out`.
+Version 2.0.3 uses `sol-parser-sdk 0.6.6` and pins `spl-pod 0.7.2` to keep fresh, lock-free builds compatible with `spl-list-view 0.1.0`. PumpFun trade events preserve the parser SDK's optional pre/post token balances in raw mint units and pre/post SOL balances in lamports, populated from transaction metadata without additional RPC calls. Meteora DLMM swaps also preserve `min_amount_out` separately from the executed `amount_out`.
 
 ### Upgrading to v2.0.1
 
