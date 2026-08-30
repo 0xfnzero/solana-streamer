@@ -319,6 +319,8 @@ pub struct MeteoraDlmmSwapEvent {
     pub start_bin_id: i32,
     pub end_bin_id: i32,
     pub amount_in: u64,
+    #[serde(default)]
+    pub min_amount_out: u64,
     pub amount_out: u64,
     pub swap_for_y: bool,
     pub fee: u64,

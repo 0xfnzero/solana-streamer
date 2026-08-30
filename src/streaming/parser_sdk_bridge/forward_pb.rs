@@ -367,6 +367,7 @@ pub(crate) fn meteora_dlmm_swap_from_pb(
         start_bin_id: e.start_bin_id,
         end_bin_id: e.end_bin_id,
         amount_in: e.amount_in,
+        min_amount_out: e.min_amount_out,
         amount_out: e.amount_out,
         swap_for_y: e.swap_for_y,
         fee: e.fee,

@@ -237,6 +237,16 @@ pub struct PumpFunTradeEvent {
     pub spendable_quote_in: u64,
     #[borsh(skip)]
     pub min_tokens_out: u64,
+    /// User token balance before/after the transaction, in raw mint units.
+    #[borsh(skip)]
+    pub pre_token_balance: Option<u64>,
+    #[borsh(skip)]
+    pub post_token_balance: Option<u64>,
+    /// User SOL balance before/after the transaction, in lamports.
+    #[borsh(skip)]
+    pub pre_sol_balance: Option<u64>,
+    #[borsh(skip)]
+    pub post_sol_balance: Option<u64>,
     #[borsh(skip)]
     pub quote_token_program: Pubkey,
     #[borsh(skip)]

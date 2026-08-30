@@ -152,6 +152,10 @@ solana-streamer-sdk = { version = "2.0.1", default-features = false, features = 
 
 ## 🔄 迁移指南
 
+### 未发布
+
+当前源码已升级到 `sol-parser-sdk 0.6.6`。PumpFun 交易事件会保留 parser SDK 提供的可选交易前后 token 余额（mint 原始精度）和 SOL 余额（lamports），这些字段直接来自交易 metadata，无需额外 RPC 请求。
+
 ### 升级到 v2.0.1
 
 v2.0.1 使用 crates.io 上的 `sol-parser-sdk 0.6.1`。PumpSwap Buy/Sell 事件现在会在 dispatcher 和 SDK bridge 路径中完整保留 cashback、buyback、带符号 virtual quote reserve、boost 和 base supply 尾部字段。默认和 zero-copy 解析后端会一致拒绝截断的当前布局，同时继续兼容历史布局。

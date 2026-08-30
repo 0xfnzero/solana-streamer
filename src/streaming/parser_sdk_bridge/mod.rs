@@ -457,6 +457,7 @@ mod tests {
             start_bin_id: -5,
             end_bin_id: 12,
             amount_in: 300,
+            min_amount_out: 298,
             amount_out: 299,
             swap_for_y: true,
             fee: 1,
@@ -474,6 +475,7 @@ mod tests {
                 assert_eq!(e.start_bin_id, -5);
                 assert_eq!(e.end_bin_id, 12);
                 assert_eq!(e.amount_in, 300);
+                assert_eq!(e.min_amount_out, 298);
                 assert_eq!(e.amount_out, 299);
                 assert!(e.swap_for_y);
                 assert_eq!(e.fee_bps, 25);

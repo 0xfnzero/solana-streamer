@@ -753,6 +753,10 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         spendable_sol_in: t.spendable_sol_in,
         spendable_quote_in: t.spendable_quote_in,
         min_tokens_out: t.min_tokens_out,
+        pre_token_balance: t.pre_token_balance,
+        post_token_balance: t.post_token_balance,
+        pre_sol_balance: t.pre_sol_balance,
+        post_sol_balance: t.post_sol_balance,
         ..Default::default()
     };
     DexEvent::PumpFunTradeEvent(st)
@@ -884,6 +888,32 @@ mod tests {
         match ev {
             DexEvent::PumpFunTradeEvent(t) => {
                 assert_eq!(t.quote_mint, quote_mint);
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn pumpfun_balance_snapshots_are_preserved() {
+        let ev = pumpfun_trade_from_parser_with_event_type(
+            sol_parser_sdk::core::events::PumpFunTradeEvent {
+                pre_token_balance: Some(10),
+                post_token_balance: Some(25),
+                pre_sol_balance: Some(1_000),
+                post_sol_balance: Some(900),
+                ..Default::default()
+            },
+            None,
+            0,
+            EventType::PumpFunBuy,
+        );
+
+        match ev {
+            DexEvent::PumpFunTradeEvent(t) => {
+                assert_eq!(t.pre_token_balance, Some(10));
+                assert_eq!(t.post_token_balance, Some(25));
+                assert_eq!(t.pre_sol_balance, Some(1_000));
+                assert_eq!(t.post_sol_balance, Some(900));
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }

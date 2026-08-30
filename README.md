@@ -153,6 +153,10 @@ If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk
 
 ## 🔄 Migration Guide
 
+### Unreleased
+
+The source tree now uses `sol-parser-sdk 0.6.6`. PumpFun trade events preserve the parser SDK's optional pre/post token balances in raw mint units and pre/post SOL balances in lamports, populated from transaction metadata without additional RPC calls.
+
 ### Upgrading to v2.0.1
 
 Version 2.0.1 uses `sol-parser-sdk 0.6.1` from crates.io. PumpSwap Buy/Sell events now preserve the complete current cashback, buyback, signed virtual quote reserve, boost, and base-supply tail through dispatcher and SDK bridge paths. Truncated current layouts are rejected consistently by the default and zero-copy parser backends while historical layouts remain supported.
