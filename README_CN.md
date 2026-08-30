@@ -128,33 +128,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.1" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.2" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "2.0.1"
+solana-streamer-sdk = "2.0.2"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "2.0.1"
+solana-streamer-sdk = "2.0.2"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "2.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "2.0.2", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
 
-### 未发布
+### 升级到 v2.0.2
 
-当前源码已升级到 `sol-parser-sdk 0.6.6`。PumpFun 交易事件会保留 parser SDK 提供的可选交易前后 token 余额（mint 原始精度）和 SOL 余额（lamports），这些字段直接来自交易 metadata，无需额外 RPC 请求。
+v2.0.2 使用 `sol-parser-sdk 0.6.6`。PumpFun 交易事件会保留 parser SDK 提供的可选交易前后 token 余额（mint 原始精度）和 SOL 余额（lamports），这些字段直接来自交易 metadata，无需额外 RPC 请求。Meteora DLMM swap 也会单独保留 `min_amount_out`，不再与实际成交的 `amount_out` 混淆。
 
 ### 升级到 v2.0.1
 
