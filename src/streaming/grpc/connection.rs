@@ -4,7 +4,7 @@ use crate::streaming::common::constants::{
 };
 use std::time::Duration;
 use tonic::transport::channel::ClientTlsConfig;
-use yellowstone_grpc_client::{GeyserGrpcClient, Interceptor};
+use yellowstone_grpc_client::GeyserGrpcClient;
 
 /// gRPC连接池 - 简化版本
 pub struct GrpcConnectionPool {
@@ -17,7 +17,7 @@ impl GrpcConnectionPool {
         Self { endpoint, x_token }
     }
 
-    pub async fn create_connection(&self) -> AnyResult<GeyserGrpcClient<impl Interceptor>> {
+    pub async fn create_connection(&self) -> AnyResult<GeyserGrpcClient> {
         let builder = GeyserGrpcClient::build_from_shared(self.endpoint.clone())?
             .x_token(self.x_token.clone())?
             .tls_config(ClientTlsConfig::new().with_native_roots())?

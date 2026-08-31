@@ -1,7 +1,7 @@
-use futures::{channel::mpsc, sink::Sink, Stream};
+use futures::{sink::Sink, Stream};
 use std::{collections::HashMap, time::Duration};
 use tonic::{transport::channel::ClientTlsConfig, Status};
-use yellowstone_grpc_client::{GeyserGrpcClient, Interceptor};
+use yellowstone_grpc_client::{GeyserGrpcClient, SubscribeRequestSinkError};
 use yellowstone_grpc_proto::geyser::{
     CommitmentLevel, SubscribeRequest, SubscribeRequestFilterAccounts,
     SubscribeRequestFilterBlocksMeta, SubscribeRequestFilterTransactions, SubscribeUpdate,
@@ -30,7 +30,7 @@ impl SubscriptionManager {
     }
 
     /// Create gRPC connection
-    pub async fn connect(&self) -> AnyResult<GeyserGrpcClient<impl Interceptor>> {
+    pub async fn connect(&self) -> AnyResult<GeyserGrpcClient> {
         let builder = GeyserGrpcClient::build_from_shared(self.endpoint.clone())?
             .x_token(self.x_token.clone())?
             .tls_config(ClientTlsConfig::new().with_native_roots())?
@@ -48,7 +48,7 @@ impl SubscriptionManager {
         commitment: Option<CommitmentLevel>,
         event_type_filter: Option<&EventTypeFilter>,
     ) -> AnyResult<(
-        impl Sink<SubscribeRequest, Error = mpsc::SendError>,
+        impl Sink<SubscribeRequest, Error = SubscribeRequestSinkError>,
         impl Stream<Item = Result<SubscribeUpdate, Status>>,
         SubscribeRequest,
     )> {
@@ -123,6 +123,7 @@ impl SubscriptionManager {
                     account_include: tf.account_include.clone(),
                     account_exclude: tf.account_exclude.clone(),
                     account_required: tf.account_required.clone(),
+                    ..Default::default()
                 },
             );
         }

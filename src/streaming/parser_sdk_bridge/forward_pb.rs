@@ -362,6 +362,8 @@ pub(crate) fn meteora_dlmm_swap_from_pb(
         metadata: meta,
         token_x_mint: e.token_x_mint,
         token_y_mint: e.token_y_mint,
+        user_token_in: e.user_token_in,
+        user_token_out: e.user_token_out,
         pool: e.pool,
         from: e.from,
         start_bin_id: e.start_bin_id,

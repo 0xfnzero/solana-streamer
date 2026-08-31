@@ -314,6 +314,10 @@ pub struct MeteoraDlmmSwapEvent {
     pub token_x_mint: Pubkey,
     #[serde(default)]
     pub token_y_mint: Pubkey,
+    #[serde(default)]
+    pub user_token_in: Pubkey,
+    #[serde(default)]
+    pub user_token_out: Pubkey,
     pub pool: Pubkey,
     pub from: Pubkey,
     pub start_bin_id: i32,

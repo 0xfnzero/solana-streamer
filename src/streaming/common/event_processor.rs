@@ -242,6 +242,11 @@ pub(crate) fn parse_shred_transaction_events(
     bot_wallet: Option<Pubkey>,
     mut on_event: impl FnMut(DexEvent),
 ) {
+    if tx.sanitize().is_err() {
+        log::debug!("Ignoring unsanitized ShredStream transaction");
+        return;
+    }
+
     let cost_selection = transaction_cost_selection(event_type_filter);
     if cost_selection.requested {
         let cost = sol_parser_sdk::parse_shred_transaction_cost(tx);
@@ -372,7 +377,7 @@ mod tests {
                 header: MessageHeader {
                     num_required_signatures: 1,
                     num_readonly_signed_accounts: 0,
-                    num_readonly_unsigned_accounts: 0,
+                    num_readonly_unsigned_accounts: 1,
                 },
                 account_keys,
                 recent_blockhash: Hash::default(),
@@ -398,17 +403,21 @@ mod tests {
         VersionedTransaction {
             signatures: vec![Signature::default()],
             message: VersionedMessage::V0(v0::Message {
-                header: MessageHeader::default(),
+                header: MessageHeader {
+                    num_required_signatures: 1,
+                    num_readonly_signed_accounts: 0,
+                    num_readonly_unsigned_accounts: 1,
+                },
                 account_keys: vec![
                     source,
-                    system_program,
                     JITO_TIP_ACCOUNTS[0],
                     GLAIVE_TIP_ACCOUNTS[0],
+                    system_program,
                 ],
                 recent_blockhash: Hash::default(),
                 instructions: vec![
-                    CompiledInstruction::new_from_raw_parts(1, transfer(10), vec![0, 2]),
-                    CompiledInstruction::new_from_raw_parts(1, transfer(20), vec![0, 3]),
+                    CompiledInstruction::new_from_raw_parts(3, transfer(10), vec![0, 1]),
+                    CompiledInstruction::new_from_raw_parts(3, transfer(20), vec![0, 2]),
                 ],
                 address_table_lookups: Vec::new(),
             }),
@@ -513,6 +522,29 @@ mod tests {
         assert_eq!(cost.tip_lamports_for(SwqosProvider::Glaive), 20);
         assert!(!cost.tip_payments_confirmed);
         assert_eq!(cost.metadata.tx_index, Some(7));
+    }
+
+    #[tokio::test]
+    async fn shred_transaction_rejects_unsanitized_message() {
+        let mut transaction = pumpfun_create_tx();
+        let VersionedMessage::V0(message) = &mut transaction.message else {
+            panic!("expected V0 fixture");
+        };
+        message.instructions[0].program_id_index = u8::MAX;
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = events.clone();
+
+        process_shred_transaction(
+            TransactionWithSlot::new(transaction, 42, 1_000_000, Some(0)),
+            &[Protocol::PumpFun],
+            None,
+            Arc::new(move |event| captured.lock().unwrap().push(event)),
+            None,
+        )
+        .await
+        .expect("reject malformed Shred transaction");
+
+        assert!(events.lock().unwrap().is_empty());
     }
 
     #[test]

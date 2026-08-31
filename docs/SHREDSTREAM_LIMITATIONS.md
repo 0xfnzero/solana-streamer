@@ -108,3 +108,73 @@ ShredStream 路径仍为下面的原始交易解析限制，不使用上述日�
 - Shred 入口：`streaming/common/event_processor.rs` → `process_shred_transaction`
 - 账户与 inner 传入：`accounts = tx.message.static_account_keys()`，`inner_instructions: &[]`
 - 合并逻辑（CPI 覆盖/补充字段）：`streaming/event_parser/core/merger_event.rs` → `merge()`
+
+## 6. 待解决事项
+
+以下事项已确认存在，但当前版本暂不处理。实现前必须先保存带 ALT 的真实
+ShredStream Entry fixture，并按现有基准流程记录优化前后的正确性与延迟数据。
+
+### 6.1 恢复 V0 ALT-loaded addresses
+
+**状态**：待解决，暂缓。
+
+**根因**：当前 ShredStream proxy 的 `Entry` 消息只携带 `slot` 和序列化后的
+`Vec<solana_entry::entry::Entry>`。V0 transaction 只记录 lookup table 账户地址及
+writable/readonly 索引，不包含索引对应的 Pubkey。仅使用 transaction bytes 无法无损
+恢复 loaded addresses。
+
+**推荐方案**：
+
+1. 优先扩展 ShredStream proxy 协议，由靠近 validator/bank 的服务端附带 slot 对应的
+   resolved writable/readonly addresses。这是可以保证完整性且客户端延迟最低的方案。
+2. 若无法修改 proxy，增加异步 ALT cache/resolver。热路径只读取内存缓存，cache miss
+   不得同步调用 RPC；后台通过 RPC 或 Yellowstone account stream 加载和刷新 table。
+3. 为公开 API 增加明确模式：
+   - `Strict`：无法解析 program id 或必要账户时跳过指令，不产生猜测事件；
+   - `Cached`：仅在 ALT cache 命中时完整解析，未命中时异步加载并跳过；
+   - `BestEffort`：保留当前默认 Pubkey 占位和 discriminator fallback，仅用于兼容。
+
+**验收条件**：
+
+- 用真实 V0/ALT Shred fixture 与同一交易的 Yellowstone resolved accounts 对比，所有
+  writable/readonly keys、program id 和事件账户字段完全一致；
+- cache miss 不阻塞 ShredStream 读流任务，不在热路径发起网络请求；
+- cache 命中路径必须有前后 Criterion 对比，新增解析开销需单独报告；
+- table 扩展、失效、重连和并发读取必须有测试；
+- legacy、V1 和不使用 ALT 的 V0 交易不得发生行为或性能回退。
+
+### 6.2 消除未知 program discriminator 碰撞
+
+**状态**：待解决，暂缓。
+
+**根因**：当外层 `program_id_index` 指向 ALT-loaded key 且真实 program id 无法恢复时，
+当前 parser 会按启用的协议依次尝试 discriminator-only 解析，并采用第一个成功候选。
+不同程序可能共享 Anchor discriminator，恶意程序也可以构造相同前缀，因此该路径不能
+提供严格的程序身份保证。
+
+**推荐方案**：
+
+1. 完成 6.1 的 program id 解析后，只向真实 program parser 派发，这是根本解决方案。
+2. 在 ALT 仍未解析时，`Strict`/`Cached` 模式不得执行 discriminator fallback。
+3. 保留 `BestEffort` 时必须进一步收紧：要求单协议 filter、完整 payload 布局、合法账户
+   数量、可见固定 program/token/system/event-authority 账户一致，并且只在候选唯一时输出；
+   多个候选同时通过时应丢弃，不得按遍历顺序选择第一个。
+4. 可在事件元数据中增加解析可信度或来源标记，但这属于公开 API 变更，需要单独评审。
+
+**验收条件**：
+
+- 加入共享 discriminator、恶意伪造 payload、账户数量相同及多候选同时命中的负向 fixture；
+- `Strict`/`Cached` cache-miss 路径不得产生错误协议事件；
+- `BestEffort` 只允许唯一候选通过，结果不得依赖协议遍历顺序；
+- 对静态 program id 的常规热路径保持零额外分配，基准不得出现可测量回退；
+- 分别统计误报、漏报、ALT cache hit/miss，并提供可观测日志或计数器。
+
+### 6.3 当前决策
+
+在上述事项完成前：
+
+- 要求账户字段和程序身份严格正确的业务继续使用 Yellowstone gRPC；
+- ShredStream 保持当前低延迟 best-effort 语义；
+- 使用方应尽量配置窄协议/事件 filter，并将默认 Pubkey 账户视为字段不可恢复，而不是
+  有效链上账户；
+- 本节仅记录后续工作，不代表当前版本已经提供 ALT resolver、严格模式或零误报保证。

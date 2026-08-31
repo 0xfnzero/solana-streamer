@@ -129,29 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.0" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "2.0.3"
+solana-streamer-sdk = "3.0.0"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "2.0.3"
+solana-streamer-sdk = "3.0.0"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "2.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.0
+
+Version 3.0.0 uses `sol-parser-sdk 0.7.0` and Solana 4 public types. ShredStream Entry decoding now uses `wincode 0.5.5` in production and supports Solana V1 transactions. The normal dependency graph dropped from 677 to 544 package/version entries, while duplicated crate names dropped from 119 to 30 by removing redundant direct Solana/SPL dependencies and aligning versions with the parser. This release requires Rust 1.91 or newer and also forwards Meteora DLMM user token input/output accounts.
 
 ### Upgrading to v2.0.3
 

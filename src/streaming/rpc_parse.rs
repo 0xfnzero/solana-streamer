@@ -9,7 +9,10 @@
 //! [`parse_encoded_rpc_transaction_as_streamer_events`].
 
 use prost_types::Timestamp;
-use sol_parser_sdk::{parse_rpc_transaction, parse_transaction_from_rpc};
+use sol_parser_sdk::{
+    parse_rpc_transaction, parse_rpc_transaction_cost_with_signature,
+    parse_rpc_transaction_with_cost, parse_transaction_from_rpc,
+};
 use solana_client::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcTransactionConfig;
 use solana_sdk::signature::Signature;
@@ -34,27 +37,28 @@ pub fn parse_encoded_rpc_transaction_as_streamer_events(
 ) -> Result<Vec<DexEvent>, ParseError> {
     let block_ts = rpc_tx.block_time.map(|sec| Timestamp { seconds: sec, nanos: 0 });
     let cost_selection = transaction_cost_selection(event_type_filter);
-    let mut events = if cost_selection.only {
-        Vec::with_capacity(1)
+    let (mut events, transaction_cost) = if cost_selection.only {
+        (Vec::with_capacity(1), Some(parse_rpc_transaction_cost_with_signature(rpc_tx)?))
     } else {
         let sdk_filter = build_sdk_parse_event_filter(event_type_filter);
-        let pb_events = parse_rpc_transaction(rpc_tx, sdk_filter.as_ref())?;
-        adapt_parser_events_list(
-            pb_events,
-            block_ts.as_ref(),
-            recv_wall_us,
-            protocols,
-            event_type_filter,
+        let (pb_events, cost) = if cost_selection.requested {
+            let parsed = parse_rpc_transaction_with_cost(rpc_tx, sdk_filter.as_ref())?;
+            (parsed.events, Some((parsed.cost, parsed.signature)))
+        } else {
+            (parse_rpc_transaction(rpc_tx, sdk_filter.as_ref())?, None)
+        };
+        (
+            adapt_parser_events_list(
+                pb_events,
+                block_ts.as_ref(),
+                recv_wall_us,
+                protocols,
+                event_type_filter,
+            ),
+            cost,
         )
     };
-    if cost_selection.requested {
-        let cost = sol_parser_sdk::parse_rpc_transaction_cost(rpc_tx)?;
-        let signature = rpc_tx
-            .transaction
-            .transaction
-            .decode()
-            .and_then(|transaction| transaction.signatures.first().copied())
-            .ok_or_else(|| ParseError::MissingField("transaction.signatures[0]".to_string()))?;
+    if let Some((cost, signature)) = transaction_cost {
         let block_time_us = rpc_tx.block_time.map(|seconds| seconds * 1_000_000);
         events.push(DexEvent::TransactionCostEvent(TransactionCostEvent::from_parser(
             cost,
@@ -81,7 +85,7 @@ pub fn fetch_rpc_transaction_as_streamer_events(
         let config = RpcTransactionConfig {
             encoding: Some(UiTransactionEncoding::Base64),
             commitment: None,
-            max_supported_transaction_version: Some(0),
+            max_supported_transaction_version: Some(1),
         };
         let rpc_tx = rpc_client
             .get_transaction_with_config(signature, config)
@@ -111,7 +115,7 @@ pub async fn fetch_rpc_transaction_as_streamer_events_async(
     let config = RpcTransactionConfig {
         encoding: Some(UiTransactionEncoding::Base64),
         commitment: None,
-        max_supported_transaction_version: Some(0),
+        max_supported_transaction_version: Some(1),
     };
     let rpc_tx = rpc_client
         .get_transaction_with_config(signature, config)
@@ -146,7 +150,77 @@ mod tests {
     use crate::streaming::event_parser::common::EventType;
     use sol_parser_sdk::SwqosProvider;
     use solana_client::rpc_client::RpcClient;
+    use solana_client::rpc_response::UiTransactionStatusMeta;
+    use solana_sdk::{
+        hash::Hash,
+        message::{v1, MessageHeader, VersionedMessage},
+        pubkey::Pubkey,
+        transaction::VersionedTransaction,
+    };
+    use solana_transaction_status::{
+        option_serializer::OptionSerializer, Encodable, EncodedTransactionWithStatusMeta,
+    };
     use std::str::FromStr;
+
+    fn local_rpc_fixture() -> EncodedConfirmedTransactionWithStatusMeta {
+        let transaction = VersionedTransaction {
+            signatures: vec![Signature::from([7; 64])],
+            message: VersionedMessage::V1(v1::Message {
+                header: MessageHeader { num_required_signatures: 1, ..Default::default() },
+                config: v1::TransactionConfig::empty()
+                    .with_compute_unit_limit(200_000)
+                    .with_priority_fee(1_000),
+                lifetime_specifier: Hash::new_unique(),
+                account_keys: vec![Pubkey::new_unique()],
+                instructions: Vec::new(),
+            }),
+        };
+        EncodedConfirmedTransactionWithStatusMeta {
+            slot: 42,
+            transaction: EncodedTransactionWithStatusMeta {
+                transaction: transaction.encode(UiTransactionEncoding::Base64),
+                meta: Some(UiTransactionStatusMeta {
+                    err: None,
+                    status: Ok(()),
+                    fee: 6_000,
+                    pre_balances: vec![1_000_000],
+                    post_balances: vec![994_000],
+                    inner_instructions: OptionSerializer::None,
+                    log_messages: OptionSerializer::None,
+                    pre_token_balances: OptionSerializer::None,
+                    post_token_balances: OptionSerializer::None,
+                    rewards: OptionSerializer::None,
+                    loaded_addresses: OptionSerializer::None,
+                    return_data: OptionSerializer::None,
+                    compute_units_consumed: OptionSerializer::Some(10_000),
+                    cost_units: OptionSerializer::None,
+                }),
+                version: None,
+            },
+            block_time: Some(1_700_000_000),
+            transaction_index: Some(0),
+        }
+    }
+
+    #[test]
+    fn local_rpc_cost_only_and_combined_filters_preserve_cost_output() {
+        let rpc_tx = local_rpc_fixture();
+        for filter in [
+            EventTypeFilter::include_only([EventType::TransactionCost]),
+            EventTypeFilter::include_only([EventType::PumpFunBuy, EventType::TransactionCost]),
+        ] {
+            let events =
+                parse_encoded_rpc_transaction_as_streamer_events(&rpc_tx, 123, &[], Some(&filter))
+                    .expect("parse local RPC fixture");
+            assert_eq!(events.len(), 1);
+            let DexEvent::TransactionCostEvent(cost) = &events[0] else {
+                panic!("expected transaction cost event");
+            };
+            assert_eq!(cost.metadata.signature, Signature::from([7; 64]));
+            assert_eq!(cost.compute_unit_limit, Some(200_000));
+            assert_eq!(cost.priority_fee_lamports, Some(1_000));
+        }
+    }
 
     #[test]
     fn current_mainnet_transaction_cost_is_reusable() {

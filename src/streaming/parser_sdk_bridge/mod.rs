@@ -448,10 +448,14 @@ mod tests {
         let from = Pubkey::new_unique();
         let token_x_mint = Pubkey::new_unique();
         let token_y_mint = Pubkey::new_unique();
+        let user_token_in = Pubkey::new_unique();
+        let user_token_out = Pubkey::new_unique();
         let pb = PbDlmmSwap {
             metadata: EventMetadata::default(),
             token_x_mint,
             token_y_mint,
+            user_token_in,
+            user_token_out,
             pool,
             from,
             start_bin_id: -5,
@@ -470,6 +474,8 @@ mod tests {
             DexEvent::MeteoraDlmmSwapEvent(e) => {
                 assert_eq!(e.token_x_mint, token_x_mint);
                 assert_eq!(e.token_y_mint, token_y_mint);
+                assert_eq!(e.user_token_in, user_token_in);
+                assert_eq!(e.user_token_out, user_token_out);
                 assert_eq!(e.pool, pool);
                 assert_eq!(e.from, from);
                 assert_eq!(e.start_bin_id, -5);

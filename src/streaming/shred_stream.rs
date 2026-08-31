@@ -126,7 +126,7 @@ fn process_shred_entry_direct(
 ) {
     let slot = entry.slot;
     let recv_us = get_high_perf_clock();
-    let entries = match bincode::deserialize::<Vec<SolanaEntry>>(&entry.entries) {
+    let entries = match decode_shred_entries(&entry.entries) {
         Ok(entries) => entries,
         Err(error) => {
             log::debug!("Failed to deserialize ShredStream entries: {error}");
@@ -172,5 +172,46 @@ fn process_shred_entry_direct(
             );
             tx_index += 1;
         }
+    }
+}
+
+#[inline]
+fn decode_shred_entries(bytes: &[u8]) -> wincode::ReadResult<Vec<SolanaEntry>> {
+    wincode::deserialize(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::decode_shred_entries;
+    use solana_entry::entry::Entry;
+    use solana_sdk::{
+        hash::Hash,
+        message::{v1, MessageHeader, VersionedMessage},
+        pubkey::Pubkey,
+        signature::Signature,
+        transaction::VersionedTransaction,
+    };
+
+    #[test]
+    fn wincode_decodes_solana4_v1_entries() {
+        let entries = vec![Entry {
+            num_hashes: 1,
+            hash: Hash::new_unique(),
+            transactions: vec![VersionedTransaction {
+                signatures: vec![Signature::from([9; 64])],
+                message: VersionedMessage::V1(v1::Message {
+                    header: MessageHeader { num_required_signatures: 1, ..Default::default() },
+                    config: v1::TransactionConfig::empty()
+                        .with_compute_unit_limit(250_000)
+                        .with_priority_fee(1_500),
+                    lifetime_specifier: Hash::new_unique(),
+                    account_keys: vec![Pubkey::new_unique()],
+                    instructions: Vec::new(),
+                }),
+            }],
+        }];
+        let bytes = wincode::serialize(&entries).expect("serialize V1 Entry");
+
+        assert_eq!(decode_shred_entries(&bytes).expect("decode V1 Entry"), entries);
     }
 }

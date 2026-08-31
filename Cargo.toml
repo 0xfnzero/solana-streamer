@@ -1,7 +1,8 @@
 [package]
 name = "solana-streamer-sdk"
-version = "2.0.3"
+version = "3.0.0"
 edition = "2021"
+rust-version = "1.91"
 authors = ["William <byteblock6@gmail.com>", "sgxiang <sgxiang@gmail.com>", "wei <1415121722@qq.com>"]
 repository = "https://github.com/0xfnzero/solana-streamer"
 description = "A low-latency Solana DEX event streaming facade over sol-parser-sdk with Yellowstone gRPC, ShredStream, and RPC parsing helpers."
@@ -21,38 +22,29 @@ sdk-perf-stats = ["sol-parser-sdk/perf-stats"]
 sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
 
 [dependencies]
-sol-parser-sdk = { version = "0.6.6", default-features = false }
-solana-sdk = "3.0.0"
-solana-client = "3.1.12"
-solana-transaction-status = "3.1.12"
-solana-account-decoder = "3.1.12"
-solana-entry = "3.0.0"
+sol-parser-sdk = { path = "../sol-parser-sdk", version = "0.7.0", default-features = false }
+solana-sdk = "=4.0.1"
+solana-client = "=4.2.2"
+solana-transaction-status = { version = "=4.2.2", features = ["agave-unstable-api"] }
+solana-entry = { version = "=4.2.2", features = ["agave-unstable-api"] }
 borsh = { version = "1.6.0", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-big-array = "0.5.1"
 futures = "0.3.32"
-bincode = "1.3"
+wincode = "=0.5.5"
 anyhow = "1.0.102"
-yellowstone-grpc-client = "12.1.0"
-yellowstone-grpc-proto = "=12.4.0"
-tokio = { version = "1.50.0", features = ["full", "rt-multi-thread"]}
+yellowstone-grpc-client = "=13.5.0"
+yellowstone-grpc-proto = "=12.7.0"
+tokio = { version = "1.50.0", features = ["full"] }
 tonic = { version = "0.14.5", features = ["transport"] }
 rustls = { version = "0.23.37", features = ["ring"], default-features = false }
 log = "0.4.29"
-dashmap = "6.1.0"
+dashmap = "=5.5.3"
 prost = "0.14.3"
 prost-types = "0.14.3"
 crossbeam-queue = "0.3.12"
-spl-token = { version = "9.0.0", default-features = false, features = ["no-entrypoint"] }
-spl-token-2022 = { version = "10.0.0", default-features = false, features = ["no-entrypoint"] }
-# spl-token-2022 10.0.0 is incompatible with spl-token-group-interface 0.7.2+ (E0308).
-# Keep token-group-interface pinned to 0.7.1 until the upstream token-2022 bump is available.
-spl-token-group-interface = "=0.7.1"
-# spl-list-view 0.1.0 does not compile with spl-pod 0.7.3 due to its widened
-# PodLength::TryFrom error type. Pin the compatible patch for lock-free builds.
-spl-pod = "=0.7.2"
-solana-commitment-config = { version = "3.1.1", features = ["serde"] }
 tonic-prost = "0.14.5"
 
 [dev-dependencies]
 serde_json = "1.0.149"
+solana-commitment-config = { version = "3.1.1", features = ["serde"] }

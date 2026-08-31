@@ -128,29 +128,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "2.0.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.0" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "2.0.3"
+solana-streamer-sdk = "3.0.0"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "2.0.3"
+solana-streamer-sdk = "3.0.0"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "2.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.0
+
+v3.0.0 使用 `sol-parser-sdk 0.7.0` 和 Solana 4 公开类型。生产 ShredStream Entry 解码已切换到 `wincode 0.5.5`，并支持 Solana V1 交易。通过删除重复的 Solana/SPL 直接依赖并与 parser 对齐版本，normal 依赖图从 677 个 package/version 项降到 544 个，重复 crate 名从 119 个降到 30 个。此版本要求 Rust 1.91 或更新版本，并会继续转发 Meteora DLMM 用户 token 输入/输出账户。
 
 ### 升级到 v2.0.3
 
