@@ -41,12 +41,15 @@ mod tests {
     use crate::streaming::event_parser::core::account_event_parser::TokenInfoEvent;
     use crate::streaming::event_parser::{DexEvent, Protocol};
     use sol_parser_sdk::core::events::{
-        EventMetadata, MeteoraDlmmSwapEvent as PbDlmmSwap, OrcaWhirlpoolSwapEvent as PbOrcaSwap,
-        PumpFunCreateV2TokenEvent as PbPumpCreateV2, PumpFunTradeEvent as PbPumpTrade,
-        PumpSwapBuyEvent as PbPumpSwapBuy, PumpSwapCreatePoolEvent as PbPumpSwapCreatePool,
-        PumpSwapPool as PbPumpSwapPool, PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount,
-        PumpSwapSellEvent as PbPumpSwapSell, RaydiumLaunchlabTradeEvent as PbBonkTrade,
-        TokenInfoEvent as PbTokenInfo, TradeDirection as PbBonkDir,
+        EventMetadata, MeteoraDammV2AddLiquidityEvent as PbDammAddLiquidity,
+        MeteoraDammV2RemoveLiquidityEvent as PbDammRemoveLiquidity,
+        MeteoraDammV2SwapEvent as PbDammSwap, MeteoraDlmmSwapEvent as PbDlmmSwap,
+        OrcaWhirlpoolSwapEvent as PbOrcaSwap, PumpFunCreateV2TokenEvent as PbPumpCreateV2,
+        PumpFunTradeEvent as PbPumpTrade, PumpSwapBuyEvent as PbPumpSwapBuy,
+        PumpSwapCreatePoolEvent as PbPumpSwapCreatePool, PumpSwapPool as PbPumpSwapPool,
+        PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount, PumpSwapSellEvent as PbPumpSwapSell,
+        RaydiumLaunchlabTradeEvent as PbBonkTrade, TokenInfoEvent as PbTokenInfo,
+        TradeDirection as PbBonkDir,
     };
     use sol_parser_sdk::DexEvent as PbDexEvent;
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
@@ -126,6 +129,90 @@ mod tests {
                 assert!(st.is_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn converts_current_damm_v2_fields_without_zeroing_them() {
+        let swap = PbDammSwap {
+            collect_fee_mode: 2,
+            amount_0: 1_000,
+            amount_1: 900,
+            swap_mode: 1,
+            actual_amount_in: 990,
+            excluded_fee_input_amount: 980,
+            amount_left: 5,
+            output_amount: 880,
+            claiming_fee: 3,
+            compounding_fee: 4,
+            lp_fee: 7,
+            included_transfer_fee_amount_in: 10,
+            included_transfer_fee_amount_out: 11,
+            excluded_transfer_fee_amount_out: 870,
+            reserve_a_amount: 50_000,
+            reserve_b_amount: 60_000,
+            ..Default::default()
+        };
+        let event = convert_parser_event(PbDexEvent::MeteoraDammV2Swap(swap), None, 999)
+            .expect("convert current DAMM v2 swap");
+        let DexEvent::MeteoraDammV2SwapEvent(event) = event else {
+            panic!("expected DAMM v2 swap");
+        };
+        assert_eq!(event.collect_fee_mode, 2);
+        assert_eq!((event.amount_0, event.amount_1, event.swap_mode), (1_000, 900, 1));
+        assert_eq!(
+            (
+                event.included_fee_input_amount,
+                event.excluded_fee_input_amount,
+                event.amount_left,
+                event.output_amount,
+            ),
+            (990, 980, 5, 880)
+        );
+        assert_eq!((event.claiming_fee, event.compounding_fee, event.trading_fee), (3, 4, 7));
+        assert_eq!(
+            (
+                event.included_transfer_fee_amount_in,
+                event.included_transfer_fee_amount_out,
+                event.excluded_transfer_fee_amount_out,
+            ),
+            (10, 11, 870)
+        );
+        assert_eq!((event.reserve_a_amount, event.reserve_b_amount), (50_000, 60_000));
+
+        for event in [
+            PbDexEvent::MeteoraDammV2AddLiquidity(PbDammAddLiquidity {
+                total_amount_a: 111,
+                total_amount_b: 222,
+                reserve_a_amount: 1_001,
+                reserve_b_amount: 2_002,
+                ..Default::default()
+            }),
+            PbDexEvent::MeteoraDammV2RemoveLiquidity(PbDammRemoveLiquidity {
+                total_amount_a: 111,
+                total_amount_b: 222,
+                reserve_a_amount: 1_001,
+                reserve_b_amount: 2_002,
+                ..Default::default()
+            }),
+        ] {
+            let event = convert_parser_event(event, None, 999).expect("convert liquidity change");
+            let values = match event {
+                DexEvent::MeteoraDammV2AddLiquidityEvent(event) => (
+                    event.total_amount_a,
+                    event.total_amount_b,
+                    event.reserve_a_amount,
+                    event.reserve_b_amount,
+                ),
+                DexEvent::MeteoraDammV2RemoveLiquidityEvent(event) => (
+                    event.total_amount_a,
+                    event.total_amount_b,
+                    event.reserve_a_amount,
+                    event.reserve_b_amount,
+                ),
+                other => panic!("expected DAMM v2 liquidity event, got {other:?}"),
+            };
+            assert_eq!(values, (111, 222, 1_001, 2_002));
         }
     }
 

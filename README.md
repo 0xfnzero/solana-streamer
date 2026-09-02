@@ -129,29 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.1" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.0"
+solana-streamer-sdk = "3.0.1"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.0"
+solana-streamer-sdk = "3.0.1"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.1
+
+Version 3.0.1 uses `sol-parser-sdk 0.7.1` and fixes current Meteora DAMM v2 Swap and AddLiquidity delivery. The bridge now preserves all current swap fee, transfer-fee, reserve, mode, and liquidity fields; exact AddLiquidity filtering follows the unified on-chain `EvtLiquidityChange` event. Streamer no longer maintains a separate DAMM swap payload decoder, keeping `sol-parser-sdk` as the single parsing implementation. Mainnet RPC regression tests cover both reported event types.
 
 ### Upgrading to v3.0.0
 

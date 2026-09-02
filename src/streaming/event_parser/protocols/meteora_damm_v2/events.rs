@@ -35,9 +35,8 @@ pub struct PoolFeeParameters {
 }
 
 /// Meteora DAMM v2 Swap Event (对应 swap 指令)
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeteoraDammV2SwapEvent {
-    #[borsh(skip)]
     pub metadata: EventMetadata,
 
     // 来自 CPI Log Event 的数据
@@ -58,6 +57,10 @@ pub struct MeteoraDammV2SwapEvent {
     pub output_amount: u64,
     pub next_sqrt_price: u128,
     pub trading_fee: u64,
+    #[serde(default)]
+    pub claiming_fee: u64,
+    #[serde(default)]
+    pub compounding_fee: u64,
     pub protocol_fee: u64,
     pub partner_fee: u64,
     pub referral_fee: u64,
@@ -73,38 +76,24 @@ pub struct MeteoraDammV2SwapEvent {
     pub reserve_b_amount: u64,
 
     // 来自 Input Accounts 的数据
-    #[borsh(skip)]
     pub pool_authority: Pubkey,
-    #[borsh(skip)]
     pub input_token_account: Pubkey,
-    #[borsh(skip)]
     pub output_token_account: Pubkey,
-    #[borsh(skip)]
     pub token_a_vault: Pubkey,
-    #[borsh(skip)]
     pub token_b_vault: Pubkey,
-    #[borsh(skip)]
     pub token_a_mint: Pubkey,
-    #[borsh(skip)]
     pub token_b_mint: Pubkey,
-    #[borsh(skip)]
     pub payer: Pubkey,
-    #[borsh(skip)]
     pub token_a_program: Pubkey,
-    #[borsh(skip)]
     pub token_b_program: Pubkey,
-    #[borsh(skip)]
     pub referral_token_account: Option<Pubkey>,
-    #[borsh(skip)]
     pub event_authority: Pubkey,
-    #[borsh(skip)]
     pub program: Pubkey,
 }
 
 /// Meteora DAMM v2 Swap2 Event (对应 swap2 指令)
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeteoraDammV2Swap2Event {
-    #[borsh(skip)]
     pub metadata: EventMetadata,
 
     // 来自 CPI Log Event 的数据
@@ -140,33 +129,19 @@ pub struct MeteoraDammV2Swap2Event {
     pub reserve_b_amount: u64,
 
     // 来自 Input Accounts 的数据
-    #[borsh(skip)]
     pub pool_authority: Pubkey,
-    #[borsh(skip)]
     pub input_token_account: Pubkey,
-    #[borsh(skip)]
     pub output_token_account: Pubkey,
-    #[borsh(skip)]
     pub token_a_vault: Pubkey,
-    #[borsh(skip)]
     pub token_b_vault: Pubkey,
-    #[borsh(skip)]
     pub token_a_mint: Pubkey,
-    #[borsh(skip)]
     pub token_b_mint: Pubkey,
-    #[borsh(skip)]
     pub payer: Pubkey,
-    #[borsh(skip)]
     pub token_a_program: Pubkey,
-    #[borsh(skip)]
     pub token_b_program: Pubkey,
-    #[borsh(skip)]
     pub referral_token_account: Option<Pubkey>,
-    #[borsh(skip)]
     pub event_authority: Pubkey,
-    #[borsh(skip)]
     pub program: Pubkey,
-    #[borsh(skip)]
     pub sysvar: Pubkey,
 }
 
@@ -394,6 +369,12 @@ pub struct MeteoraDammV2AddLiquidityEvent {
     pub total_amount_a: u64,
     #[borsh(skip)]
     pub total_amount_b: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub reserve_a_amount: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub reserve_b_amount: u64,
 }
 
 /// DAMM v2 Remove Liquidity
@@ -412,6 +393,18 @@ pub struct MeteoraDammV2RemoveLiquidityEvent {
     pub token_a_amount_threshold: u64,
     #[borsh(skip)]
     pub token_b_amount_threshold: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub total_amount_a: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub total_amount_b: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub reserve_a_amount: u64,
+    #[serde(default)]
+    #[borsh(skip)]
+    pub reserve_b_amount: u64,
 }
 
 /// DAMM v2 Create Position

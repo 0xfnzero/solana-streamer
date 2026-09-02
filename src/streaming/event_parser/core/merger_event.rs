@@ -553,6 +553,9 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.output_amount = cpie.output_amount;
                 e.next_sqrt_price = cpie.next_sqrt_price;
                 e.trading_fee = cpie.trading_fee;
+                e.claiming_fee = cpie.claiming_fee;
+                e.compounding_fee = cpie.compounding_fee;
+                e.protocol_fee = cpie.protocol_fee;
                 e.partner_fee = cpie.partner_fee;
                 e.referral_fee = cpie.referral_fee;
                 e.included_transfer_fee_amount_in = cpie.included_transfer_fee_amount_in;
@@ -579,6 +582,7 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.output_amount = cpie.output_amount;
                 e.next_sqrt_price = cpie.next_sqrt_price;
                 e.trading_fee = cpie.trading_fee;
+                e.protocol_fee = cpie.protocol_fee;
                 e.partner_fee = cpie.partner_fee;
                 e.referral_fee = cpie.referral_fee;
                 e.included_transfer_fee_amount_in = cpie.included_transfer_fee_amount_in;
@@ -926,10 +930,54 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
 mod tests {
     use super::*;
     use crate::streaming::event_parser::protocols::bonk::events::BonkTradeEvent;
+    use crate::streaming::event_parser::protocols::meteora_damm_v2::events::{
+        MeteoraDammV2Swap2Event, MeteoraDammV2SwapEvent,
+    };
     use crate::streaming::event_parser::protocols::pumpfun::events::{
         PumpFeesShareholder, PumpFunTradeEvent,
     };
     use crate::streaming::event_parser::protocols::pumpswap::events::PumpSwapSellEvent;
+
+    #[test]
+    fn damm_v2_merge_copies_all_current_fee_fields() {
+        let mut instruction_event =
+            DexEvent::MeteoraDammV2SwapEvent(MeteoraDammV2SwapEvent::default());
+        let cpi_event = DexEvent::MeteoraDammV2SwapEvent(MeteoraDammV2SwapEvent {
+            trading_fee: 7,
+            claiming_fee: 3,
+            compounding_fee: 4,
+            protocol_fee: 2,
+            partner_fee: 4,
+            referral_fee: 1,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, cpi_event.clone());
+        let DexEvent::MeteoraDammV2SwapEvent(event) = instruction_event else {
+            panic!("expected DAMM v2 swap");
+        };
+        assert_eq!(
+            (
+                event.trading_fee,
+                event.claiming_fee,
+                event.compounding_fee,
+                event.protocol_fee,
+                event.partner_fee,
+                event.referral_fee,
+            ),
+            (7, 3, 4, 2, 4, 1)
+        );
+
+        let mut swap2 = DexEvent::MeteoraDammV2Swap2Event(MeteoraDammV2Swap2Event::default());
+        merge(&mut swap2, cpi_event);
+        let DexEvent::MeteoraDammV2Swap2Event(event) = swap2 else {
+            panic!("expected DAMM v2 swap2");
+        };
+        assert_eq!(
+            (event.trading_fee, event.protocol_fee, event.partner_fee, event.referral_fee),
+            (7, 2, 4, 1)
+        );
+    }
 
     #[test]
     fn pumpfun_merge_keeps_instruction_context_and_copies_latest_trade_tail() {

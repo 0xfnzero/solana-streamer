@@ -128,29 +128,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.0" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.1" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.0"
+solana-streamer-sdk = "3.0.1"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.0"
+solana-streamer-sdk = "3.0.1"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.1
+
+v3.0.1 使用 `sol-parser-sdk 0.7.1`，修复当前 Meteora DAMM v2 Swap 与 AddLiquidity 的投递。bridge 现在会完整保留 swap fee、transfer fee、reserve、mode 和流动性字段；AddLiquidity 精确过滤会跟随链上统一的 `EvtLiquidityChange` 事件。Streamer 不再维护独立的 DAMM swap payload 解码器，由 `sol-parser-sdk` 作为唯一解析实现，并增加两类问题事件的主网 RPC 回归测试。
 
 ### 升级到 v3.0.0
 

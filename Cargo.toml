@@ -1,6 +1,6 @@
 [package]
 name = "solana-streamer-sdk"
-version = "3.0.0"
+version = "3.0.1"
 edition = "2021"
 rust-version = "1.91"
 authors = ["William <byteblock6@gmail.com>", "sgxiang <sgxiang@gmail.com>", "wei <1415121722@qq.com>"]
@@ -22,7 +22,7 @@ sdk-perf-stats = ["sol-parser-sdk/perf-stats"]
 sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
 
 [dependencies]
-sol-parser-sdk = { path = "../sol-parser-sdk", version = "0.7.0", default-features = false }
+sol-parser-sdk = { path = "../sol-parser-sdk", version = "0.7.1", default-features = false }
 solana-sdk = "=4.0.1"
 solana-client = "=4.2.2"
 solana-transaction-status = { version = "=4.2.2", features = ["agave-unstable-api"] }
