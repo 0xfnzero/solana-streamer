@@ -854,6 +854,58 @@ pub(crate) fn convert_parser_event(
                 e, meta,
             )))
         }
+        PbDexEvent::MeteoraDammV2UpdateDelegatePermission(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDammV2,
+                EventType::MeteoraDammV2UpdateDelegatePermission,
+                meteora_damm_program(),
+            );
+            Some(DexEvent::MeteoraDammV2UpdateDelegatePermissionEvent(
+                meteora_damm_v2_update_delegate_permission_from_pb(e, meta),
+            ))
+        }
+        PbDexEvent::MeteoraDammV2WithdrawDeadLiquidityReward(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDammV2,
+                EventType::MeteoraDammV2WithdrawDeadLiquidityReward,
+                meteora_damm_program(),
+            );
+            Some(DexEvent::MeteoraDammV2WithdrawDeadLiquidityRewardEvent(
+                meteora_damm_v2_withdraw_dead_liquidity_reward_from_pb(e, meta),
+            ))
+        }
+        PbDexEvent::MeteoraDammV2CreateConfig(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDammV2,
+                EventType::MeteoraDammV2CreateConfig,
+                meteora_damm_program(),
+            );
+            Some(DexEvent::MeteoraDammV2CreateConfigEvent(meteora_damm_v2_create_config_from_pb(
+                e, meta,
+            )))
+        }
+        PbDexEvent::MeteoraDammV2CreateDynamicConfig(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::MeteoraDammV2,
+                EventType::MeteoraDammV2CreateDynamicConfig,
+                meteora_damm_program(),
+            );
+            Some(DexEvent::MeteoraDammV2CreateDynamicConfigEvent(
+                meteora_damm_v2_create_dynamic_config_from_pb(e, meta),
+            ))
+        }
 
         PbDexEvent::MeteoraDbcSwap(e) => {
             let meta = adapt_pm(

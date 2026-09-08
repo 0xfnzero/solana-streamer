@@ -128,29 +128,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.1" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.2" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.1"
+solana-streamer-sdk = "3.0.2"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.1"
+solana-streamer-sdk = "3.0.2"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.2", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.2
+
+v3.0.2 使用 `sol-parser-sdk 0.7.2`，并转发新增的 Meteora DAMM v2 事件：`UpdateDelegatePermission`、`WithdrawDeadLiquidityReward`、`CreateConfig`、`CreateDynamicConfig`。TransactionCost 事件会完整保留 Solana V1 的四项 config 请求，并通过 `Message.config` 区分 V1 与 V0。接入 V1 要求 Yellowstone geyser 服务端插件至少为 `15.1.1`；更旧的服务端会静默丢弃 config 并把 V1 降级成 V0。
 
 ### 升级到 v3.0.1
 

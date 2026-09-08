@@ -429,6 +429,61 @@ pub struct MeteoraDammV2ClosePositionEvent {
     pub position_nft_mint: Pubkey,
 }
 
+/// Nested dynamic fee parameters matching sol-parser-sdk naming.
+pub type MeteoraDammV2DynamicFeeParameters = DynamicFeeParameters;
+
+/// DAMM v2 Update Delegate Permission (IDL `EvtUpdateDelegatePermission`)
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2UpdateDelegatePermissionEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub position: Pubkey,
+    pub owner: Pubkey,
+    pub permission: u32,
+    pub delegate: Option<Pubkey>,
+}
+
+/// DAMM v2 Withdraw Dead Liquidity Reward (IDL `EvtWithdrawDeadLiquidityReward`)
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2WithdrawDeadLiquidityRewardEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub pool: Pubkey,
+    pub reward_mint: Pubkey,
+    pub amount: u64,
+}
+
+/// DAMM v2 Create Config (IDL `EvtCreateConfig`, includes 0.2.4 `permission`)
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2CreateConfigEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub base_fee_data: [u8; 27],
+    pub compounding_fee_bps: u16,
+    pub padding: u8,
+    pub dynamic_fee: Option<MeteoraDammV2DynamicFeeParameters>,
+    pub vault_config_key: Pubkey,
+    pub pool_creator_authority: Pubkey,
+    pub activation_type: u8,
+    pub sqrt_min_price: u128,
+    pub sqrt_max_price: u128,
+    pub collect_fee_mode: u8,
+    pub index: u64,
+    pub config: Pubkey,
+    pub permission: u128,
+}
+
+/// DAMM v2 Create Dynamic Config (IDL `EvtCreateDynamicConfig`)
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
+pub struct MeteoraDammV2CreateDynamicConfigEvent {
+    #[borsh(skip)]
+    pub metadata: EventMetadata,
+    pub config: Pubkey,
+    pub pool_creator_authority: Pubkey,
+    pub index: u64,
+    pub permission: u128,
+}
+
 /// Event discriminators
 pub mod discriminators {
     // Instruction discriminators

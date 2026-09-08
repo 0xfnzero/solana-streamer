@@ -2,8 +2,10 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use crate::streaming::event_parser::protocols::meteora_damm_v2::events::{
     MeteoraDammV2AddLiquidityEvent, MeteoraDammV2ClosePositionEvent,
-    MeteoraDammV2CreatePositionEvent, MeteoraDammV2InitializePoolEvent,
-    MeteoraDammV2RemoveLiquidityEvent, MeteoraDammV2SwapEvent,
+    MeteoraDammV2CreateConfigEvent, MeteoraDammV2CreateDynamicConfigEvent,
+    MeteoraDammV2CreatePositionEvent, MeteoraDammV2DynamicFeeParameters,
+    MeteoraDammV2InitializePoolEvent, MeteoraDammV2RemoveLiquidityEvent, MeteoraDammV2SwapEvent,
+    MeteoraDammV2UpdateDelegatePermissionEvent, MeteoraDammV2WithdrawDeadLiquidityRewardEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_amm_v4::events::{
     RaydiumAmmV4DepositEvent, RaydiumAmmV4Initialize2Event, RaydiumAmmV4SwapEvent,
@@ -960,5 +962,79 @@ pub(crate) fn meteora_damm_v2_close_position_from_pb(
         owner: e.owner,
         position: e.position,
         position_nft_mint: e.position_nft_mint,
+    }
+}
+
+fn meteora_damm_v2_dynamic_fee_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDammV2DynamicFeeParameters,
+) -> MeteoraDammV2DynamicFeeParameters {
+    MeteoraDammV2DynamicFeeParameters {
+        bin_step: e.bin_step,
+        bin_step_u128: e.bin_step_u128,
+        filter_period: e.filter_period,
+        decay_period: e.decay_period,
+        reduction_factor: e.reduction_factor,
+        max_volatility_accumulator: e.max_volatility_accumulator,
+        variable_fee_control: e.variable_fee_control,
+    }
+}
+
+pub(crate) fn meteora_damm_v2_update_delegate_permission_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDammV2UpdateDelegatePermissionEvent,
+    meta: EventMetadata,
+) -> MeteoraDammV2UpdateDelegatePermissionEvent {
+    MeteoraDammV2UpdateDelegatePermissionEvent {
+        metadata: meta,
+        position: e.position,
+        owner: e.owner,
+        permission: e.permission,
+        delegate: e.delegate,
+    }
+}
+
+pub(crate) fn meteora_damm_v2_withdraw_dead_liquidity_reward_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDammV2WithdrawDeadLiquidityRewardEvent,
+    meta: EventMetadata,
+) -> MeteoraDammV2WithdrawDeadLiquidityRewardEvent {
+    MeteoraDammV2WithdrawDeadLiquidityRewardEvent {
+        metadata: meta,
+        pool: e.pool,
+        reward_mint: e.reward_mint,
+        amount: e.amount,
+    }
+}
+
+pub(crate) fn meteora_damm_v2_create_config_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDammV2CreateConfigEvent,
+    meta: EventMetadata,
+) -> MeteoraDammV2CreateConfigEvent {
+    MeteoraDammV2CreateConfigEvent {
+        metadata: meta,
+        base_fee_data: e.base_fee_data,
+        compounding_fee_bps: e.compounding_fee_bps,
+        padding: e.padding,
+        dynamic_fee: e.dynamic_fee.map(meteora_damm_v2_dynamic_fee_from_pb),
+        vault_config_key: e.vault_config_key,
+        pool_creator_authority: e.pool_creator_authority,
+        activation_type: e.activation_type,
+        sqrt_min_price: e.sqrt_min_price,
+        sqrt_max_price: e.sqrt_max_price,
+        collect_fee_mode: e.collect_fee_mode,
+        index: e.index,
+        config: e.config,
+        permission: e.permission,
+    }
+}
+
+pub(crate) fn meteora_damm_v2_create_dynamic_config_from_pb(
+    e: sol_parser_sdk::core::events::MeteoraDammV2CreateDynamicConfigEvent,
+    meta: EventMetadata,
+) -> MeteoraDammV2CreateDynamicConfigEvent {
+    MeteoraDammV2CreateDynamicConfigEvent {
+        metadata: meta,
+        config: e.config,
+        pool_creator_authority: e.pool_creator_authority,
+        index: e.index,
+        permission: e.permission,
     }
 }

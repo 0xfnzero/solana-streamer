@@ -154,6 +154,10 @@ pub enum EventType {
     MeteoraDammV2ClosePosition,
     MeteoraDammV2AddLiquidity,
     MeteoraDammV2RemoveLiquidity,
+    MeteoraDammV2UpdateDelegatePermission,
+    MeteoraDammV2WithdrawDeadLiquidityReward,
+    MeteoraDammV2CreateConfig,
+    MeteoraDammV2CreateDynamicConfig,
 
     // Meteora DBC
     MeteoraDbcSwap,

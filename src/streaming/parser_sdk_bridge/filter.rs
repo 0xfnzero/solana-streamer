@@ -123,7 +123,11 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2AddLiquidityEvent(_))
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2RemoveLiquidityEvent(_))
         | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2CreatePositionEvent(_))
-        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2ClosePositionEvent(_)) => true,
+        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2ClosePositionEvent(_))
+        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2UpdateDelegatePermissionEvent(_))
+        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2WithdrawDeadLiquidityRewardEvent(_))
+        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2CreateConfigEvent(_))
+        | (Protocol::MeteoraDammV2, DexEvent::MeteoraDammV2CreateDynamicConfigEvent(_)) => true,
         (Protocol::MeteoraDbc, DexEvent::MeteoraDbcSwapEvent(_))
         | (Protocol::MeteoraDbc, DexEvent::MeteoraDbcInitializePoolEvent(_))
         | (Protocol::MeteoraDbc, DexEvent::MeteoraDbcCurveCompleteEvent(_)) => true,

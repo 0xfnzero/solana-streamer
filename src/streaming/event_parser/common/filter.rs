@@ -310,6 +310,14 @@ fn push_streamer_event_sdk_grpc_types(
         St::MeteoraDammV2InitializePool => out.push(Sdk::MeteoraDammV2InitializePool),
         St::MeteoraDammV2CreatePosition => out.push(Sdk::MeteoraDammV2CreatePosition),
         St::MeteoraDammV2ClosePosition => out.push(Sdk::MeteoraDammV2ClosePosition),
+        St::MeteoraDammV2UpdateDelegatePermission => {
+            out.push(Sdk::MeteoraDammV2UpdateDelegatePermission)
+        }
+        St::MeteoraDammV2WithdrawDeadLiquidityReward => {
+            out.push(Sdk::MeteoraDammV2WithdrawDeadLiquidityReward)
+        }
+        St::MeteoraDammV2CreateConfig => out.push(Sdk::MeteoraDammV2CreateConfig),
+        St::MeteoraDammV2CreateDynamicConfig => out.push(Sdk::MeteoraDammV2CreateDynamicConfig),
         St::MeteoraDbcSwap => out.push(Sdk::MeteoraDbcSwap),
         St::MeteoraDbcInitializePool => out.push(Sdk::MeteoraDbcInitializePool),
         St::MeteoraDbcCurveComplete => out.push(Sdk::MeteoraDbcCurveComplete),
@@ -438,6 +446,10 @@ fn push_protocol_sdk_grpc_event_types(protocol: &Protocol, out: &mut Vec<SdkGrpc
             Sdk::MeteoraDammV2InitializePool,
             Sdk::MeteoraDammV2CreatePosition,
             Sdk::MeteoraDammV2ClosePosition,
+            Sdk::MeteoraDammV2UpdateDelegatePermission,
+            Sdk::MeteoraDammV2WithdrawDeadLiquidityReward,
+            Sdk::MeteoraDammV2CreateConfig,
+            Sdk::MeteoraDammV2CreateDynamicConfig,
         ]),
         StProtocol::MeteoraDbc => out.extend_from_slice(&[
             Sdk::MeteoraDbcSwap,
@@ -831,6 +843,10 @@ mod tests {
             EventType::MeteoraDammV2InitializePool,
             EventType::MeteoraDammV2CreatePosition,
             EventType::MeteoraDammV2ClosePosition,
+            EventType::MeteoraDammV2UpdateDelegatePermission,
+            EventType::MeteoraDammV2WithdrawDeadLiquidityReward,
+            EventType::MeteoraDammV2CreateConfig,
+            EventType::MeteoraDammV2CreateDynamicConfig,
             EventType::MeteoraDbcSwap,
             EventType::MeteoraDbcInitializePool,
             EventType::MeteoraDbcCurveComplete,

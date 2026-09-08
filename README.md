@@ -129,29 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.1" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.2" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.1"
+solana-streamer-sdk = "3.0.2"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.1"
+solana-streamer-sdk = "3.0.2"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.1", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.2", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.2
+
+Version 3.0.2 uses `sol-parser-sdk 0.7.2` and forwards the new Meteora DAMM v2 events: `UpdateDelegatePermission`, `WithdrawDeadLiquidityReward`, `CreateConfig`, and `CreateDynamicConfig`. Transaction-cost events preserve all four Solana V1 config requests, and Yellowstone V1 messages are distinguished from V0 through `Message.config`. V1 ingestion requires a Yellowstone geyser server plugin version of at least `15.1.1`; older servers silently discard the config while downgrading V1 to V0.
 
 ### Upgrading to v3.0.1
 

@@ -13,6 +13,10 @@ pub struct TransactionCostEvent {
     pub compute_units_consumed: Option<u64>,
     pub compute_unit_limit: Option<u32>,
     pub compute_unit_price_micro_lamports: Option<u64>,
+    #[serde(default)]
+    pub loaded_accounts_data_size_limit: Option<u32>,
+    #[serde(default)]
+    pub heap_size: Option<u32>,
     pub priority_fee_lamports: Option<u64>,
     pub tip_payments_confirmed: bool,
     pub tip_lamports: u64,
@@ -51,6 +55,8 @@ impl TransactionCostEvent {
             compute_units_consumed: cost.compute_units_consumed,
             compute_unit_limit: cost.compute_unit_limit,
             compute_unit_price_micro_lamports: cost.compute_unit_price_micro_lamports,
+            loaded_accounts_data_size_limit: cost.loaded_accounts_data_size_limit,
+            heap_size: cost.heap_size,
             priority_fee_lamports: cost.priority_fee_lamports,
             tip_payments_confirmed: cost.tip_payments_confirmed,
             tip_lamports: cost.tip_lamports,
@@ -64,5 +70,56 @@ impl TransactionCostEvent {
             .iter()
             .filter(|payment| payment.provider == provider)
             .fold(0u64, |total, payment| total.saturating_add(payment.lamports))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_all_v1_transaction_config_fields() {
+        let event = TransactionCostEvent::from_parser(
+            TransactionCost {
+                compute_unit_limit: Some(234_567),
+                priority_fee_lamports: Some(4_321),
+                loaded_accounts_data_size_limit: Some(1_048_576),
+                heap_size: Some(65_536),
+                ..TransactionCost::default()
+            },
+            Signature::default(),
+            42,
+            Some(3),
+            None,
+            0,
+            None,
+        );
+
+        assert_eq!(event.compute_unit_limit, Some(234_567));
+        assert_eq!(event.priority_fee_lamports, Some(4_321));
+        assert_eq!(event.loaded_accounts_data_size_limit, Some(1_048_576));
+        assert_eq!(event.heap_size, Some(65_536));
+    }
+
+    #[test]
+    fn deserializes_event_json_from_before_v1_resource_fields() {
+        let event = TransactionCostEvent::from_parser(
+            TransactionCost::default(),
+            Signature::default(),
+            42,
+            None,
+            None,
+            0,
+            None,
+        );
+        let mut value = serde_json::to_value(event).expect("serialize event");
+        let object = value.as_object_mut().expect("event object");
+        object.remove("loaded_accounts_data_size_limit");
+        object.remove("heap_size");
+
+        let decoded: TransactionCostEvent =
+            serde_json::from_value(value).expect("legacy TransactionCostEvent JSON");
+        assert_eq!(decoded.loaded_accounts_data_size_limit, None);
+        assert_eq!(decoded.heap_size, None);
     }
 }
