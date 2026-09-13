@@ -56,6 +56,8 @@ pub(crate) fn pumpfun_create_token_from_parser(
         quote_vault: c.quote_vault,
         quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
+        creator_fee_bps: c.creator_fee_bps,
+        is_holder_reward: c.is_holder_reward,
         ix_name: "create".to_string(),
         ..Default::default()
     }
@@ -86,6 +88,8 @@ pub(crate) fn pumpfun_create_token_from_parser_v2(
         quote_vault: c.quote_vault,
         quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
+        creator_fee_bps: c.creator_fee_bps,
+        is_holder_reward: c.is_holder_reward,
         ix_name: "create_v2".to_string(),
         mint_authority: c.mint_authority,
         associated_bonding_curve: c.associated_bonding_curve,
@@ -378,6 +382,9 @@ pub(crate) fn pumpfun_bonding_curve_account_from_parser(
             is_mayhem_mode: e.bonding_curve.is_mayhem_mode,
             is_cashback_coin: e.bonding_curve.is_cashback_coin,
             quote_mint: normalize_pumpfun_quote_mint(e.bonding_curve.quote_mint),
+            creator_fee_bps: e.bonding_curve.creator_fee_bps,
+            can_edit_creator_fee: e.bonding_curve.can_edit_creator_fee,
+            is_holder_reward: e.bonding_curve.is_holder_reward,
         },
     }
 }
@@ -528,6 +535,8 @@ pub(crate) fn pumpswap_buy_full_from_parser(
         virtual_quote_reserves: b.virtual_quote_reserves,
         can_boost: b.can_boost,
         base_supply: b.base_supply,
+        holder_rewards_bps: b.holder_rewards_bps,
+        holder_rewards: b.holder_rewards,
         is_pump_pool: b.is_pump_pool,
         base_mint: b.base_mint,
         quote_mint: b.quote_mint,
@@ -579,6 +588,8 @@ pub(crate) fn pumpswap_sell_full_from_parser(
         virtual_quote_reserves: s.virtual_quote_reserves,
         can_boost: s.can_boost,
         base_supply: s.base_supply,
+        holder_rewards_bps: s.holder_rewards_bps,
+        holder_rewards: s.holder_rewards,
         is_pump_pool: s.is_pump_pool,
         base_mint: s.base_mint,
         quote_mint: s.quote_mint,
@@ -622,6 +633,9 @@ pub(crate) fn pumpswap_create_pool_from_parser(
         coin_creator: c.coin_creator,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_coin: c.is_cashback_coin,
+        creator_fee_bps: c.creator_fee_bps,
+        can_edit_creator_fee: c.can_edit_creator_fee,
+        is_holder_reward: c.is_holder_reward,
         ..Default::default()
     }
 }
@@ -744,6 +758,8 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         quote_amount: t.quote_amount,
         virtual_quote_reserves: t.virtual_quote_reserves,
         real_quote_reserves: t.real_quote_reserves,
+        holder_rewards_bps: t.holder_rewards_bps,
+        holder_rewards: t.holder_rewards,
         is_cashback_coin: t.is_cashback_coin,
         is_created_buy: t.is_created_buy,
         is_dev_create_token_trade: t.is_created_buy,
@@ -908,6 +924,28 @@ mod tests {
             DexEvent::PumpFunTradeEvent(t) => {
                 assert_eq!(t.token_balance, Some(25));
                 assert_eq!(t.sol_balance, Some(900));
+            }
+            _ => panic!("expected PumpFunTradeEvent"),
+        }
+    }
+
+    #[test]
+    fn pumpfun_holder_rewards_are_preserved() {
+        let ev = pumpfun_trade_from_parser_with_event_type(
+            sol_parser_sdk::core::events::PumpFunTradeEvent {
+                holder_rewards_bps: 250,
+                holder_rewards: 1_234,
+                ..Default::default()
+            },
+            None,
+            0,
+            EventType::PumpFunBuy,
+        );
+
+        match ev {
+            DexEvent::PumpFunTradeEvent(t) => {
+                assert_eq!(t.holder_rewards_bps, 250);
+                assert_eq!(t.holder_rewards, 1_234);
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }

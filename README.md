@@ -129,29 +129,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.2" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.3" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.2"
+solana-streamer-sdk = "3.0.3"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.2"
+solana-streamer-sdk = "3.0.3"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.2", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.3
+
+Version 3.0.3 uses `sol-parser-sdk 0.7.3` and synchronizes the current PumpFun, PumpSwap, and Pump Fees protocol schemas. PumpFun create/trade events and PumpSwap buy/sell/create-pool events now preserve creator-fee and holder-reward fields through the streamer bridge. PumpFun bonding-curve and PumpSwap pool account events also expose the new creator-fee editability and holder-reward state while retaining defaults for legacy accounts and JSON payloads. The parser rejects truncated current PumpSwap trade and CreatePool tails instead of returning partially populated events.
 
 ### Upgrading to v3.0.2
 

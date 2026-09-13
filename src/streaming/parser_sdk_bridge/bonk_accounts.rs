@@ -202,6 +202,9 @@ pub(crate) fn pumpswap_pool_from_pb(p: sol_parser_sdk::core::events::PumpSwapPoo
         is_mayhem_mode: p.is_mayhem_mode,
         is_cashback_coin: p.is_cashback_coin,
         virtual_quote_reserves: p.virtual_quote_reserves,
+        creator_fee_bps: p.creator_fee_bps,
+        can_edit_creator_fee: p.can_edit_creator_fee,
+        is_holder_reward: p.is_holder_reward,
     }
 }
 

@@ -36,6 +36,14 @@ pub struct PumpFunCreateTokenEvent {
     pub quote_token_program: Pubkey,
     #[borsh(skip)]
     pub virtual_quote_reserves: u64,
+    /// Coin-specific creator fee rate. Zero uses the standard fee schedule.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_bps: u64,
+    /// Whether creator fees are distributed to holders.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub is_holder_reward: bool,
     /// Original PumpFun instruction name: "create" or "create_v2".
     #[borsh(skip)]
     pub ix_name: String,
@@ -102,6 +110,12 @@ pub struct PumpFunCreateV2TokenEvent {
     pub quote_token_program: Pubkey,
     #[borsh(skip)]
     pub virtual_quote_reserves: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_bps: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub is_holder_reward: bool,
     #[borsh(skip)]
     pub mint_authority: Pubkey,
     #[borsh(skip)]
@@ -226,6 +240,14 @@ pub struct PumpFunTradeEvent {
     pub virtual_quote_reserves: u64,
     #[borsh(skip)]
     pub real_quote_reserves: u64,
+    /// Holder rewards fee rate. Zero for regular coins and legacy events.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub holder_rewards_bps: u64,
+    /// Holder rewards amount. Zero for regular coins and legacy events.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub holder_rewards: u64,
     /// Whether this is a cashback coin (cashback_fee_basis_points > 0)
     #[borsh(skip)]
     pub is_cashback_coin: bool,

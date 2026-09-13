@@ -104,6 +104,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_u64(&mut e.quote_amount, cpie.quote_amount);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
                 fill_u64(&mut e.real_quote_reserves, cpie.real_quote_reserves);
+                overwrite_u64_if_present(&mut e.holder_rewards_bps, cpie.holder_rewards_bps);
+                overwrite_u64_if_present(&mut e.holder_rewards, cpie.holder_rewards);
                 e.is_cashback_coin |= cpie.is_cashback_coin;
                 e.is_created_buy |= cpie.is_created_buy;
                 fill_u64(&mut e.amount, cpie.amount);
@@ -193,8 +195,10 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
                 fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                overwrite_u64_if_present(&mut e.creator_fee_bps, cpie.creator_fee_bps);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
+                e.is_holder_reward |= cpie.is_holder_reward;
             }
             _ => {}
         },
@@ -217,8 +221,10 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
                 fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                overwrite_u64_if_present(&mut e.creator_fee_bps, cpie.creator_fee_bps);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
+                e.is_holder_reward |= cpie.is_holder_reward;
             }
             DexEvent::PumpFunCreateV2TokenEvent(cpie) => {
                 fill_string(&mut e.name, cpie.name);
@@ -258,8 +264,10 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 fill_pubkey(&mut e.quote_vault, cpie.quote_vault);
                 fill_pubkey(&mut e.quote_token_program, cpie.quote_token_program);
                 fill_u64(&mut e.virtual_quote_reserves, cpie.virtual_quote_reserves);
+                overwrite_u64_if_present(&mut e.creator_fee_bps, cpie.creator_fee_bps);
                 e.is_mayhem_mode |= cpie.is_mayhem_mode;
                 e.is_cashback_enabled |= cpie.is_cashback_enabled;
+                e.is_holder_reward |= cpie.is_holder_reward;
             }
             _ => {}
         },
@@ -392,6 +400,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 );
                 e.can_boost |= cpie.can_boost;
                 overwrite_u64_if_present(&mut e.base_supply, cpie.base_supply);
+                overwrite_u64_if_present(&mut e.holder_rewards_bps, cpie.holder_rewards_bps);
+                overwrite_u64_if_present(&mut e.holder_rewards, cpie.holder_rewards);
                 e.is_pump_pool |= cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
@@ -451,6 +461,8 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 );
                 e.can_boost |= cpie.can_boost;
                 overwrite_u64_if_present(&mut e.base_supply, cpie.base_supply);
+                overwrite_u64_if_present(&mut e.holder_rewards_bps, cpie.holder_rewards_bps);
+                overwrite_u64_if_present(&mut e.holder_rewards, cpie.holder_rewards);
                 e.is_pump_pool |= cpie.is_pump_pool;
                 fill_pubkey(&mut e.base_mint, cpie.base_mint);
                 fill_pubkey(&mut e.quote_mint, cpie.quote_mint);
@@ -493,6 +505,9 @@ pub fn merge(instruction_event: &mut DexEvent, cpi_log_event: DexEvent) {
                 e.coin_creator = cpie.coin_creator;
                 e.is_mayhem_mode = cpie.is_mayhem_mode;
                 e.is_cashback_coin |= cpie.is_cashback_coin;
+                overwrite_u64_if_present(&mut e.creator_fee_bps, cpie.creator_fee_bps);
+                e.can_edit_creator_fee |= cpie.can_edit_creator_fee;
+                e.is_holder_reward |= cpie.is_holder_reward;
             }
             _ => {}
         },
@@ -934,9 +949,11 @@ mod tests {
         MeteoraDammV2Swap2Event, MeteoraDammV2SwapEvent,
     };
     use crate::streaming::event_parser::protocols::pumpfun::events::{
-        PumpFeesShareholder, PumpFunTradeEvent,
+        PumpFeesShareholder, PumpFunCreateTokenEvent, PumpFunCreateV2TokenEvent, PumpFunTradeEvent,
     };
-    use crate::streaming::event_parser::protocols::pumpswap::events::PumpSwapSellEvent;
+    use crate::streaming::event_parser::protocols::pumpswap::events::{
+        PumpSwapCreatePoolEvent, PumpSwapSellEvent,
+    };
 
     #[test]
     fn damm_v2_merge_copies_all_current_fee_fields() {
@@ -1004,6 +1021,8 @@ mod tests {
             quote_amount: 500,
             virtual_quote_reserves: 700,
             real_quote_reserves: 800,
+            holder_rewards_bps: 250,
+            holder_rewards: 125,
             is_created_buy: true,
             ..Default::default()
         });
@@ -1026,6 +1045,8 @@ mod tests {
                 assert_eq!(t.quote_amount, 500);
                 assert_eq!(t.virtual_quote_reserves, 700);
                 assert_eq!(t.real_quote_reserves, 800);
+                assert_eq!(t.holder_rewards_bps, 250);
+                assert_eq!(t.holder_rewards, 125);
                 assert!(t.is_created_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
@@ -1072,6 +1093,8 @@ mod tests {
             buyback_fee: 22,
             can_boost: true,
             base_supply: 33,
+            holder_rewards_bps: 44,
+            holder_rewards: 55,
             ..Default::default()
         });
 
@@ -1085,6 +1108,8 @@ mod tests {
         assert_eq!(event.buyback_fee, 22);
         assert!(event.can_boost);
         assert_eq!(event.base_supply, 33);
+        assert_eq!(event.holder_rewards_bps, 44);
+        assert_eq!(event.holder_rewards, 55);
     }
 
     #[test]
@@ -1097,6 +1122,8 @@ mod tests {
             virtual_quote_reserves: -500,
             can_boost: true,
             base_supply: 60,
+            holder_rewards_bps: 70,
+            holder_rewards: 80,
             is_pump_pool: true,
             ..Default::default()
         });
@@ -1113,7 +1140,52 @@ mod tests {
         assert_eq!(event.virtual_quote_reserves, -500);
         assert!(event.can_boost);
         assert_eq!(event.base_supply, 60);
+        assert_eq!(event.holder_rewards_bps, 70);
+        assert_eq!(event.holder_rewards, 80);
         assert!(event.is_pump_pool);
+    }
+
+    #[test]
+    fn pumpfun_create_merge_preserves_holder_reward_fields() {
+        let mut instruction_event = DexEvent::PumpFunCreateTokenEvent(PumpFunCreateTokenEvent {
+            creator_fee_bps: 125,
+            ..Default::default()
+        });
+        let log_event = DexEvent::PumpFunCreateV2TokenEvent(PumpFunCreateV2TokenEvent {
+            creator_fee_bps: 250,
+            is_holder_reward: true,
+            ..Default::default()
+        });
+
+        merge(&mut instruction_event, log_event);
+
+        let DexEvent::PumpFunCreateTokenEvent(event) = instruction_event else {
+            panic!("expected PumpFunCreateTokenEvent");
+        };
+        assert_eq!(event.creator_fee_bps, 250);
+        assert!(event.is_holder_reward);
+    }
+
+    #[test]
+    fn pumpswap_create_pool_merge_preserves_holder_reward_fields() {
+        let mut instruction_event = DexEvent::PumpSwapCreatePoolEvent(PumpSwapCreatePoolEvent {
+            creator_fee_bps: 125,
+            can_edit_creator_fee: true,
+            is_holder_reward: true,
+            ..Default::default()
+        });
+
+        merge(
+            &mut instruction_event,
+            DexEvent::PumpSwapCreatePoolEvent(PumpSwapCreatePoolEvent::default()),
+        );
+
+        let DexEvent::PumpSwapCreatePoolEvent(event) = instruction_event else {
+            panic!("expected PumpSwapCreatePoolEvent");
+        };
+        assert_eq!(event.creator_fee_bps, 125);
+        assert!(event.can_edit_creator_fee);
+        assert!(event.is_holder_reward);
     }
 
     #[test]

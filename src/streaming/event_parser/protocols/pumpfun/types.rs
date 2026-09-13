@@ -14,9 +14,17 @@ pub struct BondingCurve {
     pub is_mayhem_mode: bool,
     pub is_cashback_coin: bool,
     pub quote_mint: Pubkey,
+    #[serde(default)]
+    pub creator_fee_bps: u64,
+    #[serde(default)]
+    pub can_edit_creator_fee: bool,
+    #[serde(default)]
+    pub is_holder_reward: bool,
 }
 
-pub const BONDING_CURVE_SIZE: usize = 8 * 5 + 1 + 32 + 1 + 1 + 32;
+pub const BONDING_CURVE_LEGACY_SIZE: usize = 8 * 5 + 1 + 32 + 1 + 1 + 32;
+pub const BONDING_CURVE_CREATOR_FEE_SIZE: usize = BONDING_CURVE_LEGACY_SIZE + 8 + 1;
+pub const BONDING_CURVE_SIZE: usize = BONDING_CURVE_CREATOR_FEE_SIZE + 1;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct Global {

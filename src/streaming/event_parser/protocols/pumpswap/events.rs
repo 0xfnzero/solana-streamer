@@ -54,6 +54,10 @@ pub struct PumpSwapBuyEvent {
     pub can_boost: bool,
     #[serde(default)]
     pub base_supply: u64,
+    #[serde(default)]
+    pub holder_rewards_bps: u64,
+    #[serde(default)]
+    pub holder_rewards: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]
@@ -125,6 +129,10 @@ pub struct PumpSwapSellEvent {
     pub can_boost: bool,
     #[serde(default)]
     pub base_supply: u64,
+    #[serde(default)]
+    pub holder_rewards_bps: u64,
+    #[serde(default)]
+    pub holder_rewards: u64,
     #[borsh(skip)]
     pub is_pump_pool: bool,
     #[borsh(skip)]
@@ -185,6 +193,18 @@ pub struct PumpSwapCreatePoolEvent {
     #[borsh(skip)]
     #[serde(default)]
     pub is_cashback_coin: bool,
+    /// Coin-specific creator fee rate carried over from the bonding curve.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_bps: u64,
+    /// Reserved by the program; currently false.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub can_edit_creator_fee: bool,
+    /// Whether creator fees are distributed to holders.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub is_holder_reward: bool,
     #[borsh(skip)]
     pub user_pool_token_account: Pubkey,
     #[borsh(skip)]
@@ -284,6 +304,8 @@ mod tests {
         object.remove("virtual_quote_reserves");
         object.remove("can_boost");
         object.remove("base_supply");
+        object.remove("holder_rewards_bps");
+        object.remove("holder_rewards");
 
         let decoded: PumpSwapSellEvent = serde_json::from_value(value).unwrap();
         assert_eq!(decoded.buyback_fee_basis_points, 0);
@@ -291,6 +313,8 @@ mod tests {
         assert_eq!(decoded.virtual_quote_reserves, 0);
         assert!(!decoded.can_boost);
         assert_eq!(decoded.base_supply, 0);
+        assert_eq!(decoded.holder_rewards_bps, 0);
+        assert_eq!(decoded.holder_rewards, 0);
     }
 }
 

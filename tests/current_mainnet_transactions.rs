@@ -22,6 +22,73 @@ fn rpc_client() -> RpcClient {
 // Run with: RUN_MAINNET_TESTS=1 SOLANA_RPC_URL=<optional archive RPC> cargo test --test current_mainnet_transactions
 
 #[test]
+fn current_pumpfun_holder_reward_trade_preserves_reward_tail() {
+    if !run_mainnet_tests() {
+        return;
+    }
+    const SIGNATURE: &str =
+        "4xesV2yysHa1S2t6wkW8gJKTJ23LbtnKqchbtuRAmeSGqVWXTuZ755nQRzg4xZNYUmyeZr8Hpq8UW4iVe24YLrf2";
+    let signature = Signature::from_str(SIGNATURE).expect("valid fixture signature");
+    let filter = EventTypeFilter::include_only([EventType::PumpFunBuy]);
+    let events = fetch_rpc_transaction_as_streamer_events(
+        &rpc_client(),
+        &signature,
+        0,
+        &[Protocol::PumpFun],
+        Some(&filter),
+    )
+    .expect("parse current PumpFun holder-reward trade");
+
+    assert_eq!(events.len(), 1);
+    let DexEvent::PumpFunTradeEvent(trade) = &events[0] else {
+        panic!("expected PumpFun trade");
+    };
+    assert_eq!(trade.metadata.signature, signature);
+    assert_eq!(trade.metadata.slot, 446_704_267);
+    assert_eq!(trade.token_amount, 33_183_665_172);
+    assert_eq!(trade.quote_amount, 111_485_301);
+    assert_eq!(trade.creator_fee_basis_points, 300);
+    assert_eq!(trade.creator_fee, 3_344_560);
+    assert_eq!(trade.holder_rewards_bps, 300);
+    assert_eq!(trade.holder_rewards, 3_344_560);
+}
+
+#[test]
+fn current_pumpswap_buy_preserves_complete_upgrade_tail() {
+    if !run_mainnet_tests() {
+        return;
+    }
+    const SIGNATURE: &str =
+        "4tCWJ41mFmJNU6KPk1dQpbVH9noysGKcuTTMcb7NQsE2U4Kr2x9rNNipCKLRuxA38j7TJPPYzC9eNA7piNyTPat1";
+    let signature = Signature::from_str(SIGNATURE).expect("valid fixture signature");
+    let filter = EventTypeFilter::include_only([EventType::PumpSwapBuy]);
+    let events = fetch_rpc_transaction_as_streamer_events(
+        &rpc_client(),
+        &signature,
+        0,
+        &[Protocol::PumpSwap],
+        Some(&filter),
+    )
+    .expect("parse current PumpSwap buy");
+
+    assert_eq!(events.len(), 1);
+    let DexEvent::PumpSwapBuyEvent(buy) = &events[0] else {
+        panic!("expected PumpSwap buy");
+    };
+    assert_eq!(buy.metadata.signature, signature);
+    assert_eq!(buy.metadata.slot, 446_704_571);
+    assert_eq!(buy.base_amount_out, 88_002_570_945);
+    assert_eq!(buy.quote_amount_in, 99_000_000);
+    assert_eq!(buy.buyback_fee_basis_points, 5_000);
+    assert_eq!(buy.buyback_fee, 24_457);
+    assert_eq!(buy.virtual_quote_reserves, 17_584_505_355);
+    assert!(buy.can_boost);
+    assert_eq!(buy.base_supply, 976_275_975_409_128);
+    assert_eq!(buy.holder_rewards_bps, 0);
+    assert_eq!(buy.holder_rewards, 0);
+}
+
+#[test]
 fn current_meteora_damm_v2_swap_passes_exact_filter() {
     if !run_mainnet_tests() {
         return;

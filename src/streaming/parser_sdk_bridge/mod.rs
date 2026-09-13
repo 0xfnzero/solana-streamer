@@ -92,6 +92,8 @@ mod tests {
         t.quote_amount = 14;
         t.virtual_quote_reserves = 15;
         t.real_quote_reserves = 16;
+        t.holder_rewards_bps = 17;
+        t.holder_rewards = 18;
         t.is_buy = true;
 
         let ev = convert_parser_event(PbDexEvent::PumpFunTrade(t), None, 999).expect("convert");
@@ -126,6 +128,8 @@ mod tests {
                 assert_eq!(st.quote_amount, 14);
                 assert_eq!(st.virtual_quote_reserves, 15);
                 assert_eq!(st.real_quote_reserves, 16);
+                assert_eq!(st.holder_rewards_bps, 17);
+                assert_eq!(st.holder_rewards, 18);
                 assert!(st.is_buy);
             }
             _ => panic!("expected PumpFunTradeEvent"),
@@ -260,6 +264,8 @@ mod tests {
             quote_token_program,
             is_mayhem_mode: true,
             is_cashback_enabled: true,
+            creator_fee_bps: 250,
+            is_holder_reward: true,
             ..Default::default()
         };
 
@@ -276,6 +282,8 @@ mod tests {
                 assert_eq!(st.ix_name, "create_v2");
                 assert!(st.is_mayhem_mode);
                 assert!(st.is_cashback_enabled);
+                assert_eq!(st.creator_fee_bps, 250);
+                assert!(st.is_holder_reward);
             }
             other => panic!("expected canonical PumpFunCreateTokenEvent, got {other:?}"),
         }
@@ -314,6 +322,9 @@ mod tests {
             quote_mint: Pubkey::new_unique(),
             is_mayhem_mode: true,
             is_cashback_coin: true,
+            creator_fee_bps: 250,
+            can_edit_creator_fee: true,
+            is_holder_reward: true,
             ..Default::default()
         };
 
@@ -324,6 +335,9 @@ mod tests {
                 assert_eq!(st.metadata.event_type, EventType::PumpSwapCreatePool);
                 assert!(st.is_mayhem_mode);
                 assert!(st.is_cashback_coin);
+                assert_eq!(st.creator_fee_bps, 250);
+                assert!(st.can_edit_creator_fee);
+                assert!(st.is_holder_reward);
             }
             _ => panic!("expected PumpSwapCreatePoolEvent"),
         }
@@ -337,6 +351,8 @@ mod tests {
             buyback_fee: 22,
             can_boost: true,
             base_supply: 33,
+            holder_rewards_bps: 44,
+            holder_rewards: 55,
             ..Default::default()
         };
 
@@ -350,6 +366,8 @@ mod tests {
         assert_eq!(converted.buyback_fee, 22);
         assert!(converted.can_boost);
         assert_eq!(converted.base_supply, 33);
+        assert_eq!(converted.holder_rewards_bps, 44);
+        assert_eq!(converted.holder_rewards, 55);
     }
 
     #[test]
@@ -360,6 +378,8 @@ mod tests {
             buyback_fee: 55,
             can_boost: true,
             base_supply: 66,
+            holder_rewards_bps: 77,
+            holder_rewards: 88,
             ..Default::default()
         };
 
@@ -373,6 +393,8 @@ mod tests {
         assert_eq!(converted.buyback_fee, 55);
         assert!(converted.can_boost);
         assert_eq!(converted.base_supply, 66);
+        assert_eq!(converted.holder_rewards_bps, 77);
+        assert_eq!(converted.holder_rewards, 88);
     }
 
     #[test]
@@ -406,6 +428,9 @@ mod tests {
                 is_mayhem_mode: true,
                 is_cashback_coin: true,
                 virtual_quote_reserves: -777,
+                creator_fee_bps: 250,
+                can_edit_creator_fee: true,
+                is_holder_reward: true,
             },
         };
 
@@ -418,6 +443,9 @@ mod tests {
                 assert!(st.pool.is_mayhem_mode);
                 assert!(st.pool.is_cashback_coin);
                 assert_eq!(st.pool.virtual_quote_reserves, -777);
+                assert_eq!(st.pool.creator_fee_bps, 250);
+                assert!(st.pool.can_edit_creator_fee);
+                assert!(st.pool.is_holder_reward);
             }
             _ => panic!("expected PumpSwapPoolAccountEvent"),
         }

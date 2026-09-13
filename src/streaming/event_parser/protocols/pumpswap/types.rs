@@ -35,11 +35,21 @@ pub struct Pool {
     pub is_cashback_coin: bool,
     #[serde(default)]
     pub virtual_quote_reserves: i128,
+    #[serde(default)]
+    pub creator_fee_bps: u64,
+    #[serde(default)]
+    pub can_edit_creator_fee: bool,
+    #[serde(default)]
+    pub is_holder_reward: bool,
 }
 
 /// Legacy allocated pool account body.
 pub const POOL_BODY_LEGACY: usize = 244;
-/// Current serialized pool account body including signed virtual quote reserves.
-pub const POOL_BODY: usize = 253;
+/// Boost-era body including signed virtual quote reserves.
+pub const POOL_BODY_BOOST: usize = 253;
+/// Creator-fee body before the holder-reward flag was added.
+pub const POOL_BODY_CREATOR_FEE: usize = 262;
+/// Current serialized pool account body.
+pub const POOL_BODY: usize = 263;
 
 pub const POOL_SIZE: usize = POOL_BODY;
