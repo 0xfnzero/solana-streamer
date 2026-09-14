@@ -14,7 +14,8 @@ use crate::streaming::event_parser::protocols::pumpswap::events::{
 };
 use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, Pool};
 use sol_parser_sdk::core::events::{
-    RaydiumLaunchlabTradeEvent as PbBonkTrade, TradeDirection as PbBonkTradeDirection,
+    RaydiumLaunchlabPoolStatus as PbPoolStatus, RaydiumLaunchlabTradeEvent as PbBonkTrade,
+    TradeDirection as PbBonkTradeDirection,
 };
 #[inline]
 pub(crate) fn pb_bonk_trade_direction(d: PbBonkTradeDirection) -> BonkTradeDirection {
@@ -38,8 +39,6 @@ pub(crate) fn sdk_bonk_trade_event_type(
     }
 }
 
-/// SDK Bonk trade events do not expose reserves or fee rates; keep those fields at streamer
-/// defaults.
 pub(crate) fn bonk_trade_from_parser(
     b: sol_parser_sdk::core::events::RaydiumLaunchlabTradeEvent,
     meta: EventMetadata,
@@ -47,21 +46,25 @@ pub(crate) fn bonk_trade_from_parser(
     BonkTradeEvent {
         metadata: meta,
         pool_state: b.pool_state,
-        total_base_sell: 0,
-        virtual_base: 0,
-        virtual_quote: 0,
-        real_base_before: 0,
-        real_quote_before: 0,
-        real_base_after: 0,
-        real_quote_after: 0,
+        total_base_sell: b.total_base_sell,
+        virtual_base: b.virtual_base,
+        virtual_quote: b.virtual_quote,
+        real_base_before: b.real_base_before,
+        real_quote_before: b.real_quote_before,
+        real_base_after: b.real_base_after,
+        real_quote_after: b.real_quote_after,
         amount_in: b.amount_in,
         amount_out: b.amount_out,
-        protocol_fee: 0,
-        platform_fee: 0,
-        creator_fee: 0,
-        share_fee: 0,
+        protocol_fee: b.protocol_fee,
+        platform_fee: b.platform_fee,
+        creator_fee: b.creator_fee,
+        share_fee: b.share_fee,
         trade_direction: pb_bonk_trade_direction(b.trade_direction),
-        pool_status: PoolStatus::Trade,
+        pool_status: match b.pool_status {
+            PbPoolStatus::Fund => PoolStatus::Fund,
+            PbPoolStatus::Migrate => PoolStatus::Migrate,
+            PbPoolStatus::Trade => PoolStatus::Trade,
+        },
         exact_in: b.exact_in,
         payer: b.user,
         global_config: b.global_config,
@@ -74,6 +77,9 @@ pub(crate) fn bonk_trade_from_parser(
         quote_token_mint: b.quote_mint,
         base_token_program: b.base_token_program,
         quote_token_program: b.quote_token_program,
+        system_program: b.system_program,
+        platform_associated_account: b.platform_associated_account,
+        creator_associated_account: b.creator_associated_account,
         ..Default::default()
     }
 }
@@ -269,6 +275,7 @@ mod tests {
             quote_mint: keys[9],
             base_token_program: keys[10],
             quote_token_program: Pubkey::new_unique(),
+            ..Default::default()
         };
         let quote_token_program = event.quote_token_program;
 

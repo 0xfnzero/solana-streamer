@@ -39,6 +39,10 @@ mod tests {
     use crate::streaming::event_parser::common::filter::EventTypeFilter;
     use crate::streaming::event_parser::common::types::{EventType, ProtocolType};
     use crate::streaming::event_parser::core::account_event_parser::TokenInfoEvent;
+    use crate::streaming::event_parser::protocols::bonk::{
+        BonkMigrateToCpswapEvent, BonkPlatformConfigAccountEvent, BonkPoolStateAccountEvent,
+        PoolState,
+    };
     use crate::streaming::event_parser::{DexEvent, Protocol};
     use sol_parser_sdk::core::events::{
         EventMetadata, MeteoraDammV2AddLiquidityEvent as PbDammAddLiquidity,
@@ -49,7 +53,7 @@ mod tests {
         PumpSwapCreatePoolEvent as PbPumpSwapCreatePool, PumpSwapPool as PbPumpSwapPool,
         PumpSwapPoolAccountEvent as PbPumpSwapPoolAccount, PumpSwapSellEvent as PbPumpSwapSell,
         RaydiumLaunchlabTradeEvent as PbBonkTrade, TokenInfoEvent as PbTokenInfo,
-        TradeDirection as PbBonkDir,
+        TradeDirection as PbBonkDir, STONKFUN_REWARD_PLATFORM_CONFIG,
     };
     use sol_parser_sdk::DexEvent as PbDexEvent;
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
@@ -627,6 +631,56 @@ mod tests {
     }
 
     #[test]
+    fn stonkfun_trade_is_attributed_and_filtered_separately_from_other_launchlab_events() {
+        let stonkfun =
+            PbBonkTrade { platform_config: STONKFUN_REWARD_PLATFORM_CONFIG, ..Default::default() };
+        let dex = convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(stonkfun), None, 0)
+            .expect("convert StonkFun trade");
+
+        assert_eq!(dex.metadata().protocol, ProtocolType::StonkFun);
+        assert!(event_matches_protocol(&[Protocol::StonkFun], &dex));
+        assert!(event_matches_protocol(&[Protocol::LaunchLab], &dex));
+
+        let other_launchlab = convert_parser_event(
+            PbDexEvent::RaydiumLaunchlabTrade(PbBonkTrade::default()),
+            None,
+            0,
+        )
+        .expect("convert generic LaunchLab trade");
+        assert_eq!(other_launchlab.metadata().protocol, ProtocolType::LaunchLab);
+        assert!(!event_matches_protocol(&[Protocol::StonkFun], &other_launchlab));
+        assert!(event_matches_protocol(&[Protocol::LaunchLab], &other_launchlab));
+    }
+
+    #[test]
+    fn stonkfun_filter_uses_platform_config_for_migration_and_account_events() {
+        let migration = DexEvent::BonkMigrateToCpswapEvent(BonkMigrateToCpswapEvent {
+            platform_config: STONKFUN_REWARD_PLATFORM_CONFIG,
+            ..Default::default()
+        });
+        let pool = DexEvent::BonkPoolStateAccountEvent(BonkPoolStateAccountEvent {
+            pool_state: PoolState {
+                platform_config: STONKFUN_REWARD_PLATFORM_CONFIG,
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        let platform = DexEvent::BonkPlatformConfigAccountEvent(BonkPlatformConfigAccountEvent {
+            pubkey: STONKFUN_REWARD_PLATFORM_CONFIG,
+            ..Default::default()
+        });
+
+        for event in [migration, pool, platform] {
+            assert!(event_matches_protocol(&[Protocol::StonkFun], &event));
+            assert!(event_matches_protocol(&[Protocol::LaunchLab], &event));
+        }
+
+        let other = DexEvent::BonkMigrateToCpswapEvent(BonkMigrateToCpswapEvent::default());
+        assert!(!event_matches_protocol(&[Protocol::StonkFun], &other));
+        assert!(event_matches_protocol(&[Protocol::LaunchLab], &other));
+    }
+
+    #[test]
     fn converts_bonk_trade_maps_event_type_buy_exact_in() {
         let b = PbBonkTrade {
             metadata: EventMetadata::default(),
@@ -647,6 +701,7 @@ mod tests {
             quote_mint: Pubkey::default(),
             base_token_program: Pubkey::default(),
             quote_token_program: Pubkey::default(),
+            ..Default::default()
         };
         let dex =
             convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");
@@ -679,6 +734,7 @@ mod tests {
             quote_mint: Pubkey::default(),
             base_token_program: Pubkey::default(),
             quote_token_program: Pubkey::default(),
+            ..Default::default()
         };
         let dex =
             convert_parser_event(PbDexEvent::RaydiumLaunchlabTrade(b), None, 0).expect("convert");

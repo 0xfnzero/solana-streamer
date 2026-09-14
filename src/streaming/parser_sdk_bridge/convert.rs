@@ -345,22 +345,20 @@ pub(crate) fn convert_parser_event(
 
         PbDexEvent::RaydiumLaunchlabTrade(b) => {
             let et = sdk_bonk_trade_event_type(&b);
-            let meta = adapt_pm(
-                b.metadata.clone(),
-                bt,
-                recv_wall_us,
-                ProtocolType::Bonk,
-                et,
-                bonk_program(),
-            );
+            let protocol_type =
+                if b.is_stonkfun() { ProtocolType::StonkFun } else { ProtocolType::LaunchLab };
+            let meta =
+                adapt_pm(b.metadata.clone(), bt, recv_wall_us, protocol_type, et, bonk_program());
             Some(DexEvent::BonkTradeEvent(bonk_trade_from_parser(b, meta)))
         }
         PbDexEvent::RaydiumLaunchlabPoolCreate(p) => {
+            let protocol_type =
+                if p.is_stonkfun() { ProtocolType::StonkFun } else { ProtocolType::LaunchLab };
             let meta = adapt_pm(
                 p.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::Bonk,
+                protocol_type,
                 EventType::BonkInitialize,
                 bonk_program(),
             );
@@ -371,7 +369,7 @@ pub(crate) fn convert_parser_event(
                 m.metadata.clone(),
                 bt,
                 recv_wall_us,
-                ProtocolType::Bonk,
+                ProtocolType::LaunchLab,
                 EventType::BonkMigrateToAmm,
                 bonk_program(),
             );

@@ -71,6 +71,23 @@ pub struct BonkTradeEvent {
     pub creator_associated_account: Pubkey,
 }
 
+impl BonkTradeEvent {
+    #[inline]
+    pub fn stonkfun_mode(&self) -> Option<sol_parser_sdk::core::events::StonkFunMode> {
+        sol_parser_sdk::core::events::stonkfun_mode_from_platform_config(self.platform_config)
+    }
+
+    #[inline]
+    pub fn is_stonkfun(&self) -> bool {
+        self.stonkfun_mode().is_some()
+    }
+}
+
+/// Preferred generic name for a trade emitted by the shared LaunchLab program.
+pub type LaunchLabTradeEvent = BonkTradeEvent;
+/// Preferred platform name when [`BonkTradeEvent::is_stonkfun`] is true.
+pub type StonkFunTradeEvent = BonkTradeEvent;
+
 pub const BONK_TRADE_EVENT_LOG_SIZE: usize = 32 + 8 * 13 + 1 + 1 + 1;
 
 /// Create pool event
@@ -106,6 +123,23 @@ pub struct BonkPoolCreateEvent {
     #[serde(default)]
     pub quote_token_program: Pubkey,
 }
+
+impl BonkPoolCreateEvent {
+    #[inline]
+    pub fn stonkfun_mode(&self) -> Option<sol_parser_sdk::core::events::StonkFunMode> {
+        sol_parser_sdk::core::events::stonkfun_mode_from_platform_config(self.platform_config)
+    }
+
+    #[inline]
+    pub fn is_stonkfun(&self) -> bool {
+        self.stonkfun_mode().is_some()
+    }
+}
+
+/// Preferred generic name for a pool created by the shared LaunchLab program.
+pub type LaunchLabPoolCreateEvent = BonkPoolCreateEvent;
+/// Preferred platform name when [`BonkPoolCreateEvent::is_stonkfun`] is true.
+pub type StonkFunPoolCreateEvent = BonkPoolCreateEvent;
 
 pub const BONK_POOL_CREATE_EVENT_LOG_SIZE: usize = 256;
 
@@ -219,6 +253,18 @@ pub struct BonkMigrateToCpswapEvent {
     pub remaining_accounts: Vec<Pubkey>,
 }
 
+impl BonkMigrateToCpswapEvent {
+    #[inline]
+    pub fn stonkfun_mode(&self) -> Option<sol_parser_sdk::core::events::StonkFunMode> {
+        sol_parser_sdk::core::events::stonkfun_mode_from_platform_config(self.platform_config)
+    }
+
+    #[inline]
+    pub fn is_stonkfun(&self) -> bool {
+        self.stonkfun_mode().is_some()
+    }
+}
+
 /// 池状态
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BonkPoolStateAccountEvent {
@@ -229,6 +275,20 @@ pub struct BonkPoolStateAccountEvent {
     pub owner: Pubkey,
     pub rent_epoch: u64,
     pub pool_state: PoolState,
+}
+
+impl BonkPoolStateAccountEvent {
+    #[inline]
+    pub fn stonkfun_mode(&self) -> Option<sol_parser_sdk::core::events::StonkFunMode> {
+        sol_parser_sdk::core::events::stonkfun_mode_from_platform_config(
+            self.pool_state.platform_config,
+        )
+    }
+
+    #[inline]
+    pub fn is_stonkfun(&self) -> bool {
+        self.stonkfun_mode().is_some()
+    }
 }
 
 /// 全局配置
@@ -253,6 +313,18 @@ pub struct BonkPlatformConfigAccountEvent {
     pub owner: Pubkey,
     pub rent_epoch: u64,
     pub platform_config: PlatformConfig,
+}
+
+impl BonkPlatformConfigAccountEvent {
+    #[inline]
+    pub fn stonkfun_mode(&self) -> Option<sol_parser_sdk::core::events::StonkFunMode> {
+        sol_parser_sdk::core::events::stonkfun_mode_from_platform_config(self.pubkey)
+    }
+
+    #[inline]
+    pub fn is_stonkfun(&self) -> bool {
+        self.stonkfun_mode().is_some()
+    }
 }
 
 /// Event discriminator constants

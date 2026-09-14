@@ -78,7 +78,21 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         | (Protocol::RaydiumLaunchpad, DexEvent::BonkMigrateToCpswapEvent(_))
         | (Protocol::RaydiumLaunchpad, DexEvent::BonkPoolStateAccountEvent(_))
         | (Protocol::RaydiumLaunchpad, DexEvent::BonkGlobalConfigAccountEvent(_))
-        | (Protocol::RaydiumLaunchpad, DexEvent::BonkPlatformConfigAccountEvent(_)) => true,
+        | (Protocol::RaydiumLaunchpad, DexEvent::BonkPlatformConfigAccountEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkTradeEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkPoolCreateEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkMigrateToAmmEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkMigrateToCpswapEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkPoolStateAccountEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkGlobalConfigAccountEvent(_))
+        | (Protocol::LaunchLab, DexEvent::BonkPlatformConfigAccountEvent(_)) => true,
+        (Protocol::StonkFun, DexEvent::BonkTradeEvent(event)) => event.is_stonkfun(),
+        (Protocol::StonkFun, DexEvent::BonkPoolCreateEvent(event)) => event.is_stonkfun(),
+        (Protocol::StonkFun, DexEvent::BonkMigrateToCpswapEvent(event)) => event.is_stonkfun(),
+        (Protocol::StonkFun, DexEvent::BonkPoolStateAccountEvent(event)) => event.is_stonkfun(),
+        (Protocol::StonkFun, DexEvent::BonkPlatformConfigAccountEvent(event)) => {
+            event.is_stonkfun()
+        }
         (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmSwapEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmDepositEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmWithdrawEvent(_))

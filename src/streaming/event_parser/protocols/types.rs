@@ -15,6 +15,11 @@ pub enum Protocol {
     PumpFees,
     /// Backward-compatible alias for Raydium Launchpad / LaunchLab.
     Bonk,
+    /// StonkFun-attributed pools on LaunchLab.
+    StonkFun,
+    /// All LaunchLab traffic, regardless of platform configuration.
+    LaunchLab,
+    /// Backward-compatible alias for [`Protocol::LaunchLab`].
     RaydiumLaunchpad,
     RaydiumCpmm,
     RaydiumClmm,
@@ -32,8 +37,10 @@ impl Protocol {
             Protocol::PumpSwap => vec![PUMPSWAP_PROGRAM_ID],
             Protocol::PumpFun => vec![PUMPFUN_PROGRAM_ID],
             Protocol::PumpFees => vec![PUMP_FEES_PROGRAM_ID],
-            Protocol::Bonk => vec![BONK_PROGRAM_ID],
-            Protocol::RaydiumLaunchpad => vec![BONK_PROGRAM_ID],
+            Protocol::Bonk
+            | Protocol::StonkFun
+            | Protocol::LaunchLab
+            | Protocol::RaydiumLaunchpad => vec![BONK_PROGRAM_ID],
             Protocol::RaydiumCpmm => vec![RAYDIUM_CPMM_PROGRAM_ID],
             Protocol::RaydiumClmm => vec![RAYDIUM_CLMM_PROGRAM_ID],
             Protocol::RaydiumAmmV4 => vec![RAYDIUM_AMM_V4_PROGRAM_ID],
@@ -53,7 +60,9 @@ impl std::fmt::Display for Protocol {
             Protocol::PumpFun => write!(f, "PumpFun"),
             Protocol::PumpFees => write!(f, "PumpFees"),
             Protocol::Bonk => write!(f, "Bonk"),
-            Protocol::RaydiumLaunchpad => write!(f, "RaydiumLaunchpad"),
+            Protocol::StonkFun => write!(f, "StonkFun"),
+            Protocol::LaunchLab => write!(f, "LaunchLab"),
+            Protocol::RaydiumLaunchpad => write!(f, "LaunchLab"),
             Protocol::RaydiumCpmm => write!(f, "RaydiumCpmm"),
             Protocol::RaydiumClmm => write!(f, "RaydiumClmm"),
             Protocol::RaydiumAmmV4 => write!(f, "RaydiumAmmV4"),
@@ -75,8 +84,11 @@ impl std::str::FromStr for Protocol {
             "pumpfun" => Ok(Protocol::PumpFun),
             "pumpfees" | "pump_fees" => Ok(Protocol::PumpFees),
             "bonk" => Ok(Protocol::Bonk),
-            "raydiumlaunchpad" | "raydium_launchpad" | "raydium_launchlab" | "launchpad"
-            | "launchlab" => Ok(Protocol::RaydiumLaunchpad),
+            "stonkfun" | "stonk_fun" | "stonk" => Ok(Protocol::StonkFun),
+            "launchlab" | "raydium_launchlab" => Ok(Protocol::LaunchLab),
+            "raydiumlaunchpad" | "raydium_launchpad" | "launchpad" => {
+                Ok(Protocol::RaydiumLaunchpad)
+            }
             "raydiumcpmm" | "raydium_cpmm" => Ok(Protocol::RaydiumCpmm),
             "raydiumclmm" | "raydium_clmm" => Ok(Protocol::RaydiumClmm),
             "raydiumammv4" | "raydium_amm_v4" => Ok(Protocol::RaydiumAmmV4),
@@ -99,7 +111,8 @@ mod tests {
     fn parses_display_style_protocol_names() {
         for protocol in [
             Protocol::PumpFees,
-            Protocol::RaydiumLaunchpad,
+            Protocol::StonkFun,
+            Protocol::LaunchLab,
             Protocol::RaydiumCpmm,
             Protocol::RaydiumClmm,
             Protocol::RaydiumAmmV4,
@@ -119,6 +132,7 @@ mod tests {
         assert_eq!(Protocol::from_str("raydium_cpmm").unwrap(), Protocol::RaydiumCpmm);
         assert_eq!(Protocol::from_str("pump_fees").unwrap(), Protocol::PumpFees);
         assert_eq!(Protocol::from_str("raydium_launchpad").unwrap(), Protocol::RaydiumLaunchpad);
+        assert_eq!(Protocol::from_str("raydium_launchlab").unwrap(), Protocol::LaunchLab);
         assert_eq!(Protocol::from_str("raydium_clmm").unwrap(), Protocol::RaydiumClmm);
         assert_eq!(Protocol::from_str("raydium_amm_v4").unwrap(), Protocol::RaydiumAmmV4);
         assert_eq!(Protocol::from_str("meteora_damm_v2").unwrap(), Protocol::MeteoraDammV2);

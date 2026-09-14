@@ -64,7 +64,7 @@
 | 方向 | 覆盖范围 |
 |------|----------|
 | 输入来源 | Yellowstone gRPC、Jito ShredStream、已获取的 RPC 交易、编码交易数据 |
-| DEX 协议 | PumpFun、PumpSwap、Pump Fees、Raydium LaunchLab、Raydium CPMM、Raydium CLMM、Raydium AMM V4、Meteora DAMM v2、Meteora DLMM、Meteora DBC、Orca Whirlpool |
+| DEX 协议 | PumpFun、PumpSwap、Pump Fees、LaunchLab、StonkFun、Raydium CPMM、Raydium CLMM、Raydium AMM V4、Meteora DAMM v2、Meteora DLMM、Meteora DBC、Orca Whirlpool |
 | 使用场景 | 实时 DEX 事件流、代币发射监控、跟单交易、账户状态订阅、Bot 信号管道 |
 | 解析后端 | `sol-parser-sdk`，默认 Borsh 解析，并可为低延迟场景启用 zero-copy 后端 |
 
@@ -81,7 +81,8 @@
 - **PumpFun**: 迷因币交易平台事件
 - **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议事件
-- **Raydium LaunchLab**: 代币发射平台事件；`Protocol::Bonk` 和 `Protocol::RaydiumLaunchpad` 仍作为兼容别名保留
+- **LaunchLab**: 通过 `Protocol::LaunchLab` 订阅共享代币发射程序事件；`Protocol::Bonk` 和 `Protocol::RaydiumLaunchpad` 仍作为兼容别名保留
+- **StonkFun**: 通过 `Protocol::StonkFun` 订阅归属于 StonkFun 的 LaunchLab 事件；事件 metadata 使用 `ProtocolType::StonkFun`
 - **Raydium CPMM**: Raydium 集中池做市商事件
 - **Raydium CLMM**: Raydium 集中流动性做市商事件
 - **Raydium AMM V4**: Raydium 自动做市商 V4 事件
@@ -128,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.4" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.3"
+solana-streamer-sdk = "3.0.4"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.3"
+solana-streamer-sdk = "3.0.4"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.4
+
+v3.0.4 使用 `sol-parser-sdk 0.7.4`，新增面向用户的 `Protocol::LaunchLab`、`Protocol::StonkFun`、`ProtocolType::LaunchLab` 与 `ProtocolType::StonkFun` 标识，并根据 StonkFun 官方 platform config 过滤共享 LaunchLab 流量。LaunchLab 交易事件现在会完整转发储备量、手续费、池状态与当前新增的三个尾部账户。`Protocol::RaydiumLaunchpad` 继续作为源码兼容别名保留，其显示名称统一为 `LaunchLab`。
 
 ### 升级到 v3.0.3
 
@@ -210,7 +215,7 @@ v1.5.8 使用 crates.io 上的 `sol-parser-sdk 0.5.8`。该版本继承 parser S
 
 ### 升级到 v1.5.5
 
-v1.5.5 使用 crates.io 上的 `sol-parser-sdk 0.5.5`。底层 SDK 已将 Raydium LaunchLab 事件统一暴露为 `RaydiumLaunchlab*`；streamer 仍保留现有 `Bonk*` 事件结构以及 `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` 兼容别名，同时把解析调用和上游 gRPC 事件过滤映射到新的 LaunchLab SDK variant。该版本也同步了 CLMM/CPMM/Orca account bridge、Meteora DAMM v2 initialize-pool、Meteora DBC 事件，以及客户端创建时的 parser warmup。
+v1.5.5 使用 crates.io 上的 `sol-parser-sdk 0.5.5`。底层 SDK 已将 LaunchLab 事件统一暴露为 `RaydiumLaunchlab*`；streamer 仍保留现有 `Bonk*` 事件结构以及 `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` 兼容别名，同时把解析调用和上游 gRPC 事件过滤映射到新的 LaunchLab SDK variant。该版本也同步了 CLMM/CPMM/Orca account bridge、Meteora DAMM v2 initialize-pool、Meteora DBC 事件，以及客户端创建时的 parser warmup。
 
 ### 升级到 v1.5.4
 
@@ -515,7 +520,8 @@ grpc.update_subscription(
 - **PumpFun**: 主要迷因币交易平台
 - **Pump Fees**: Pump 费用分成配置事件
 - **PumpSwap**: PumpFun 的交换协议
-- **Raydium LaunchLab**: 代币发射平台；`Bonk` 和 `RaydiumLaunchpad` 作为兼容别名保留
+- **LaunchLab**: 代币发射平台；`Bonk` 和 `RaydiumLaunchpad` 作为兼容别名保留
+- **StonkFun**: 归属于 StonkFun 的 LaunchLab 交易和建池事件
 - **Raydium CPMM**: Raydium 集中池做市商协议
 - **Raydium CLMM**: Raydium 集中流动性做市商协议
 - **Raydium AMM V4**: Raydium 自动做市商 V4 协议

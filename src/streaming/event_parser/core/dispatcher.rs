@@ -69,7 +69,10 @@ impl EventDispatcher {
                 pump_amm_inner::parse_pumpswap_inner_instruction(&disc, inner_instruction_data, pm)
             }
             Protocol::PumpFees => all_inner::pump_fees::parse(&disc, inner_instruction_data, pm),
-            Protocol::Bonk | Protocol::RaydiumLaunchpad => {
+            Protocol::Bonk
+            | Protocol::StonkFun
+            | Protocol::LaunchLab
+            | Protocol::RaydiumLaunchpad => {
                 all_inner::raydium_launchlab::parse(&disc, inner_instruction_data, pm)
             }
             Protocol::RaydiumCpmm => {
@@ -152,9 +155,10 @@ impl EventDispatcher {
             Protocol::PumpFun => program_ids::PUMPFUN_PROGRAM_ID,
             Protocol::PumpFees => program_ids::PUMP_FEES_PROGRAM_ID,
             Protocol::PumpSwap => program_ids::PUMPSWAP_PROGRAM_ID,
-            Protocol::Bonk | Protocol::RaydiumLaunchpad => {
-                program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID
-            }
+            Protocol::Bonk
+            | Protocol::StonkFun
+            | Protocol::LaunchLab
+            | Protocol::RaydiumLaunchpad => program_ids::RAYDIUM_LAUNCHLAB_PROGRAM_ID,
             Protocol::RaydiumCpmm => program_ids::RAYDIUM_CPMM_PROGRAM_ID,
             Protocol::RaydiumClmm => program_ids::RAYDIUM_CLMM_PROGRAM_ID,
             Protocol::RaydiumAmmV4 => program_ids::RAYDIUM_AMM_V4_PROGRAM_ID,

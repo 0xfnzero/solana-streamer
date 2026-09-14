@@ -45,6 +45,8 @@ pub enum ProtocolType {
     PumpSwap,
     PumpFun,
     Bonk,
+    StonkFun,
+    LaunchLab,
     RaydiumCpmm,
     RaydiumClmm,
     RaydiumAmmV4,

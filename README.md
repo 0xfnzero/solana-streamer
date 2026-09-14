@@ -65,7 +65,7 @@
 | Area | Coverage |
 |------|----------|
 | Input sources | Yellowstone gRPC, Jito ShredStream, fetched RPC transactions, encoded transaction data |
-| DEX protocols | PumpFun, PumpSwap, Pump Fees, Raydium LaunchLab, Raydium CPMM, Raydium CLMM, Raydium AMM V4, Meteora DAMM v2, Meteora DLMM, Meteora DBC, Orca Whirlpool |
+| DEX protocols | PumpFun, PumpSwap, Pump Fees, LaunchLab, StonkFun, Raydium CPMM, Raydium CLMM, Raydium AMM V4, Meteora DAMM v2, Meteora DLMM, Meteora DBC, Orca Whirlpool |
 | Use cases | Real-time DEX event streaming, token launch monitoring, copy trading, account-state subscriptions, bot signal pipelines |
 | Parser backend | `sol-parser-sdk` with default Borsh parsing and optional zero-copy backend for latency-sensitive workloads |
 
@@ -82,7 +82,8 @@
 - **PumpFun**: Meme coin trading platform events
 - **Pump Fees**: Pump fee-sharing configuration events
 - **PumpSwap**: PumpFun's swap protocol events
-- **Raydium LaunchLab**: Token launch platform events; `Protocol::Bonk` and `Protocol::RaydiumLaunchpad` remain compatible aliases
+- **LaunchLab**: Shared token-launch program events through `Protocol::LaunchLab`; `Protocol::Bonk` and `Protocol::RaydiumLaunchpad` remain compatible aliases
+- **StonkFun**: StonkFun-attributed LaunchLab events through `Protocol::StonkFun`; event metadata reports `ProtocolType::StonkFun`
 - **Raydium CPMM**: Raydium's Concentrated Pool Market Maker events
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker events
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 events
@@ -129,29 +130,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.3" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.4" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.3"
+solana-streamer-sdk = "3.0.4"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.3"
+solana-streamer-sdk = "3.0.4"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.3", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.4", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.4
+
+Version 3.0.4 uses `sol-parser-sdk 0.7.4`, adds the user-facing `Protocol::LaunchLab`, `Protocol::StonkFun`, `ProtocolType::LaunchLab`, and `ProtocolType::StonkFun` identifiers, and filters shared LaunchLab traffic by StonkFun's official platform configuration accounts. LaunchLab trade events now forward complete reserves, fee legs, pool status, and the current three appended accounts. `Protocol::RaydiumLaunchpad` remains a source-compatible alias and displays as `LaunchLab`.
 
 ### Upgrading to v3.0.3
 
@@ -211,7 +216,7 @@ Version 1.5.8 uses `sol-parser-sdk 0.5.8` from crates.io. It inherits the Pump.f
 
 ### Upgrading to v1.5.5
 
-Version 1.5.5 uses `sol-parser-sdk 0.5.5` from crates.io. The SDK now exposes Raydium LaunchLab as `RaydiumLaunchlab*`; streamer keeps the existing `Bonk*` event structs and `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` aliases for source compatibility, while routing parser calls and upstream gRPC event filters to the new LaunchLab SDK variants. This release also syncs the CLMM/CPMM/Orca account bridges, Meteora DAMM v2 initialize-pool events, Meteora DBC events, and parser warmup on client creation.
+Version 1.5.5 uses `sol-parser-sdk 0.5.5` from crates.io. The SDK exposes LaunchLab as `RaydiumLaunchlab*`; streamer keeps the existing `Bonk*` event structs and `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` aliases for source compatibility, while routing parser calls and upstream gRPC event filters to the new LaunchLab SDK variants. This release also syncs the CLMM/CPMM/Orca account bridges, Meteora DAMM v2 initialize-pool events, Meteora DBC events, and parser warmup on client creation.
 
 ### Upgrading to v1.5.4
 
@@ -536,7 +541,8 @@ Note: Multiple subscription attempts on the same client return an error.
 - **PumpFun**: Primary meme coin trading platform
 - **Pump Fees**: Pump fee-sharing configuration events
 - **PumpSwap**: PumpFun's swap protocol
-- **Raydium LaunchLab**: Token launch platform; `Bonk` and `RaydiumLaunchpad` are kept as compatibility aliases
+- **LaunchLab**: Token launch platform; `Bonk` and `RaydiumLaunchpad` are kept as compatibility aliases
+- **StonkFun**: StonkFun-attributed LaunchLab trade and pool-create events
 - **Raydium CPMM**: Raydium's Concentrated Pool Market Maker protocol
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker protocol
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 protocol

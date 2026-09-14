@@ -402,7 +402,10 @@ fn push_protocol_sdk_grpc_event_types(protocol: &Protocol, out: &mut Vec<SdkGrpc
             Sdk::PumpSwapLiquidityAdded,
             Sdk::PumpSwapLiquidityRemoved,
         ]),
-        StProtocol::Bonk | StProtocol::RaydiumLaunchpad => out.extend_from_slice(&[
+        StProtocol::Bonk
+        | StProtocol::StonkFun
+        | StProtocol::LaunchLab
+        | StProtocol::RaydiumLaunchpad => out.extend_from_slice(&[
             Sdk::RaydiumLaunchlabTrade,
             Sdk::RaydiumLaunchlabPoolCreate,
             Sdk::RaydiumLaunchlabMigrateAmm,
