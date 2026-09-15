@@ -121,6 +121,36 @@ fn current_meteora_damm_v2_swap_passes_exact_filter() {
 }
 
 #[test]
+fn issue_82_damm_v2_swap_accounts_reach_streamer() {
+    if !run_mainnet_tests() {
+        return;
+    }
+    for (signature, pool) in [
+        ("4vPzV2JPbDZghNgE6pYQhcjTFrNQt1V2A23bRXCpmYRQdjmKTGYgrfiLWXdXrdZpBu1CrWWLQoJxbL7GnoQJLRhv", "GSKh9Q5BmhwWNvr9phx7ei1gNkpVLBTqqx9GbMTfwcxE"),
+        ("4CBrBEWnoo3TKMMbBx8zscYqVcLrrCDwWykKjGUWfASABGQz7RKLJD7mCKm7pWyGaxRaBaapMqnrSwCy3ZHFCS9W", "52388vAjCySRMBjuQJD36iQ2941hKEzTpU46M7MjZeoM"),
+    ] {
+        let signature = Signature::from_str(signature).unwrap();
+        let events = fetch_rpc_transaction_as_streamer_events(
+            &rpc_client(), &signature, 0, &[Protocol::MeteoraDammV2],
+            Some(&EventTypeFilter::include_only([EventType::MeteoraDammV2Swap])),
+        ).expect("parse issue #82 swap");
+        assert_eq!(events.len(), 1);
+        let DexEvent::MeteoraDammV2SwapEvent(swap) = &events[0] else { panic!("expected DAMM swap") };
+        assert_eq!(swap.pool.to_string(), pool);
+        assert_ne!(swap.pool_authority, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.input_token_account, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.output_token_account, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.token_a_vault, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.token_b_vault, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.token_a_mint, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.token_b_mint, solana_sdk::pubkey::Pubkey::default());
+        assert_ne!(swap.payer, solana_sdk::pubkey::Pubkey::default());
+        assert_eq!(swap.program.to_string(), "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG");
+        assert_eq!(swap.referral_token_account, None);
+    }
+}
+
+#[test]
 fn current_meteora_damm_v2_add_liquidity_passes_exact_filter() {
     if !run_mainnet_tests() {
         return;

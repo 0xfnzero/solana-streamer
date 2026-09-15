@@ -130,29 +130,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.4" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.5" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.4"
+solana-streamer-sdk = "3.0.5"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.4"
+solana-streamer-sdk = "3.0.5"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.4", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.5", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.5
+
+Version 3.0.5 uses `sol-parser-sdk 0.7.5` and forwards the recovered Meteora DAMM v2 swap instruction accounts, including token mints, vaults, payer, token programs, and optional referral. Live mainnet regressions cover both swaps reported in issue #82.
 
 ### Upgrading to v3.0.4
 

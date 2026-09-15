@@ -129,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.4" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.5" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.4"
+solana-streamer-sdk = "3.0.5"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.4"
+solana-streamer-sdk = "3.0.5"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.4", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.5", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.5
+
+v3.0.5 使用 `sol-parser-sdk 0.7.5`，并转发 Meteora DAMM v2 swap 指令中恢复的 mint、vault、payer、token program 及可选 referral 等账户。真实主网回归覆盖 issue #82 报告的两笔交易。
 
 ### 升级到 v3.0.4
 
