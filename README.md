@@ -130,29 +130,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.5" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.6" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.5"
+solana-streamer-sdk = "3.0.6"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.5"
+solana-streamer-sdk = "3.0.6"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.5", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.6", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### Upgrading to v3.0.6
+
+Version 3.0.6 pins `sol-parser-sdk 0.7.7`. Advanced callers can access StonkFun route analysis, migration registry and raw account subscriptions through `parser_sdk` / `sdk_bridge::raw`. Raw snapshots retain their parser SDK type and should be consumed directly rather than passed through the legacy streamer event adapter. Bridge regression fixtures are synchronized with the current Whirlpool/DLMM account fields.
 
 ### Upgrading to v3.0.5
 

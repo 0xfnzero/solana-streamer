@@ -129,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.5" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.6" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.5"
+solana-streamer-sdk = "3.0.6"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.5"
+solana-streamer-sdk = "3.0.6"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.5", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.6", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### 升级到 v3.0.6
+
+v3.0.6 固定使用 `sol-parser-sdk 0.7.7`。通过 `parser_sdk` / `sdk_bridge::raw` 可访问 StonkFun 路由分析、迁移注册表和原始账户订阅。原始快照保留 parser SDK 类型，应直接消费，不要经过旧 streamer 事件转换层。bridge 回归样本已同步当前 Whirlpool/DLMM 账户字段。
 
 ### 升级到 v3.0.5
 

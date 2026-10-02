@@ -541,6 +541,7 @@ mod tests {
             output_transfer_fee: 2,
             lp_fee: 3,
             protocol_fee: 4,
+            ..Default::default()
         };
         let ev =
             convert_parser_event(PbDexEvent::OrcaWhirlpoolSwap(pb), None, 111).expect("convert");
@@ -587,6 +588,7 @@ mod tests {
             protocol_fee: 2,
             fee_bps: 25,
             host_fee: 0,
+            ..Default::default()
         };
         let ev = convert_parser_event(PbDexEvent::MeteoraDlmmSwap(pb), None, 0).expect("convert");
         match ev {
@@ -623,6 +625,7 @@ mod tests {
             output_transfer_fee: 0,
             lp_fee: 0,
             protocol_fee: 0,
+            ..Default::default()
         };
         let dex =
             convert_parser_event(PbDexEvent::OrcaWhirlpoolSwap(pb), None, 0).expect("convert");
