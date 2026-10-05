@@ -27,8 +27,9 @@ use crate::streaming::event_parser::protocols::raydium_clmm::types::{
     RewardInfo as ClmmRewardInfo, TickArrayState as ClmmTickArrayState, TickState as ClmmTickState,
 };
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::{
-    RaydiumCpmmAmmConfigAccountEvent, RaydiumCpmmDepositEvent, RaydiumCpmmInitializeEvent,
-    RaydiumCpmmPoolStateAccountEvent, RaydiumCpmmSwapEvent, RaydiumCpmmWithdrawEvent,
+    RaydiumCpmmAmmConfigAccountEvent, RaydiumCpmmCollectCreatorFeeEvent, RaydiumCpmmDepositEvent,
+    RaydiumCpmmInitializeEvent, RaydiumCpmmPoolStateAccountEvent, RaydiumCpmmSwapEvent,
+    RaydiumCpmmWithdrawEvent,
 };
 use crate::streaming::event_parser::protocols::raydium_cpmm::types::{
     AmmConfig as CpmmAmmConfig, PoolState as CpmmPoolState,
@@ -118,23 +119,29 @@ pub(crate) fn raydium_cpmm_swap_from_parser(
 ) -> RaydiumCpmmSwapEvent {
     RaydiumCpmmSwapEvent {
         metadata: meta,
-        amount_in: e.input_amount,
-        minimum_amount_out: 0,
-        max_amount_in: e.input_amount,
-        amount_out: e.output_amount,
-        payer: Pubkey::default(),
-        authority: Pubkey::default(),
-        amm_config: Pubkey::default(),
+        amount_in: e.amount_in,
+        minimum_amount_out: e.minimum_amount_out,
+        max_amount_in: e.max_amount_in,
+        amount_out: e.amount_out,
+        input_amount: e.input_amount,
+        output_amount: e.output_amount,
+        input_transfer_fee: e.input_transfer_fee,
+        output_transfer_fee: e.output_transfer_fee,
+        base_input: e.base_input,
+        ix_name: e.ix_name,
+        payer: e.payer,
+        authority: e.authority,
+        amm_config: e.amm_config,
         pool_state: e.pool_id,
-        input_token_account: Pubkey::default(),
-        output_token_account: Pubkey::default(),
-        input_vault: Pubkey::default(),
-        output_vault: Pubkey::default(),
-        input_token_program: Pubkey::default(),
-        output_token_program: Pubkey::default(),
-        input_token_mint: Pubkey::default(),
-        output_token_mint: Pubkey::default(),
-        observation_state: Pubkey::default(),
+        input_token_account: e.input_token_account,
+        output_token_account: e.output_token_account,
+        input_vault: e.input_vault,
+        output_vault: e.output_vault,
+        input_token_program: e.input_token_program,
+        output_token_program: e.output_token_program,
+        input_token_mint: e.input_token_mint,
+        output_token_mint: e.output_token_mint,
+        observation_state: e.observation_state,
     }
 }
 
@@ -218,6 +225,7 @@ fn raydium_cpmm_amm_config_from_parser(
         protocol_owner: c.protocol_owner,
         fund_owner: c.fund_owner,
         creator_fee_rate: c.creator_fee_rate,
+        creator_fee_share_rate: c.creator_fee_share_rate,
         padding: c.padding,
     }
 }
@@ -436,18 +444,13 @@ pub(crate) fn raydium_clmm_swap_from_parser(
     e: sol_parser_sdk::core::events::RaydiumClmmSwapEvent,
     meta: EventMetadata,
 ) -> RaydiumClmmSwapEvent {
-    let (amount, other_amount_threshold, input_token_account, output_token_account) =
-        if e.zero_for_one {
-            (e.amount_0, e.amount_1, e.token_account_0, e.token_account_1)
-        } else {
-            (e.amount_1, e.amount_0, e.token_account_1, e.token_account_0)
-        };
     RaydiumClmmSwapEvent {
         metadata: meta,
-        amount,
-        other_amount_threshold,
-        sqrt_price_limit_x64: e.sqrt_price_x64,
-        is_base_input: e.zero_for_one,
+        amount: e.amount,
+        other_amount_threshold: e.other_amount_threshold,
+        sqrt_price_limit_x64: e.sqrt_price_limit_x64,
+        is_base_input: e.is_base_input,
+        ix_name: e.ix_name,
         pool_state: e.pool_state,
         sender: e.sender,
         token_account_0: e.token_account_0,
@@ -461,8 +464,17 @@ pub(crate) fn raydium_clmm_swap_from_parser(
         liquidity: e.liquidity,
         tick: e.tick,
         payer: e.sender,
-        input_token_account,
-        output_token_account,
+        input_token_account: e.input_token_account,
+        output_token_account: e.output_token_account,
+        amm_config: e.amm_config,
+        input_vault: e.input_vault,
+        output_vault: e.output_vault,
+        observation_state: e.observation_state,
+        input_mint: e.input_mint,
+        output_mint: e.output_mint,
+        tick_array: e.tick_arrays.first().copied().unwrap_or_default(),
+        tick_arrays: e.tick_arrays,
+        tick_array_bitmap_extension: e.tick_array_bitmap_extension,
         ..Default::default()
     }
 }
@@ -1036,5 +1048,31 @@ pub(crate) fn meteora_damm_v2_create_dynamic_config_from_pb(
         pool_creator_authority: e.pool_creator_authority,
         index: e.index,
         permission: e.permission,
+    }
+}
+
+pub(crate) fn raydium_cpmm_collect_creator_fee_from_parser(
+    e: sol_parser_sdk::core::events::RaydiumCpmmCollectCreatorFeeEvent,
+    metadata: EventMetadata,
+) -> RaydiumCpmmCollectCreatorFeeEvent {
+    RaydiumCpmmCollectCreatorFeeEvent {
+        metadata,
+        permissionless: e.permissionless,
+        payer: e.payer,
+        creator: e.creator,
+        authority: e.authority,
+        pool_state: e.pool_state,
+        amm_config: e.amm_config,
+        token_0_vault: e.token_0_vault,
+        token_1_vault: e.token_1_vault,
+        vault_0_mint: e.vault_0_mint,
+        vault_1_mint: e.vault_1_mint,
+        creator_token_0: e.creator_token_0,
+        creator_token_1: e.creator_token_1,
+        token_0_program: e.token_0_program,
+        token_1_program: e.token_1_program,
+        associated_token_program: e.associated_token_program,
+        system_program: e.system_program,
+        creator_fee_share: e.creator_fee_share,
     }
 }

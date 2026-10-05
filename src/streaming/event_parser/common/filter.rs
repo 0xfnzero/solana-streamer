@@ -270,6 +270,7 @@ fn push_streamer_event_sdk_grpc_types(
         St::RaydiumCpmmDeposit => out.push(Sdk::RaydiumCpmmDeposit),
         St::RaydiumCpmmInitialize => out.push(Sdk::RaydiumCpmmInitialize),
         St::RaydiumCpmmWithdraw => out.push(Sdk::RaydiumCpmmWithdraw),
+        St::RaydiumCpmmCollectCreatorFee => out.push(Sdk::RaydiumCpmmCollectCreatorFee),
         St::RaydiumClmmSwap | St::RaydiumClmmSwapV2 => out.push(Sdk::RaydiumClmmSwap),
         St::RaydiumClmmClosePosition => out.push(Sdk::RaydiumClmmClosePosition),
         St::RaydiumClmmIncreaseLiquidityV2 => out.push(Sdk::RaydiumClmmIncreaseLiquidity),
@@ -414,6 +415,7 @@ fn push_protocol_sdk_grpc_event_types(protocol: &Protocol, out: &mut Vec<SdkGrpc
             Sdk::RaydiumCpmmSwap,
             Sdk::RaydiumCpmmDeposit,
             Sdk::RaydiumCpmmWithdraw,
+            Sdk::RaydiumCpmmCollectCreatorFee,
             Sdk::RaydiumCpmmInitialize,
         ]),
         StProtocol::RaydiumClmm => out.extend_from_slice(&[
@@ -805,6 +807,7 @@ mod tests {
             EventType::RaydiumCpmmDeposit,
             EventType::RaydiumCpmmInitialize,
             EventType::RaydiumCpmmWithdraw,
+            EventType::RaydiumCpmmCollectCreatorFee,
             EventType::RaydiumClmmSwap,
             EventType::RaydiumClmmSwapV2,
             EventType::RaydiumClmmClosePosition,

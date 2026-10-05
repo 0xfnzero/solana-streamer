@@ -1,0 +1,136 @@
+{
+  "network": "mainnet-beta",
+  "capture_date": "2026-10-05",
+  "rpc_endpoint": "https://api.mainnet-beta.solana.com",
+  "commitment": "finalized",
+  "cases": [
+    {
+      "file": "cpmm_0.json",
+      "signature": "2LMzxp9Y9YE7Adw8SK5jY1EGtSnCmBY7LS6u4BuC9VWTruGoiokzMUM5wEZ5oDwmAb3XjDk4zcvSAXc5RSbe5o63",
+      "slot": 453452014,
+      "blockTime": 1791169327,
+      "execution_error": null,
+      "sha256_base64_payload": "ee9bf032a8117b6001e5f9bbed7e78165d11977994a99a496004e4be3b526e18",
+      "sha256_json_wire": "6911878cf0ddc46b0c001eb339e51f2d623e2113696c7c1c5ae1d50c5ca82585"
+    },
+    {
+      "file": "cpmm_1.json",
+      "signature": "2D7yBwBKB42zQkqXuzmdL4T7smZqhFnf8X4Jjpq29eau5Jxz9YRgwbk5FBwmcdBuN8Ej1tN989LQ1BvtSC2XUbKp",
+      "slot": 453452013,
+      "blockTime": 1791169327,
+      "execution_error": null,
+      "sha256_base64_payload": "dd94611593477bc1994696b9d576c4620412c1c353755410176c651c577540e5",
+      "sha256_json_wire": "2bfa09b79ee03ed89837d7283b7f0571b10eaacb0d601c764f2e09ccbf5e09fb"
+    },
+    {
+      "file": "cpmm_route.json",
+      "signature": "4v27ccyrAgpCdCHLvjvn8smFn4Fb4HGcRVTSt952eNcF5jg5niA5bKRLPoGrzxXZdZULEZujgA5TXdESNbwmFYE8",
+      "slot": 438881024,
+      "blockTime": 1786566803,
+      "execution_error": null,
+      "sha256_base64_payload": "9645db58778ac3b2742d6ed44a149f9e2620c23f5224344273445d2c2a1781ba",
+      "sha256_json_wire": "d0fe46fa965681f1cb3397af4e557ebdcfbdad6266727f8a2b32ada7d0a2fc1e"
+    },
+    {
+      "file": "dlmm_0.json",
+      "signature": "48s4NatwuYFF8wdPjV5ZKSaq9W2Cv5UQ6tjBRFdDVUQuBaeP9iGiYiSAp8g5XqCh8wJrGJv9rk331RZdByk77Y7b",
+      "slot": 453452020,
+      "blockTime": 1791169329,
+      "execution_error": null,
+      "sha256_base64_payload": "aec2ea3d1d2d67b30569ac8e8efb2914ea53cd66c57332646433835d262e9364",
+      "sha256_json_wire": "ea1fc48d09b5aef8a2bc286ef4a2ebb97592f275332b558de24bf7f9880ecc62"
+    },
+    {
+      "file": "dlmm_route.json",
+      "signature": "eEWaGsbRPoiD36Xf3epzSMmdtXX36va76b13YfsDV3ncsxQHBTjC68zZ8mbzFXTNWy3n3qKUAHjgHBconX4Gu1i",
+      "slot": 438873646,
+      "blockTime": 1786563705,
+      "execution_error": null,
+      "sha256_base64_payload": "775f4558e92227806c4a5a21a81f13bb39c63ef8f2160438ff445a3bcc6262aa",
+      "sha256_json_wire": "36de44ee274629bd16c6974903ae0853e155b879a06d6658c2c1a3fee1173919"
+    },
+    {
+      "file": "failed_route.json",
+      "signature": "3yWpH56RKycsT8kvkYzUVU8KLg5176J6Jd7WQyRhKMyffoT3H2dUpEfLxx7nK5DM3eD2oYsaZ7eRXJmdtqAEF2fd",
+      "slot": 453479647,
+      "blockTime": 1791176707,
+      "execution_error": {
+        "InstructionError": [
+          6,
+          {
+            "Custom": 6004
+          }
+        ]
+      },
+      "sha256_base64_payload": "c6da5709c310f077f917bd6901ccffd4979e7c78b33f09c513775bb9ab99d259",
+      "sha256_json_wire": "8b995a236599efba43dfdcb34da4bc6543cebb54d064e3c34f190601b70abb30"
+    },
+    {
+      "file": "pumpfun.json",
+      "signature": "QUYUtVPVkkjV2GGFTC4MfxtauNpRvWDViGCGxTckxPWbPZvEY92d1sZD9Lq5iK31sy3Drwy28gHmV89iRt9hz9R",
+      "slot": 438880952,
+      "blockTime": 1786566774,
+      "execution_error": null,
+      "sha256_base64_payload": "892dbde6ff1ea62a5ae8cbe24bca13cab455ae38a589902cd9b6e1ef4cbb6d7d",
+      "sha256_json_wire": "98edd1fa13bfc14fc5466856c51427e216e104ff5ed1ea5474936c0e05365000"
+    },
+    {
+      "file": "pumpswap_0.json",
+      "signature": "5FoZuu1E9p4wTkLjihTm9yf2faDYWP3xkGaHwKRaqjK8Lzx1Uj8iZdXfAkr6hx5WoTEUS8VSsMruKHf8hHfAzmop",
+      "slot": 453452017,
+      "blockTime": 1791169328,
+      "execution_error": null,
+      "sha256_base64_payload": "9f56979b6ea9c0272f2cca5d31f12c042dada8881e3f7be6f699f0878cb7b66c",
+      "sha256_json_wire": "a69b1e7be5ad88b15dff3c5928117fc0a07c1b8e94e8782a100e8a384033e22d"
+    },
+    {
+      "file": "pumpswap_1.json",
+      "signature": "4QsDu6ZuHRCToAEs2ED99CZEfHhXQHH8UCpUSYq1io6JMBJgx2s4BWNQKfrqYUwTLpz2oxjUuMevyaYP58XXTgTu",
+      "slot": 453452017,
+      "blockTime": 1791169328,
+      "execution_error": null,
+      "sha256_base64_payload": "80085356ed7eebfc9b2aba1c1c96c6dfc96ae33daa75784e81d06c8e66ece788",
+      "sha256_json_wire": "7090f3452a54a47e73b2808ada8f84d09c1dac51aa3893182b5f9dfc5773c1fa"
+    },
+    {
+      "file": "cpmm_collect.json",
+      "signature": "5PpDgbQKov8W6vJZdV4BdX1DL9aiDVP5P74mo4cAnTgZzUMSV9jnCzDcGVa8UjZiqrRJm5VSAMvS4hGgS2KAbkmX",
+      "slot": 453451580,
+      "blockTime": 1791169213,
+      "execution_error": null,
+      "sha256_base64_payload": "88d9ddd30e151bdcf4ea8f68eb103fa0a6f83a67840125ead5dbf8bc54fabd4e",
+      "sha256_json_wire": "6f751f034741f8f0ed6a54e7da0ffbf686eafaf2c331caa77dfc0a6da92bc581",
+      "capture_date": "2026-10-06"
+    },
+    {
+      "file": "cpmm_collect_token2022.json",
+      "signature": "3idXD4Z7ZkazRoK3LboDDQwWXoPcyVPA7SfArFYLre1nnyajWwQq3PBcrtdiK9tsxPJE1hbKnXAuHgtnpg2VMJT7",
+      "slot": 453656059,
+      "blockTime": 1791223940,
+      "execution_error": null,
+      "capture_date": "2026-10-06",
+      "sha256_base64_payload": "8054edb81ab8429f1ccbd6b40082d31624d93a3bbdd3d2035e7b41fc6a298e1a",
+      "sha256_json_wire": "1131969dd22faa9b95bb00945f272f4ac43485bfca367130f6b34be9f8eddaea"
+    },
+    {
+      "file": "pumpswap_buy_exact_quote.json",
+      "signature": "4UrrW5HM3Uou8Rcmn3UukNAdfgiPwnTTNc9E6zHsd26JYhuHyM2cMHoCxrWm5L3xndEbXLwMT9vtiswr1KhptpXw",
+      "slot": 453665150,
+      "blockTime": 1791226390,
+      "execution_error": null,
+      "capture_date": "2026-10-06",
+      "sha256_base64_payload": "796a2c0a7f922da0f185c438124777435092a0d164fdc764d29dc88a4c86cff7",
+      "sha256_json_wire": "2d237b39a9573b1657c8e56145699bd1c1dce7c431584bd53db6f17e573d8396"
+    },
+    {
+      "file": "pumpfun_sell_v2.json",
+      "signature": "36dHx3dZ2bQFQcmTkG1GdnSVb9FFoFx2n132Tr1Wr1vwb3FfQmVK8t8EJdHLFojmfh5feBzmhBUgPBDcG4vbgqtX",
+      "slot": 453668517,
+      "blockTime": 1791227294,
+      "execution_error": null,
+      "capture_date": "2026-10-06",
+      "sha256_base64_payload": "c63bffe265d919fdd722eddfe19ffc6273ddab560a3a63fbb7c0b080cd99bc17",
+      "sha256_json_wire": "5d9e74ec023e8e9f099778f6381346d294c561fbc0197b70b3158b8570e8669d"
+    }
+  ]
+}

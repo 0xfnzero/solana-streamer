@@ -169,6 +169,7 @@ pub enum DexEvent {
     ParserSdkErrorEvent(ParserSdkErrorEvent),
     // Appended to preserve existing serialized enum variant indices.
     TransactionCostEvent(TransactionCostEvent),
+    RaydiumCpmmCollectCreatorFeeEvent(RaydiumCpmmCollectCreatorFeeEvent),
 }
 
 /// Macro to generate metadata accessors for all DexEvent variants
@@ -261,6 +262,7 @@ impl_dex_event_metadata!(
     RaydiumCpmmSwapEvent,
     RaydiumCpmmDepositEvent,
     RaydiumCpmmWithdrawEvent,
+    RaydiumCpmmCollectCreatorFeeEvent,
     RaydiumCpmmInitializeEvent,
     RaydiumCpmmAmmConfigAccountEvent,
     RaydiumCpmmPoolStateAccountEvent,

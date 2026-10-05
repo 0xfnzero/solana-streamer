@@ -14,6 +14,25 @@ pub struct RaydiumCpmmSwapEvent {
     pub minimum_amount_out: u64,
     pub max_amount_in: u64,
     pub amount_out: u64,
+    /// Executed amounts from the swap log; distinct from instruction limits above.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub input_amount: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub output_amount: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub input_transfer_fee: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub output_transfer_fee: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub base_input: bool,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub ix_name: String,
     pub payer: Pubkey,
     pub authority: Pubkey,
     pub amm_config: Pubkey,
@@ -147,4 +166,27 @@ pub mod discriminators {
     // 账号鉴别器
     pub const AMM_CONFIG: &[u8] = &[218, 244, 33, 104, 203, 203, 43, 111];
     pub const POOL_STATE: &[u8] = &[247, 237, 227, 245, 215, 195, 222, 70];
+}
+
+/// Upgraded creator-fee collection instruction accounts; amounts settle on-chain.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RaydiumCpmmCollectCreatorFeeEvent {
+    pub metadata: EventMetadata,
+    pub permissionless: bool,
+    pub payer: Pubkey,
+    pub creator: Pubkey,
+    pub authority: Pubkey,
+    pub pool_state: Pubkey,
+    pub amm_config: Pubkey,
+    pub token_0_vault: Pubkey,
+    pub token_1_vault: Pubkey,
+    pub vault_0_mint: Pubkey,
+    pub vault_1_mint: Pubkey,
+    pub creator_token_0: Pubkey,
+    pub creator_token_1: Pubkey,
+    pub token_0_program: Pubkey,
+    pub token_1_program: Pubkey,
+    pub associated_token_program: Pubkey,
+    pub system_program: Pubkey,
+    pub creator_fee_share: Pubkey,
 }

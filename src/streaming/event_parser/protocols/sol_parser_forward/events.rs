@@ -24,6 +24,43 @@ pub struct OrcaWhirlpoolSwapEvent {
     pub output_transfer_fee: u64,
     pub lp_fee: u64,
     pub protocol_fee: u64,
+    // Instruction limits and accounts, distinct from execution results.
+    #[serde(default)]
+    pub ix_name: String,
+    #[serde(default)]
+    pub amount: u64,
+    #[serde(default)]
+    pub other_amount_threshold: u64,
+    #[serde(default)]
+    pub sqrt_price_limit: u128,
+    #[serde(default)]
+    pub amount_specified_is_input: bool,
+    #[serde(default)]
+    pub token_program_a: Pubkey,
+    #[serde(default)]
+    pub token_program_b: Pubkey,
+    #[serde(default)]
+    pub token_mint_a: Pubkey,
+    #[serde(default)]
+    pub token_mint_b: Pubkey,
+    #[serde(default)]
+    pub token_vault_a: Pubkey,
+    #[serde(default)]
+    pub token_vault_b: Pubkey,
+    #[serde(default)]
+    pub tick_array_0: Pubkey,
+    #[serde(default)]
+    pub tick_array_1: Pubkey,
+    #[serde(default)]
+    pub tick_array_2: Pubkey,
+    #[serde(default)]
+    pub oracle: Pubkey,
+    #[serde(default)]
+    pub token_authority: Pubkey,
+    #[serde(default)]
+    pub token_owner_account_a: Pubkey,
+    #[serde(default)]
+    pub token_owner_account_b: Pubkey,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

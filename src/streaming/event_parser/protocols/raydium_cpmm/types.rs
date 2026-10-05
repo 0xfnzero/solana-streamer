@@ -14,10 +14,29 @@ pub struct AmmConfig {
     pub protocol_owner: Pubkey,
     pub fund_owner: Pubkey,
     pub creator_fee_rate: u64,
-    pub padding: [u64; 15],
+    pub creator_fee_share_rate: u64,
+    pub padding: [u64; 14],
 }
 
 pub const AMM_CONFIG_SIZE: usize = 228;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creator_share_reuses_padding_without_changing_wire_size() {
+        let mut bytes = vec![0; AMM_CONFIG_SIZE];
+        bytes[100..108].copy_from_slice(&123u64.to_le_bytes());
+        bytes[108..116].copy_from_slice(&250_000u64.to_le_bytes());
+        bytes[116..124].copy_from_slice(&42u64.to_le_bytes());
+        let config = AmmConfig::try_from_slice(&bytes).unwrap();
+        assert_eq!(config.creator_fee_rate, 123);
+        assert_eq!(config.creator_fee_share_rate, 250_000);
+        assert_eq!(config.padding[0], 42);
+        assert_eq!(bytes.len() + 8, 236);
+    }
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PoolState {

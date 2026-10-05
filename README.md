@@ -130,29 +130,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.6" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.7" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.6"
+solana-streamer-sdk = "3.0.7"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.6"
+solana-streamer-sdk = "3.0.7"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.6", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.7", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### v3.0.7
+
+Uses `sol-parser-sdk 0.7.8`. Preserves CPMM creator-fee collection events, the AmmConfig share rate, swap instruction arguments and Orca/CLMM accounts through the bridge. Includes independent RPC corpus validation for 13 mainnet transactions and 17 target operations. Run `cargo run --example rpc_corpus_validate -- --list` to view signatures.
 
 ### Upgrading to v3.0.6
 

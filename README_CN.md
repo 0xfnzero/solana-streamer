@@ -129,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.6" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.7" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.6"
+solana-streamer-sdk = "3.0.7"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.6"
+solana-streamer-sdk = "3.0.7"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.6", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.7", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### v3.0.7
+
+Uses `sol-parser-sdk 0.7.8`. Preserves CPMM creator-fee collection events, the AmmConfig share rate, swap instruction arguments and Orca/CLMM accounts through the bridge. Includes independent RPC corpus validation for 13 mainnet transactions and 17 target operations. Run `cargo run --example rpc_corpus_validate -- --list` to view signatures.
 
 ### 升级到 v3.0.6
 

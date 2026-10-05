@@ -34,6 +34,20 @@ pub struct RaydiumClmmSwapEvent {
     pub token_program: Pubkey,
     pub tick_array: Pubkey,
     pub remaining_accounts: Vec<Pubkey>,
+    #[serde(default)]
+    pub ix_name: String,
+
+    #[serde(default)]
+    pub input_mint: Pubkey,
+
+    #[serde(default)]
+    pub output_mint: Pubkey,
+
+    #[serde(default)]
+    pub tick_arrays: Vec<Pubkey>,
+
+    #[serde(default)]
+    pub tick_array_bitmap_extension: Option<Pubkey>,
 }
 
 /// 交易v2

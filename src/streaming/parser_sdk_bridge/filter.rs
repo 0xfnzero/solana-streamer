@@ -96,6 +96,7 @@ fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
         (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmSwapEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmDepositEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmWithdrawEvent(_))
+        | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmCollectCreatorFeeEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmInitializeEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmAmmConfigAccountEvent(_))
         | (Protocol::RaydiumCpmm, DexEvent::RaydiumCpmmPoolStateAccountEvent(_)) => true,

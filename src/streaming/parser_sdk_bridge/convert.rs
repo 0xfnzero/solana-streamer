@@ -414,6 +414,19 @@ pub(crate) fn convert_parser_event(
             );
             Some(DexEvent::RaydiumCpmmWithdrawEvent(raydium_cpmm_withdraw_from_parser(e, meta)))
         }
+        PbDexEvent::RaydiumCpmmCollectCreatorFee(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::RaydiumCpmm,
+                EventType::RaydiumCpmmCollectCreatorFee,
+                raydium_cpmm_program(),
+            );
+            Some(DexEvent::RaydiumCpmmCollectCreatorFeeEvent(
+                raydium_cpmm_collect_creator_fee_from_parser(e, meta),
+            ))
+        }
         PbDexEvent::RaydiumCpmmInitialize(e) => {
             let meta = adapt_pm(
                 e.metadata.clone(),

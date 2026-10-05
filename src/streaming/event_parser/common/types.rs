@@ -227,6 +227,7 @@ pub enum EventType {
     Unknown,
     // Appended to preserve existing Borsh enum discriminants.
     TransactionCost,
+    RaydiumCpmmCollectCreatorFee,
 }
 
 pub const ACCOUNT_EVENT_TYPES: &[EventType] = &[
