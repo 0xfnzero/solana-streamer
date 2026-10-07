@@ -58,6 +58,7 @@ pub(crate) fn pumpfun_create_token_from_parser(
         virtual_quote_reserves: c.virtual_quote_reserves,
         creator_fee_bps: c.creator_fee_bps,
         is_holder_reward: c.is_holder_reward,
+        depth: c.depth,
         ix_name: "create".to_string(),
         ..Default::default()
     }
@@ -356,6 +357,11 @@ pub(crate) fn pumpfun_global_account_from_parser(
             buyback_basis_points: e.global.buyback_basis_points,
             initial_virtual_quote_reserves: e.global.initial_virtual_quote_reserves,
             whitelisted_quote_mints: e.global.whitelisted_quote_mints,
+            creator_fee_configurable: e.global.creator_fee_configurable,
+            max_configurable_creator_fee_bps: e.global.max_configurable_creator_fee_bps,
+            holder_reward_claim_authority: e.global.holder_reward_claim_authority,
+            is_holder_reward_enabled: e.global.is_holder_reward_enabled,
+            max_curve_depth: e.global.max_curve_depth,
         },
     }
 }
@@ -372,6 +378,13 @@ pub(crate) fn pumpfun_bonding_curve_account_from_parser(
         owner: pump_program(),
         rent_epoch: 0,
         bonding_curve: BondingCurve {
+            creator_fee: e.bonding_curve.creator_fee,
+            protocol_fees: e.bonding_curve.protocol_fees,
+            depth: e.bonding_curve.depth,
+            initial_virtual_quote_reserves: e.bonding_curve.initial_virtual_quote_reserves,
+            post_complete_base_out: e.bonding_curve.post_complete_base_out,
+            post_complete_quote_in: e.bonding_curve.post_complete_quote_in,
+
             virtual_token_reserves: e.bonding_curve.virtual_token_reserves,
             virtual_quote_reserves: e.bonding_curve.virtual_quote_reserves,
             real_token_reserves: e.bonding_curve.real_token_reserves,
@@ -401,6 +414,7 @@ pub(crate) fn pumpfun_fee_config_account_from_parser(
         owner: pump_program(),
         rent_epoch: 0,
         fee_config: PumpFunFeeConfig {
+            exotic_flat_fees: pump_fees_fees_from_parser(e.fee_config.exotic_flat_fees),
             bump: e.fee_config.bump,
             admin: e.fee_config.admin,
             flat_fees: pump_fees_fees_from_parser(e.fee_config.flat_fees),
@@ -533,6 +547,7 @@ pub(crate) fn pumpswap_buy_full_from_parser(
         buyback_fee_basis_points: b.buyback_fee_basis_points,
         buyback_fee: b.buyback_fee,
         virtual_quote_reserves: b.virtual_quote_reserves,
+        creator_fee_unclaimed: b.creator_fee_unclaimed,
         can_boost: b.can_boost,
         base_supply: b.base_supply,
         holder_rewards_bps: b.holder_rewards_bps,
@@ -586,6 +601,7 @@ pub(crate) fn pumpswap_sell_full_from_parser(
         buyback_fee_basis_points: s.buyback_fee_basis_points,
         buyback_fee: s.buyback_fee,
         virtual_quote_reserves: s.virtual_quote_reserves,
+        creator_fee_unclaimed: s.creator_fee_unclaimed,
         can_boost: s.can_boost,
         base_supply: s.base_supply,
         holder_rewards_bps: s.holder_rewards_bps,
@@ -757,6 +773,7 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         quote_mint: normalize_pumpfun_quote_mint(t.quote_mint),
         quote_amount: t.quote_amount,
         virtual_quote_reserves: t.virtual_quote_reserves,
+        creator_fee_unclaimed: t.creator_fee_unclaimed,
         real_quote_reserves: t.real_quote_reserves,
         holder_rewards_bps: t.holder_rewards_bps,
         holder_rewards: t.holder_rewards,

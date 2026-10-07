@@ -9,6 +9,9 @@ use crate::streaming::event_parser::protocols::pumpswap::types::{GlobalConfig, P
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapBuyEvent {
     #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_unclaimed: u64,
+    #[borsh(skip)]
     pub metadata: EventMetadata,
     pub timestamp: i64,
     pub base_amount_out: u64,
@@ -92,6 +95,9 @@ pub const PUMP_SWAP_BUY_EVENT_LOG_SIZE: usize = PUMP_SWAP_BUY_EVENT_LOG_MIN;
 /// 卖出事件
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpSwapSellEvent {
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_unclaimed: u64,
     #[borsh(skip)]
     pub metadata: EventMetadata,
     pub timestamp: i64,
@@ -374,4 +380,17 @@ pub mod discriminators {
     // 账户鉴别器
     pub const GLOBAL_CONFIG_ACCOUNT: &[u8] = &[149, 8, 156, 202, 160, 252, 176, 217];
     pub const POOL_ACCOUNT: &[u8] = &[241, 154, 109, 4, 17, 177, 109, 188];
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpSwapSweepPoolFeeEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub pool: Pubkey,
+    pub base_mint: Pubkey,
+    pub quote_mint: Pubkey,
+    pub recipient: Pubkey,
+    pub payer: Pubkey,
+    pub amount: u64,
+    pub bucket: u8,
 }

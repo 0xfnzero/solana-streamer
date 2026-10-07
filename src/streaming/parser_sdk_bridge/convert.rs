@@ -23,6 +23,60 @@ pub(crate) fn convert_parser_event(
     recv_wall_us: i64,
 ) -> Option<DexEvent> {
     match ev {
+        PbDexEvent::PumpFunPostCompleteBuy(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::PumpFunPostCompleteBuy,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunPostCompleteBuyEvent(crate::streaming::event_parser::protocols::pumpfun::events::PumpFunPostCompleteBuyEvent{metadata:meta,user:e.user,mint:e.mint,bonding_curve:e.bonding_curve,quote_mint:e.quote_mint,timestamp:e.timestamp,base_out:e.base_out,quote_in:e.quote_in,fee_basis_points:e.fee_basis_points,fee:e.fee,creator_fee_basis_points:e.creator_fee_basis_points,creator_fee:e.creator_fee,buyback_fee:e.buyback_fee,pool_base_reserves_before:e.pool_base_reserves_before,pool_quote_reserves_before:e.pool_quote_reserves_before,pool_base_reserves_after:e.pool_base_reserves_after,pool_quote_reserves_after:e.pool_quote_reserves_after,}))
+        }
+        PbDexEvent::PumpFunSweepBondingCurveFee(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::PumpFunSweepBondingCurveFee,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunSweepBondingCurveFeeEvent(crate::streaming::event_parser::protocols::pumpfun::events::PumpFunSweepBondingCurveFeeEvent{metadata:meta,timestamp:e.timestamp,mint:e.mint,bonding_curve:e.bonding_curve,quote_mint:e.quote_mint,recipient:e.recipient,amount:e.amount,bucket:e.bucket,}))
+        }
+        PbDexEvent::PumpFunComplete(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpFun,
+                EventType::PumpFunComplete,
+                pump_program(),
+            );
+            Some(DexEvent::PumpFunCompleteEvent(
+                crate::streaming::event_parser::protocols::pumpfun::events::PumpFunCompleteEvent {
+                    metadata: meta,
+                    user: e.user,
+                    mint: e.mint,
+                    bonding_curve: e.bonding_curve,
+                    timestamp: e.timestamp,
+                    quote_mint: e.quote_mint,
+                },
+            ))
+        }
+        PbDexEvent::PumpSwapSweepPoolFee(e) => {
+            let meta = adapt_pm(
+                e.metadata.clone(),
+                bt,
+                recv_wall_us,
+                ProtocolType::PumpSwap,
+                EventType::PumpSwapSweepPoolFee,
+                pumpswap_program(),
+            );
+            Some(DexEvent::PumpSwapSweepPoolFeeEvent(crate::streaming::event_parser::protocols::pumpswap::events::PumpSwapSweepPoolFeeEvent{metadata:meta,timestamp:e.timestamp,pool:e.pool,base_mint:e.base_mint,quote_mint:e.quote_mint,recipient:e.recipient,payer:e.payer,amount:e.amount,bucket:e.bucket,}))
+        }
+
         PbDexEvent::PumpFunTrade(t) => Some(pumpfun_trade_from_parser_with_event_type(
             t,
             bt,

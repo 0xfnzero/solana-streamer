@@ -419,6 +419,8 @@ mod tests {
             owner: Pubkey::new_unique(),
             rent_epoch: 0,
             pool: PbPumpSwapPool {
+                protocol_fees: 0,
+                creator_fees: 0,
                 pool_bump: 7,
                 index: 42,
                 creator: Pubkey::new_unique(),

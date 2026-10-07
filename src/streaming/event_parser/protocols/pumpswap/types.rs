@@ -21,6 +21,12 @@ pub const GLOBAL_CONFIG_SIZE: usize = 32 + 8 + 8 + 1 + 32 * 8 + 8 + 32 + 32 + 32
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct Pool {
+    #[borsh(skip)]
+    #[serde(default)]
+    pub protocol_fees: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fees: u64,
     pub pool_bump: u8,
     pub index: u16,
     pub creator: Pubkey,

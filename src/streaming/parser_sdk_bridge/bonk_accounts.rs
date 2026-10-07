@@ -195,6 +195,8 @@ pub(crate) fn pumpswap_global_config_from_pb(
 
 pub(crate) fn pumpswap_pool_from_pb(p: sol_parser_sdk::core::events::PumpSwapPool) -> Pool {
     Pool {
+        creator_fees: p.creator_fees,
+        protocol_fees: p.protocol_fees,
         pool_bump: p.pool_bump,
         index: p.index,
         creator: p.creator,

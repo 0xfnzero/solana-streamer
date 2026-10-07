@@ -170,6 +170,10 @@ pub enum DexEvent {
     // Appended to preserve existing serialized enum variant indices.
     TransactionCostEvent(TransactionCostEvent),
     RaydiumCpmmCollectCreatorFeeEvent(RaydiumCpmmCollectCreatorFeeEvent),
+    PumpFunPostCompleteBuyEvent(PumpFunPostCompleteBuyEvent),
+    PumpFunSweepBondingCurveFeeEvent(PumpFunSweepBondingCurveFeeEvent),
+    PumpFunCompleteEvent(PumpFunCompleteEvent),
+    PumpSwapSweepPoolFeeEvent(PumpSwapSweepPoolFeeEvent),
 }
 
 /// Macro to generate metadata accessors for all DexEvent variants
@@ -192,6 +196,10 @@ macro_rules! impl_dex_event_metadata {
 }
 
 impl_dex_event_metadata!(
+    PumpFunPostCompleteBuyEvent,
+    PumpFunSweepBondingCurveFeeEvent,
+    PumpFunCompleteEvent,
+    PumpSwapSweepPoolFeeEvent,
     // Bonk events
     BonkTradeEvent,
     BonkPoolCreateEvent,

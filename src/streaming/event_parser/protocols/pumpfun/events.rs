@@ -8,6 +8,9 @@ use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Gl
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunCreateTokenEvent {
     #[borsh(skip)]
+    #[serde(default)]
+    pub depth: u8,
+    #[borsh(skip)]
     pub metadata: EventMetadata,
     pub name: String,
     pub symbol: String,
@@ -144,6 +147,9 @@ pub struct PumpFunCreateV2TokenEvent {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunTradeEvent {
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_unclaimed: u64,
     #[borsh(skip)]
     pub metadata: EventMetadata,
     pub mint: Pubkey,
@@ -522,6 +528,7 @@ pub struct PumpFunFeeConfigAccountEvent {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PumpFunFeeConfig {
+    pub exotic_flat_fees: PumpFeesFees,
     pub bump: u8,
     pub admin: Pubkey,
     pub flat_fees: PumpFeesFees,
@@ -622,4 +629,47 @@ pub mod discriminators {
     // Account discriminators
     pub const BONDING_CURVE_ACCOUNT: &[u8] = &[23, 183, 248, 55, 96, 216, 172, 96];
     pub const GLOBAL_ACCOUNT: &[u8] = &[167, 232, 232, 177, 200, 108, 114, 127];
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunPostCompleteBuyEvent {
+    pub metadata: EventMetadata,
+    pub user: Pubkey,
+    pub mint: Pubkey,
+    pub bonding_curve: Pubkey,
+    pub quote_mint: Pubkey,
+    pub timestamp: i64,
+    pub base_out: u64,
+    pub quote_in: u64,
+    pub fee_basis_points: u64,
+    pub fee: u64,
+    pub creator_fee_basis_points: u64,
+    pub creator_fee: u64,
+    pub buyback_fee: u64,
+    pub pool_base_reserves_before: u64,
+    pub pool_quote_reserves_before: u64,
+    pub pool_base_reserves_after: u64,
+    pub pool_quote_reserves_after: u64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunSweepBondingCurveFeeEvent {
+    pub metadata: EventMetadata,
+    pub timestamp: i64,
+    pub mint: Pubkey,
+    pub bonding_curve: Pubkey,
+    pub quote_mint: Pubkey,
+    pub recipient: Pubkey,
+    pub amount: u64,
+    pub bucket: u8,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PumpFunCompleteEvent {
+    pub metadata: EventMetadata,
+    pub user: Pubkey,
+    pub mint: Pubkey,
+    pub bonding_curve: Pubkey,
+    pub timestamp: i64,
+    pub quote_mint: Pubkey,
 }

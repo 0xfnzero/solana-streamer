@@ -73,6 +73,11 @@ pub enum ProtocolType {
     BorshDeserialize,
 )]
 pub enum EventType {
+    PumpFunComplete,
+    PumpFunPostCompleteBuy,
+    PumpFunSweepBondingCurveFee,
+    PumpSwapSweepPoolFee,
+
     // PumpSwap events
     #[default]
     PumpSwapBuy,

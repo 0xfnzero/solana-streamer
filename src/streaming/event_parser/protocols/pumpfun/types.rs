@@ -4,6 +4,25 @@ use solana_sdk::pubkey::Pubkey;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BondingCurve {
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub protocol_fees: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub depth: u8,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub initial_virtual_quote_reserves: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub post_complete_base_out: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub post_complete_quote_in: u64,
+
     pub virtual_token_reserves: u64,
     pub virtual_quote_reserves: u64,
     pub real_token_reserves: u64,
@@ -28,6 +47,22 @@ pub const BONDING_CURVE_SIZE: usize = BONDING_CURVE_CREATOR_FEE_SIZE + 1;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct Global {
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_configurable: bool,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub max_configurable_creator_fee_bps: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub holder_reward_claim_authority: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub is_holder_reward_enabled: bool,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub max_curve_depth: u8,
+
     pub initialized: bool,
     pub authority: Pubkey,
     pub fee_recipient: Pubkey,
