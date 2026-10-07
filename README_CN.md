@@ -288,8 +288,6 @@ v1.4.12 使用 `sol-parser-sdk 0.4.17`，会把 legacy PumpFun SOL 的 `quote_mi
 3. **事件匹配** - 使用标准 Rust `match` 而不是 `match_event!` 宏
 4. **元数据访问** - 事件属性现在通过 `.metadata()` 方法访问
 
-详细的迁移步骤和代码示例，请参阅 [MIGRATION.md](MIGRATION.md) 或 [MIGRATION_CN.md](MIGRATION_CN.md)（中文版本）。
-
 **快速迁移示例：**
 
 ```rust

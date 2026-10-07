@@ -289,8 +289,6 @@ Version 1.0.0 introduces a major architectural change from trait-based event han
 3. **Event Matching** - Use standard Rust `match` instead of `match_event!` macro
 4. **Metadata Access** - Event properties now accessed through `.metadata()` method
 
-For detailed migration steps and code examples, see [MIGRATION.md](MIGRATION.md) or [MIGRATION_CN.md](MIGRATION_CN.md) (Chinese version).
-
 **Quick Migration Example:**
 
 ```rust
