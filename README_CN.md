@@ -129,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.7" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.8" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.7"
+solana-streamer-sdk = "3.0.8"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.7"
+solana-streamer-sdk = "3.0.8"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.7", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.8", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### v3.0.8
+
+固定依赖 `sol-parser-sdk 0.7.9`，继承 PumpSwap boost 账户回填与预编译指令日志索引修复，保留严格交易匹配和 ALT 账户处理。新增离线主网回归样本，验证 RPC facade 和 gRPC 事件桥接层完整保留池金库、token program 及卖出 token mint。
 
 ### v3.0.7
 
