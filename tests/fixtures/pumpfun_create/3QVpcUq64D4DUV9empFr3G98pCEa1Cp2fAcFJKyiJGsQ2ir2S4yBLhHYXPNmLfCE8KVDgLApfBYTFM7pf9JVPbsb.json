@@ -1,0 +1,118 @@
+{
+  "blockTime": 1766735159,
+  "meta": {
+    "computeUnitsConsumed": 450,
+    "costUnits": 9316,
+    "err": {
+      "InstructionError": [
+        2,
+        {
+          "Custom": 1
+        }
+      ]
+    },
+    "fee": 160000,
+    "innerInstructions": [],
+    "loadedAddresses": {
+      "readonly": [
+        "13ec7XdrjF3h3YcqBTFDSReRcUFwbCnJaAQspM4j6DDJ",
+        "SysvarRent111111111111111111111111111111111",
+        "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM",
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+        "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ",
+        "4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf",
+        "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1"
+      ],
+      "writable": [
+        "MAyhSmzXzV1pTf7LsNkrNwkWKTo4ougAJ1PPg47MD4e",
+        "62qc2CNXwrYqQScmEdiZFFAnJR262PxWEuNQtxfafNgV",
+        "BwWK17cbHxwWBKZkUYvzxLcNQ1YVyaFezduWbtm2de6s"
+      ]
+    },
+    "logMessages": [
+      "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+      "Program ComputeBudget111111111111111111111111111111 success",
+      "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+      "Program ComputeBudget111111111111111111111111111111 success",
+      "Program 11111111111111111111111111111111 invoke [1]",
+      "Transfer: insufficient lamports 891780, need 2000000",
+      "Program 11111111111111111111111111111111 failed: custom program error: 0x1"
+    ],
+    "postBalances": [
+      891780,
+      0,
+      1472048615,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      11066909,
+      0,
+      1,
+      1662625250,
+      1,
+      20373807,
+      3316541054,
+      11149834,
+      18351164688778,
+      6130959019891,
+      2547360,
+      1009200,
+      717039856,
+      44727117,
+      1159717,
+      454657808,
+      168186849
+    ],
+    "postTokenBalances": [],
+    "preBalances": [
+      1051780,
+      0,
+      1472048615,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      11066909,
+      0,
+      1,
+      1662625250,
+      1,
+      20373807,
+      3316541054,
+      11149834,
+      18351164688778,
+      6130959019891,
+      2547360,
+      1009200,
+      717039856,
+      44727117,
+      1159717,
+      454657808,
+      168186849
+    ],
+    "preTokenBalances": [],
+    "rewards": [],
+    "status": {
+      "Err": {
+        "InstructionError": [
+          2,
+          {
+            "Custom": 1
+          }
+        ]
+      }
+    }
+  },
+  "slot": 389243699,
+  "transaction": [
+    "AnhL/dE/zY1N6Si7QiDC1WPCjz+NfZL59xLJfUMydUTuDzbSUgB1QTwH1CXjcjvMqyz7ysZwdWxfYtHDJ9BPMw6Z20X5ADBy6HtLCVtxSsuHgdrR/FmWdZJ5KIoVBtP+5yfgVF7BG3/ybhxLQbnyllQOyrPZMIFbe7jEbFfPqycPgAIABRDrZ62Tc80sgPWEBGqwxqJdORPimCdqFgAbkundpERCa6fbYHnL8P2AU6HZ8xeGl0ZojxrLUsawg4f9ev2esKVJCK22eMkZYQlp18Z0h6xwzbmXn029K8qGPkLQuMcPCQwJSiILCFkdkYD4PEElN1swpxTMXKaedgVJZAUrb5/A0mychy719cRqGlG++dUcYSbNgVJWpj5ElpOO1/2YpxB/lCgRPgeoSP5oXtMjNeH0KJ6BBovDIlkNphuCylXivAvD4mndyWgQemYIDBhv3plFwShcRx0nIIsOqevtd2umnslBHWBmcrlGsf85End4cLtv/0yV7zmXRCJOTbSdN3xL3zqyx9J/tyTf5/hEqJyWSA2LVOO1CRGrwcnK27bW3Cn6CRGlSGNBLWMfTgeHAylsA18NEzOg2ciDjXO3EP5uLfqKjrl1EqzSb8h3PuXF6zcVEjrruun9ge4Z4Pm0LdIrAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVuD2k2Zaz0TbFWi/F1uqUYnLl/XS/ztlXSu2/W0YsAMGRm/lIRcy/+ytunLDm+e8jOW7xfcSayxDmzpAAAAAb5q0pPGVjcCpyUw/tywHmVhD7aSF46JPEMaTmfgZlA+MlyWPTiSJ8bs9ECkUjg2DC1oTmdr/EIQEjnvY2+n4Wbt5RDPCpK2siodXkgc9fdmEeY397F1v/7wdTdUj1RkCBg0ACQMgoQcAAAAAAA0ABQLgkwQACwIAAgwCAAAAgIQeAAAAAAAMEAEVBggYAAsWDxATEgMFGQx01pBM7F+LMbQBAAAAIAEAAAAgPQAAAGh0dHBzOi8vbWV0YWRhdGEuajd0cmFja2VyLmNvbS9tZXRhZGF0YS8wMzUzMTQ3NGY5NjI0NmI5Lmpzb27rZ62Tc80sgPWEBGqwxqJdORPimCdqFgAbkundpERCawAPBwAHAAELFhQBAQwQGBEBBggHAAsWBBkMCQoOFxlmBj0SAdrr6pKUjJxpiwAAAFfTRwEAAAABAf5a2ymWMblbq9MVBfNzEtsa8rJxjWgvRTWOSpCyoA0tAwcECgcJEQYLBQEC",
+    "base64"
+  ],
+  "transactionIndex": 905,
+  "version": 0
+}

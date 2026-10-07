@@ -130,29 +130,33 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.8" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.9" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.8"
+solana-streamer-sdk = "3.0.9"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.8"
+solana-streamer-sdk = "3.0.9"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.8", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.9", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+### v3.0.9
+
+- Pins `sol-parser-sdk 0.7.10` and inherits creation account matching, quote-account and historical-layout fixes, verified through the RPC facade and gRPC bridge.
 
 ### v3.0.8
 
