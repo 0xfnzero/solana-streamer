@@ -263,6 +263,27 @@ pub struct MeteoraDbcSwapEvent {
     pub protocol_fee: u64,
     pub referral_fee: u64,
     pub current_timestamp: u64,
+    #[serde(default)]
+    pub event_version: u8,
+    #[serde(default)]
+    pub swap_mode: u8,
+    #[serde(default)]
+    pub amount_0: u64,
+    #[serde(default)]
+    pub amount_1: u64,
+    #[serde(default)]
+    pub maximum_amount_in: u64,
+    #[serde(default)]
+    pub included_fee_input_amount: u64,
+    #[serde(default)]
+    pub amount_left: u64,
+    #[serde(default)]
+    pub quote_reserve_amount: u64,
+    #[serde(default)]
+    pub migration_threshold: u64,
+    #[serde(default)]
+    pub has_transfer_hook: bool,
+
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -368,6 +389,19 @@ pub struct MeteoraDlmmSwapEvent {
     pub protocol_fee: u64,
     pub fee_bps: u128,
     pub host_fee: u64,
+    #[serde(default)]
+    pub event_version: u8,
+    #[serde(default)]
+    pub amount_left: u64,
+    #[serde(default)]
+    pub mm_fee: u64,
+    #[serde(default)]
+    pub limit_order_fee: u64,
+    #[serde(default)]
+    pub fees_on_input: bool,
+    #[serde(default)]
+    pub fees_on_token_x: bool,
+
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

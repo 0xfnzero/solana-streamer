@@ -249,6 +249,17 @@ pub(crate) fn meteora_dbc_swap_from_pb(
 ) -> MeteoraDbcSwapEvent {
     MeteoraDbcSwapEvent {
         metadata: meta,
+        event_version: e.event_version,
+        swap_mode: e.swap_mode,
+        amount_0: e.amount_0,
+        amount_1: e.amount_1,
+        maximum_amount_in: e.maximum_amount_in,
+        included_fee_input_amount: e.included_fee_input_amount,
+        amount_left: e.amount_left,
+        quote_reserve_amount: e.quote_reserve_amount,
+        migration_threshold: e.migration_threshold,
+        has_transfer_hook: e.has_transfer_hook,
+
         pool: e.pool,
         config: e.config,
         trade_direction: e.trade_direction,
@@ -378,6 +389,13 @@ pub(crate) fn meteora_dlmm_swap_from_pb(
 ) -> MeteoraDlmmSwapEvent {
     MeteoraDlmmSwapEvent {
         metadata: meta,
+        event_version: e.event_version,
+        amount_left: e.amount_left,
+        mm_fee: e.mm_fee,
+        limit_order_fee: e.limit_order_fee,
+        fees_on_input: e.fees_on_input,
+        fees_on_token_x: e.fees_on_token_x,
+
         token_x_mint: e.token_x_mint,
         token_y_mint: e.token_y_mint,
         user_token_in: e.user_token_in,

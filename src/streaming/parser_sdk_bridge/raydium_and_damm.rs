@@ -119,6 +119,14 @@ pub(crate) fn raydium_cpmm_swap_from_parser(
 ) -> RaydiumCpmmSwapEvent {
     RaydiumCpmmSwapEvent {
         metadata: meta,
+        input_vault_before: e.input_vault_before,
+        output_vault_before: e.output_vault_before,
+        input_mint: e.input_mint,
+        output_mint: e.output_mint,
+        trade_fee: e.trade_fee,
+        creator_fee: e.creator_fee,
+        creator_fee_on_input: e.creator_fee_on_input,
+
         amount_in: e.amount_in,
         minimum_amount_out: e.minimum_amount_out,
         max_amount_in: e.max_amount_in,

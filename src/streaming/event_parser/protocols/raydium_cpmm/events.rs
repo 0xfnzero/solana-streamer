@@ -46,6 +46,28 @@ pub struct RaydiumCpmmSwapEvent {
     pub input_token_mint: Pubkey,
     pub output_token_mint: Pubkey,
     pub observation_state: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub input_vault_before: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub output_vault_before: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub input_mint: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub output_mint: Pubkey,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub trade_fee: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee: u64,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub creator_fee_on_input: bool,
+
 }
 
 /// 存款
