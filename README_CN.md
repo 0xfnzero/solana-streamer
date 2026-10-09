@@ -129,29 +129,33 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.9" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.10" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.9"
+solana-streamer-sdk = "3.0.10"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.9"
+solana-streamer-sdk = "3.0.10"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.9", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.10", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+### v3.0.10
+
+锁定 sol-parser-sdk 0.7.12，同步 PumpFun migration event CPI 解析修复。发布当前 bridge 的 compact trade、quote coin、complete/fee sweep 事件、协议费用字段和 synthetic migration 支持，包含离线主网交易回归样本。
 
 ### v3.0.9
 
