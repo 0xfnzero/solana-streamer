@@ -130,29 +130,36 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.10" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.11" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.10"
+solana-streamer-sdk = "3.0.11"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.10"
+solana-streamer-sdk = "3.0.11"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.10", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.11", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+## v3.0.11 — Pump depth-2 compatibility
+
+Pins sol-parser-sdk 0.7.13 and inherits signed Pump depth-2 create-event compatibility coverage through the parser bridge. Existing trading and event interfaces remain unchanged.
+
+Validation includes official Pump SDK 4.1.0 instruction comparisons, signed local LiteSVM simulations and SDK regressions. Local simulation state/config is synthetic; no funded transactions were broadcast and production latency was not measured.
+
 
 ### v3.0.10
 

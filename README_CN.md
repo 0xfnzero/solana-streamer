@@ -129,29 +129,36 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.10" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.11" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.10"
+solana-streamer-sdk = "3.0.11"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.10"
+solana-streamer-sdk = "3.0.11"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.10", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.11", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+## v3.0.11 — Pump depth-2 compatibility
+
+Pins sol-parser-sdk 0.7.13 and inherits signed Pump depth-2 create-event compatibility coverage through the parser bridge. Existing trading and event interfaces remain unchanged.
+
+Validation includes official Pump SDK 4.1.0 instruction comparisons, signed local LiteSVM simulations and SDK regressions. Local simulation state/config is synthetic; no funded transactions were broadcast and production latency was not measured.
+
 
 ### v3.0.10
 
