@@ -1,4 +1,25 @@
 <div align="center">
+
+## v3.0.14 — Pump 执行事件与最新回放示例
+
+修复官方 Anchor CPI TradeEvent 前缀识别，保留历史编码兼容。RPC/gRPC 的实际 `sol_amount`、`quote_amount`、`token_amount` 只从执行事件合并；预算和最小输出保留在指令参数字段。如果日志及事件 CPI 均缺失，实际金额字段为 0（表示无执行数据，不代表已确认零成交）。非 SOL 报价金额不能当作 SOL。
+
+在本仓库运行 `cargo run --offline --example rpc_transaction_replay`，离线回放 2026-10-19 重新抓取的真实交易。默认样本为 Delta SellV2；使用 `--fetch SIGNATURE OUTPUT.json` 抓取另一笔，再用 `--fixture OUTPUT.json` 回放。通过 `SOLANA_RPC_URL` 选择 RPC，支持 transaction v1。
+
+新 Delta 卖出样本：`4ARos3Yq1SMNE3izDpy9YdKrRgMmD7UCDxvnVrBRaGCJHiifPHSmQWc4DPfjUaEUcxS7puGmEN64K7EZdeXLJaj2`，slot 458542546。旧的五种双跳组合仅作为回归样本，未冒充本次新抓取交易。
+
+## v3.0.14 — Shred 原始指令透传
+
+只限制协议（例如 PumpFun）而不设置事件过滤器时，默认未知指令透传也能到达最终回调。显式只订阅 Trade 仍不包含原始指令；显式订阅 RawInstruction 返回全部外层指令。
+
+默认 Shred 入口将未适配的第三方程序（包括 Rapid/Delta）作为 `RawInstruction` 返回，不再推断买卖方向、金额或内部 buy 版本。System、Token、ATA、ComputeBudget 等基础程序默认不透传；已支持的官方 DEX 指令继续正常解析，官方 Pump/PumpSwap 多跳仍返回 `PumpRouteIntent`。
+
+事件包含 `program_id`、`instruction_index`、`accounts`、`account_indices`、`instruction_data` 和交易 metadata。账户保留原顺序与重复项；未解析 ALT 地址为 null/None，原始索引仍保留。使用缓存 loaded-addresses/resolver 补齐，热路径不请求 RPC。data 是完整原始字节，不要求已知布局。
+
+无过滤器时返回未知第三方指令；显式订阅 `RawInstruction` 时返回所有外层指令（含基础程序）。仅订阅 `PumpFunTrade` 不包含原始事件，需要同时订阅 `RawInstruction`。Streamer 对应 `DexEvent::RawInstructionEvent`，协议为 Common。账户包含 Pump 不证明发生 CPI，更不证明具体 buy 方法；事件数量也不是成交数量。
+
+已有 wrapper 适配函数仅作为显式调用的兼容接口保留，不参与默认 Shred 解码。以下已发布版本的历史说明描述旧行为。
+
     <h1>🌊 Solana Streamer</h1>
     <h3><em>从 Solana DEX 交易程序实时流式传输事件。</em></h3>
 </div>
@@ -129,24 +150,24 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.13" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.14" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.13"
+solana-streamer-sdk = "3.0.14"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.13"
+solana-streamer-sdk = "3.0.14"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.13", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.14", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。

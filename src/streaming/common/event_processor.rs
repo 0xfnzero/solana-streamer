@@ -286,6 +286,29 @@ pub(crate) fn parse_shred_transaction_events(
             &mut events,
         );
 
+        // Protocol narrowing must not suppress protocol-independent default raw
+        // events. Explicit RawInstruction subscriptions are handled by the main
+        // parser (all outer instructions); this pass returns unknown programs only.
+        let wants_default_raw = event_type_filter.is_none_or(|f| {
+            f.include.is_empty()
+                && !f
+                    .exclude
+                    .contains(&crate::streaming::event_parser::common::EventType::RawInstruction)
+        });
+        if wants_default_raw
+            && sdk_parse_filter
+                .as_ref()
+                .is_some_and(|f| !f.should_include(sol_parser_sdk::grpc::EventType::RawInstruction))
+        {
+            sol_parser_sdk::shredstream::parse_transaction_unknown_instructions(
+                tx,
+                signature,
+                slot,
+                tx_index.unwrap_or(0),
+                recv_us,
+                &mut events,
+            );
+        }
         for sdk_event in events.drain(..) {
             if let Some(mut event) =
                 adapt_parser_event(sdk_event, None, recv_us, protocols, event_type_filter)
@@ -455,6 +478,53 @@ mod tests {
             },
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn recent_wrapper_reaches_shred_callback_with_protocol_narrowing() {
+        let rpc: solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta =
+            serde_json::from_str(include_str!(
+                "../../../tests/fixtures/pump_execution_20261019.json"
+            ))
+            .unwrap();
+        let tx = rpc.transaction.transaction.decode().unwrap();
+        for protocols in [vec![], vec![Protocol::PumpFun]] {
+            let mut events = vec![];
+            super::parse_shred_transaction_events(
+                &tx,
+                tx.signatures[0],
+                rpc.slot,
+                Some(7),
+                0,
+                &protocols,
+                None,
+                None,
+                |e| events.push(e),
+            );
+            assert_eq!(events.len(), 1);
+            let DexEvent::RawInstructionEvent(raw) = &events[0] else {
+                panic!("wrapper inferred as trade")
+            };
+            let ix = &tx.message.instructions()[raw.instruction_index];
+            assert_eq!(raw.instruction_data, ix.data);
+            assert_eq!(raw.account_indices, ix.accounts);
+            assert_eq!(raw.metadata.tx_index, Some(7));
+            assert_eq!(raw.metadata.slot, rpc.slot);
+        }
+        let filter = EventTypeFilter::include_only(vec![EventType::PumpFunTrade]);
+        let mut events = vec![];
+        super::parse_shred_transaction_events(
+            &tx,
+            tx.signatures[0],
+            rpc.slot,
+            None,
+            0,
+            &[Protocol::PumpFun],
+            Some(&filter),
+            None,
+            |e| events.push(e),
+        );
+        assert!(events.is_empty());
     }
 
     async fn parse_single_shred_create(tx_index: Option<u64>) -> DexEvent {

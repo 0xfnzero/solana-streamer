@@ -238,6 +238,7 @@ fn push_streamer_event_sdk_grpc_types(
             out.push(Sdk::PumpFunTrade);
         }
         St::PumpRouteIntent => out.push(Sdk::PumpRouteIntent),
+        St::RawInstruction => out.push(Sdk::RawInstruction),
         St::PumpFunBuy => {
             out.push(Sdk::PumpFunBuy);
         }

@@ -23,6 +23,25 @@ pub(crate) fn convert_parser_event(
     recv_wall_us: i64,
 ) -> Option<DexEvent> {
     match ev {
+        PbDexEvent::RawInstruction(e) => {
+            use crate::streaming::event_parser::protocols::sol_parser_forward::events::RawInstructionEvent;
+            let metadata = adapt_pm(
+                e.metadata,
+                bt,
+                recv_wall_us,
+                ProtocolType::Common,
+                EventType::RawInstruction,
+                e.program_id,
+            );
+            Some(DexEvent::RawInstructionEvent(RawInstructionEvent {
+                metadata,
+                program_id: e.program_id,
+                instruction_index: e.instruction_index,
+                accounts: e.accounts,
+                account_indices: e.account_indices,
+                instruction_data: e.instruction_data,
+            }))
+        }
         PbDexEvent::PumpRouteIntent(e) => {
             use crate::streaming::event_parser::protocols::pumpfun::events::{
                 PumpRouteIntentEvent, PumpRouteKind,

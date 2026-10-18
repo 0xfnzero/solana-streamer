@@ -59,6 +59,48 @@ mod tests {
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
 
     #[test]
+    fn raw_instructions_survive_bridge_filters_and_json_without_protocol_inference() {
+        let program = Pubkey::new_unique();
+        let account = Pubkey::new_unique();
+        let source = PbDexEvent::RawInstruction(Box::new(
+            sol_parser_sdk::core::events::RawInstructionEvent {
+                metadata: EventMetadata { slot: 42, ..Default::default() },
+                program_id: program,
+                instruction_index: 3,
+                accounts: vec![Some(account), None, Some(account)],
+                account_indices: vec![1, 250, 1],
+                instruction_data: vec![255, 0, 1],
+            },
+        ));
+        let event =
+            adapt_parser_event(source.clone(), None, 999, &[Protocol::PumpFun], None).unwrap();
+        let DexEvent::RawInstructionEvent(ref raw) = event else { panic!() };
+        assert_eq!(raw.metadata.protocol, ProtocolType::Common);
+        assert_eq!(raw.metadata.event_type, EventType::RawInstruction);
+        assert_eq!(raw.program_id, program);
+        assert_eq!(raw.accounts, vec![Some(account), None, Some(account)]);
+        assert_eq!(raw.instruction_data, vec![255, 0, 1]);
+        let json = serde_json::to_value(&event).unwrap();
+        assert_eq!(serde_json::from_value::<DexEvent>(json).unwrap(), event);
+        assert!(adapt_parser_event(
+            source.clone(),
+            None,
+            999,
+            &[],
+            Some(&EventTypeFilter::include_only(vec![EventType::RawInstruction]))
+        )
+        .is_some());
+        assert!(adapt_parser_event(
+            source,
+            None,
+            999,
+            &[],
+            Some(&EventTypeFilter::include_only(vec![EventType::PumpFunTrade]))
+        )
+        .is_none());
+    }
+
+    #[test]
     fn converts_pump_route_intents_and_filters_without_losing_hints() {
         use crate::streaming::event_parser::common::filter::EventTypeFilter;
         use sol_parser_sdk::core::events::{PumpRouteHop, PumpRouteIntentEvent, PumpRouteKind};

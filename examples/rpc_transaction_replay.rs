@@ -1,4 +1,5 @@
 //! Fetch once or replay an RPC fixture through the public streamer facade.
+//! With no arguments: replay the 2026-10-19 Delta SellV2 transaction offline.
 //! cargo run --example rpc_transaction_replay -- --fetch SIGNATURE OUTPUT.json
 //! cargo run --example rpc_transaction_replay -- --fixture OUTPUT.json
 use anyhow::{bail, ensure, Context, Result};
@@ -11,6 +12,7 @@ use std::{fs, str::FromStr, time::Duration};
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let tx: EncodedConfirmedTransactionWithStatusMeta = match args.as_slice() {
+        [] => serde_json::from_str(include_str!("../tests/fixtures/pump_execution_20261019.json"))?,
         [mode, path] if mode == "--fixture" => serde_json::from_slice(&fs::read(path)?)?,
         [mode, signature, path] if mode == "--fetch" => {
             let signature = Signature::from_str(signature)?;

@@ -283,7 +283,6 @@ pub struct MeteoraDbcSwapEvent {
     pub migration_threshold: u64,
     #[serde(default)]
     pub has_transfer_hook: bool,
-
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -401,7 +400,6 @@ pub struct MeteoraDlmmSwapEvent {
     pub fees_on_input: bool,
     #[serde(default)]
     pub fees_on_token_x: bool,
-
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -467,4 +465,14 @@ pub struct MeteoraDlmmClaimFeeEvent {
     pub owner: Pubkey,
     pub fee_x: u64,
     pub fee_y: u64,
+}
+/// Outer instruction bytes; no claim about internal CPI calls or trade direction.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RawInstructionEvent {
+    pub metadata: EventMetadata,
+    pub program_id: Pubkey,
+    pub instruction_index: usize,
+    pub accounts: Vec<Option<Pubkey>>,
+    pub account_indices: Vec<u8>,
+    pub instruction_data: Vec<u8>,
 }

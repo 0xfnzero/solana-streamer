@@ -16,6 +16,7 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
     matches!(
         ev,
         DexEvent::TokenAccountEvent(_)
+            | DexEvent::RawInstructionEvent(_)
             | DexEvent::TokenInfoEvent(_)
             | DexEvent::NonceAccountEvent(_)
             | DexEvent::BlockMetaEvent(_)
