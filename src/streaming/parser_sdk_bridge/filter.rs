@@ -29,6 +29,10 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
 #[allow(clippy::match_like_matches_macro)]
 fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
     match (p, ev) {
+        (Protocol::PumpFun, DexEvent::PumpRouteIntentEvent(_)) => true,
+        (Protocol::PumpSwap, DexEvent::PumpRouteIntentEvent(e)) => {
+            e.kind == sol_parser_sdk::core::events::PumpRouteKind::MultiHopSwap
+        }
         (Protocol::PumpFun, DexEvent::PumpFunCreateTokenEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunCreateV2TokenEvent(_))
         | (Protocol::PumpFun, DexEvent::PumpFunTradeEvent(_))

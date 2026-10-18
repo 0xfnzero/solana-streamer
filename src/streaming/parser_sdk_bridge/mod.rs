@@ -59,6 +59,91 @@ mod tests {
     use solana_sdk::{pubkey::Pubkey, signature::Signature};
 
     #[test]
+    fn converts_pump_route_intents_and_filters_without_losing_hints() {
+        use crate::streaming::event_parser::common::filter::EventTypeFilter;
+        use sol_parser_sdk::core::events::{PumpRouteHop, PumpRouteIntentEvent, PumpRouteKind};
+        for kind in [
+            PumpRouteKind::RapidBuy,
+            PumpRouteKind::BuyPumpDelta,
+            PumpRouteKind::MultiHopSwap,
+            PumpRouteKind::MultiHopCurveSwap,
+        ] {
+            let is_buy = matches!(kind, PumpRouteKind::RapidBuy | PumpRouteKind::BuyPumpDelta)
+                .then_some(true);
+            let ix_name =
+                (kind == PumpRouteKind::RapidBuy).then(|| "buy_exact_quote_in_v2".to_owned());
+            let program = Pubkey::new_unique();
+            let hop = PumpRouteHop {
+                base_mint: Pubkey::new_unique(),
+                quote_mint: Pubkey::new_unique(),
+                venue: Pubkey::new_unique(),
+                base_vault: Pubkey::new_unique(),
+                quote_vault: Pubkey::new_unique(),
+            };
+            let source = PbDexEvent::PumpRouteIntent(Box::new(PumpRouteIntentEvent {
+                metadata: EventMetadata { slot: 42, tx_index: 8, ..Default::default() },
+                kind,
+                is_buy,
+                ix_name: ix_name.clone(),
+                program,
+                instruction_index: 3,
+                user: Pubkey::new_unique(),
+                input_account: Pubkey::new_unique(),
+                output_account: Pubkey::new_unique(),
+                amount_in: None,
+                min_amount_out: None,
+                hops: vec![hop.clone()],
+                instruction_data: vec![1, 2, 3],
+            }));
+            let event = adapt_parser_event(
+                source.clone(),
+                None,
+                999,
+                &[Protocol::PumpFun],
+                Some(&EventTypeFilter::include_only(vec![EventType::PumpFunTrade])),
+            )
+            .unwrap();
+            let DexEvent::PumpRouteIntentEvent(ref route) = event else { panic!("route lost") };
+            assert_eq!(route.is_buy, is_buy);
+            assert_eq!(route.ix_name, ix_name);
+            assert_eq!(route.hops, vec![hop]);
+            assert_eq!(route.program, program);
+            assert_eq!(route.instruction_index, 3);
+            assert_eq!(route.metadata.slot, 42);
+            assert_eq!(route.metadata.event_type, EventType::PumpRouteIntent);
+            assert_eq!(route.instruction_data, vec![1, 2, 3]);
+            let json = serde_json::to_value(&event).unwrap();
+            assert_eq!(serde_json::from_value::<DexEvent>(json).unwrap(), event);
+            assert!(adapt_parser_event(
+                source.clone(),
+                None,
+                999,
+                &[Protocol::PumpFun],
+                Some(&EventTypeFilter::include_only(vec![EventType::PumpRouteIntent]))
+            )
+            .is_some());
+            for filter in [
+                EventTypeFilter::include_only(vec![EventType::PumpFunBuy]),
+                EventTypeFilter::include_only(vec![EventType::PumpFunSell]),
+                EventTypeFilter::include_exclude(
+                    vec![EventType::PumpFunTrade],
+                    vec![EventType::PumpRouteIntent],
+                ),
+            ] {
+                assert!(adapt_parser_event(source.clone(), None, 999, &[], Some(&filter)).is_none());
+            }
+            assert_eq!(
+                adapt_parser_event(source.clone(), None, 999, &[Protocol::PumpSwap], None)
+                    .is_some(),
+                kind == PumpRouteKind::MultiHopSwap
+            );
+            assert!(
+                adapt_parser_event(source, None, 999, &[Protocol::OrcaWhirlpool], None).is_none()
+            );
+        }
+    }
+
+    #[test]
     fn converts_pumpfun_trade_preserving_amounts() {
         let mut t = PbPumpTrade::default();
         t.metadata = EventMetadata {

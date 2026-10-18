@@ -82,6 +82,13 @@ impl EventTypeFilter {
 
     #[inline]
     pub fn passes_for_event(&self, ev: &DexEvent) -> bool {
+        if let DexEvent::PumpRouteIntentEvent(_) = ev {
+            if self.exclude.contains(&EventType::PumpRouteIntent) {
+                return false;
+            }
+            return self.include.contains(&EventType::PumpRouteIntent)
+                || self.passes_event_type(&EventType::PumpFunTrade);
+        }
         self.passes_event_type(&ev.metadata().event_type)
     }
 }
@@ -230,6 +237,7 @@ fn push_streamer_event_sdk_grpc_types(
         St::PumpFunTrade => {
             out.push(Sdk::PumpFunTrade);
         }
+        St::PumpRouteIntent => out.push(Sdk::PumpRouteIntent),
         St::PumpFunBuy => {
             out.push(Sdk::PumpFunBuy);
         }

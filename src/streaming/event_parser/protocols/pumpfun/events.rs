@@ -673,3 +673,26 @@ pub struct PumpFunCompleteEvent {
     pub timestamp: i64,
     pub quote_mint: Pubkey,
 }
+pub use sol_parser_sdk::core::events::{PumpRouteHop, PumpRouteKind};
+
+/// Recognized outer route intent, not a confirmed trade or CPI result.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PumpRouteIntentEvent {
+    pub metadata: EventMetadata,
+    pub kind: PumpRouteKind,
+    /// Intended direction relative to the single wrapper hop's base mint.
+    #[serde(default)]
+    pub is_buy: Option<bool>,
+    /// Official underlying instruction encoded in the wrapper, when known.
+    #[serde(default)]
+    pub ix_name: Option<String>,
+    pub program: Pubkey,
+    pub instruction_index: usize,
+    pub user: Pubkey,
+    pub input_account: Pubkey,
+    pub output_account: Pubkey,
+    pub amount_in: Option<u64>,
+    pub min_amount_out: Option<u64>,
+    pub hops: Vec<PumpRouteHop>,
+    pub instruction_data: Vec<u8>,
+}
