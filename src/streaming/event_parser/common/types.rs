@@ -289,9 +289,13 @@ pub struct SwapData {
 pub struct EventMetadata {
     pub signature: Signature,
     pub slot: u64,
-    pub tx_index: Option<u64>, // 新增：交易在slot中的索引
+    /// Position supplied by the source. Yellowstone uses its node index;
+    /// Shred positions may be local to an Entries message. None means unavailable.
+    /// Do not use (slot, tx_index) as a cross-message Shred deduplication key.
+    pub tx_index: Option<u64>,
     pub block_time: i64,
     pub block_time_ms: i64,
+    /// Local receive timestamp in microseconds; not chain execution order.
     pub recv_us: i64,
     pub handle_us: i64,
     pub protocol: ProtocolType,

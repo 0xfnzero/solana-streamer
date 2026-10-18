@@ -472,7 +472,7 @@ mod tests {
                 tx.signatures[0],
                 rpc.slot,
                 Some(7),
-                0,
+                123456,
                 &protocols,
                 None,
                 None,
@@ -486,6 +486,7 @@ mod tests {
             assert_eq!(raw.instruction_data, ix.data);
             assert_eq!(raw.account_indices, ix.accounts);
             assert_eq!(raw.metadata.tx_index, Some(7));
+            assert_eq!(raw.metadata.recv_us, 123456);
             assert_eq!(raw.metadata.slot, rpc.slot);
         }
         let filter = EventTypeFilter::include_only(vec![EventType::PumpFunTrade]);
