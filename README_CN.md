@@ -129,29 +129,35 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.11" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.12" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.11"
+solana-streamer-sdk = "3.0.12"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.11"
+solana-streamer-sdk = "3.0.12"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.11", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.12", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。
 
 ## 🔄 迁移指南
+
+## v3.0.12 — Pump routes and offline replay
+
+Pins sol-parser-sdk 0.7.14 and includes the latest streaming facade code and native hot-path benchmark. The raw parser re-export provides the new Pump route-intent and cached-ALT APIs.
+
+Route intents describe instructions before execution; use execution metadata for confirmed fills. Offline CPU timings do not measure production transport or transaction landing.
 
 ## v3.0.11 — Pump depth-2 compatibility
 

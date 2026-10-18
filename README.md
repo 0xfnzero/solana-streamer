@@ -130,29 +130,35 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.11" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.12" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.11"
+solana-streamer-sdk = "3.0.12"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.11"
+solana-streamer-sdk = "3.0.12"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.11", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.12", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
 
 ## 🔄 Migration Guide
+
+## v3.0.12 — Pump routes and offline replay
+
+Pins sol-parser-sdk 0.7.14 and includes the latest streaming facade code and native hot-path benchmark. The raw parser re-export provides the new Pump route-intent and cached-ALT APIs.
+
+Route intents describe instructions before execution; use execution metadata for confirmed fills. Offline CPU timings do not measure production transport or transaction landing.
 
 ## v3.0.11 — Pump depth-2 compatibility
 
@@ -674,3 +680,21 @@ Compact Pump v3 and PumpSwap v2 trades use their new 17-account layouts. New typ
 For a synthetic completing buy, retain TradeEvent **and** PostCompleteBuyEvent and aggregate execution amounts within the same invocation. CompleteEvent is the completion notification. For `multi_hop_swap`, retain each venue's trade events; different venues are not merged into one fill. The multi-hop intent decoder exposes the fixed user accounts, input/minimum limits and 5 roles per hop; these limits are not actual executed amounts. Streamer forwards the typed events and account fields through its parser bridge (its re-exported `parser_sdk` also provides the intent decoder).
 
 Reference: [pump-public-docs](https://github.com/pump-fun/pump-public-docs/tree/8cda1fa30ea658b20909d8aedf002047119388d2). Validation uses offline official IDL fixtures; no live trade is sent by the tests.
+
+
+## Reproducible local hot-path latency
+
+Run the native Rust example with a configuration file (no RPC):
+
+```sh
+cargo run --release --example hotpath_latency -- examples/hotpath_latency.json
+```
+
+The JSON configuration controls `warmup`, `samples`, and `batch`. Output includes
+p50/p95/p99 nanoseconds per operation and the build profile. Use `--release` for
+performance comparisons and run on an otherwise idle machine. Re-run with the
+same configuration and fixtures before comparing changes.
+
+The workload measures the public Pump trade event bridge, with and without a
+recent blockhash. Input cloning happens outside the measured interval; output
+destruction is included. This is CPU conversion latency, not network latency.
