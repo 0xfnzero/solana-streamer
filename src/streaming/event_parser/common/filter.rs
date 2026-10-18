@@ -82,6 +82,43 @@ impl EventTypeFilter {
 
     #[inline]
     pub fn passes_for_event(&self, ev: &DexEvent) -> bool {
+        if let DexEvent::RawInstructionEvent(raw) = ev {
+            // Execution-specific aliases must not become broad raw subscriptions
+            // merely because the upstream execution parser uses one family enum.
+            let map = |types: &[EventType], mode| {
+                let mut out = vec![];
+                for t in types {
+                    if matches!(
+                        t,
+                        EventType::BonkBuyExactIn
+                            | EventType::BonkBuyExactOut
+                            | EventType::BonkSellExactIn
+                            | EventType::BonkSellExactOut
+                            | EventType::RaydiumCpmmSwapBaseInput
+                            | EventType::RaydiumCpmmSwapBaseOutput
+                            | EventType::RaydiumAmmV4SwapBaseIn
+                            | EventType::RaydiumAmmV4SwapBaseOut
+                            | EventType::RaydiumClmmSwap
+                            | EventType::RaydiumClmmSwapV2
+                            | EventType::MeteoraDammV2Swap
+                            | EventType::MeteoraDammV2Swap2
+                    ) {
+                        continue;
+                    }
+                    push_streamer_event_sdk_grpc_types(t, &mut out, mode);
+                }
+                out
+            };
+            let sdk = SdkGrpcEventTypeFilter {
+                include_only: if self.include.is_empty() {
+                    None
+                } else {
+                    Some(map(&self.include, FilterMapMode::Include))
+                },
+                exclude_types: Some(map(&self.exclude, FilterMapMode::Exclude)),
+            };
+            return sol_parser_sdk::core::events::raw_instruction_matches_filter(&raw.dexes, &sdk);
+        }
         if let DexEvent::PumpRouteIntentEvent(_) = ev {
             if self.exclude.contains(&EventType::PumpRouteIntent) {
                 return false;

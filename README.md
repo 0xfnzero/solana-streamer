@@ -1,6 +1,11 @@
 <div align="center">
 
-## v3.0.14 — Pump execution replay
+## v3.0.15 — DEX-scoped RawInstruction and typed DEX identifiers
+
+Raw instructions now respect DEX subscriptions using programs referenced by each instruction. `RawInstructionDexType` provides typed identifiers with unchanged JSON strings. Unknown router layouts do not establish pool addresses, trade direction, or method versions.
+
+
+## v3.0.15 — Pump execution replay
 
 Current Anchor TradeEvent CPI decoding is supported alongside the historical encoding. RPC/gRPC instruction budgets and minimum outputs remain in instruction fields. Execution fields `sol_amount`, `quote_amount`, and `token_amount` come from execution events; without logs or event CPIs they remain zero (unavailable, not a proven zero fill).
 
@@ -8,15 +13,15 @@ Run `cargo run --offline --example rpc_transaction_replay` from this repository 
 
 The current Delta sell signature is `4ARos3Yq1SMNE3izDpy9YdKrRgMmD7UCDxvnVrBRaGCJHiifPHSmQWc4DPfjUaEUcxS7puGmEN64K7EZdeXLJaj2` (slot 458542546).  Older five-combination multi-hop fixtures are retained as regression tests, not labeled as new mainnet captures.
 
-## v3.0.14 — raw Shred instructions
+## v3.0.15 — raw Shred instructions
 
-Protocol narrowing (for example PumpFun with no event filter) preserves default raw unknown instructions end to end. An explicit trade-only event filter still excludes raw instructions; explicitly including RawInstruction selects all outer instructions.
+Protocol filters apply to raw DEX associations as well as decoded events.
 
 Default Shred parsing emits `RawInstruction` for unsupported third-party programs, including Rapid/Delta, without inferring direction, amounts, or internal buy methods. Infrastructure programs (System, Token, ATA, ComputeBudget, etc.) are omitted by default. Supported official DEX parsers are unchanged; official Pump/PumpSwap multi-hop instructions retain `PumpRouteIntent`.
 
 The payload contains `program_id`, `instruction_index`, `accounts`, `account_indices`, `instruction_data`, and transaction metadata. Account order and duplicates are preserved. Unresolved ALT addresses are null/None, with original indices retained; supply cached loaded addresses or a resolver. No hot-path RPC is performed. Data is copied verbatim without requiring a known layout.
 
-No filter returns unknown third-party instructions. Explicitly including `RawInstruction` returns every outer instruction, including infrastructure. A `PumpFunTrade`-only filter does not include raw events: subscribe to both types when needed. Streamer forwards `DexEvent::RawInstructionEvent` as Common. A Pump address in accounts does not prove a CPI or a particular buy method. Event count is not fill count.
+Without a filter, unknown third-party instructions are returned. Broad trade/swap filters (for example `PumpFunTrade` or `RaydiumCpmmSwap`) also return raw instructions associated with that DEX; direction-specific filters do not infer a buy or sell. Explicit `RawInstruction` selects all outer instructions only when no protocol restriction is set; streamer protocol restrictions always apply. Excluding `RawInstruction` wins. `dex_type` uses the public `RawInstructionDexType` enum (typed string constants in Go); JSON values remain unchanged, such as `"pumpfun"` and `"raydium_cpmm"`. `dexes` contains `{ dex_type, program_id, pool }` for each recognized DEX program targeted or referenced by this instruction, not other instructions in the transaction. Multi-DEX wrappers retain every association. Unknown or unresolved ALT references cannot satisfy a DEX subscription. `pool` is currently null: an unknown wrapper layout cannot establish the pool account. A program reference is not proof of an executed CPI. Raw callbacks are not fills.
 
 Wrapper adapter functions remain explicit compatibility helpers only; default Shred parsing does not call them. The released-version history below describes previous behavior.
 
@@ -151,24 +156,24 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.14" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.15" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.14"
+solana-streamer-sdk = "3.0.15"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.14"
+solana-streamer-sdk = "3.0.15"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.14", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.15", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.

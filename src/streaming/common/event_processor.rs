@@ -286,29 +286,6 @@ pub(crate) fn parse_shred_transaction_events(
             &mut events,
         );
 
-        // Protocol narrowing must not suppress protocol-independent default raw
-        // events. Explicit RawInstruction subscriptions are handled by the main
-        // parser (all outer instructions); this pass returns unknown programs only.
-        let wants_default_raw = event_type_filter.is_none_or(|f| {
-            f.include.is_empty()
-                && !f
-                    .exclude
-                    .contains(&crate::streaming::event_parser::common::EventType::RawInstruction)
-        });
-        if wants_default_raw
-            && sdk_parse_filter
-                .as_ref()
-                .is_some_and(|f| !f.should_include(sol_parser_sdk::grpc::EventType::RawInstruction))
-        {
-            sol_parser_sdk::shredstream::parse_transaction_unknown_instructions(
-                tx,
-                signature,
-                slot,
-                tx_index.unwrap_or(0),
-                recv_us,
-                &mut events,
-            );
-        }
         for sdk_event in events.drain(..) {
             if let Some(mut event) =
                 adapt_parser_event(sdk_event, None, recv_us, protocols, event_type_filter)
@@ -517,6 +494,118 @@ mod tests {
             &tx,
             tx.signatures[0],
             rpc.slot,
+            None,
+            0,
+            &[Protocol::PumpFun],
+            Some(&filter),
+            None,
+            |e| events.push(e),
+        );
+        assert_eq!(events.len(), 1);
+        assert!(
+            matches!(&events[0], DexEvent::RawInstructionEvent(raw) if raw.dexes.iter().any(|d| d.dex_type == sol_parser_sdk::core::events::RawInstructionDexType::PumpFun))
+        );
+    }
+
+    #[test]
+    fn raw_callbacks_respect_protocol_even_with_explicit_raw_subscription() {
+        use sol_parser_sdk::grpc::program_ids::{PUMPFUN_PROGRAM, RAYDIUM_CPMM_PROGRAM};
+        use solana_sdk::{
+            instruction::{AccountMeta, Instruction},
+            message::{Message, VersionedMessage},
+            signature::Signature,
+            transaction::VersionedTransaction,
+        };
+        let wrapper = Pubkey::new_unique();
+        let tx = VersionedTransaction {
+            signatures: vec![Signature::default()],
+            message: VersionedMessage::Legacy(Message::new(
+                &[
+                    Instruction {
+                        program_id: wrapper,
+                        accounts: vec![AccountMeta::new_readonly(PUMPFUN_PROGRAM, false)],
+                        data: vec![255],
+                    },
+                    Instruction {
+                        program_id: wrapper,
+                        accounts: vec![AccountMeta::new_readonly(RAYDIUM_CPMM_PROGRAM, false)],
+                        data: vec![254],
+                    },
+                    Instruction { program_id: wrapper, accounts: vec![], data: vec![253] },
+                    Instruction {
+                        program_id: wrapper,
+                        accounts: vec![
+                            AccountMeta::new_readonly(PUMPFUN_PROGRAM, false),
+                            AccountMeta::new_readonly(RAYDIUM_CPMM_PROGRAM, false),
+                        ],
+                        data: vec![252],
+                    },
+                ],
+                Some(&Pubkey::new_unique()),
+            )),
+        };
+        for (protocols, expected) in [
+            (vec![Protocol::PumpFun], vec![0, 3]),
+            (vec![Protocol::RaydiumCpmm], vec![1, 3]),
+            (vec![Protocol::MeteoraDammV2], vec![]),
+            (vec![], vec![0, 1, 2, 3]),
+        ] {
+            for filter in
+                [None, Some(EventTypeFilter::include_only(vec![EventType::RawInstruction]))]
+            {
+                let mut events = vec![];
+                super::parse_shred_transaction_events(
+                    &tx,
+                    tx.signatures[0],
+                    1,
+                    None,
+                    0,
+                    &protocols,
+                    filter.as_ref(),
+                    None,
+                    |e| events.push(e),
+                );
+                let indices: Vec<_> = events
+                    .iter()
+                    .map(|e| match e {
+                        DexEvent::RawInstructionEvent(raw) => raw.instruction_index,
+                        _ => panic!("not raw"),
+                    })
+                    .collect();
+                assert_eq!(indices, expected, "{protocols:?}");
+            }
+        }
+        for (protocol, event_type) in [
+            (Protocol::PumpFun, EventType::PumpFunBuy),
+            (Protocol::RaydiumCpmm, EventType::RaydiumCpmmSwapBaseInput),
+        ] {
+            let mut events = vec![];
+            let filter = EventTypeFilter::include_only(vec![event_type]);
+            super::parse_shred_transaction_events(
+                &tx,
+                tx.signatures[0],
+                1,
+                None,
+                0,
+                &[protocol],
+                Some(&filter),
+                None,
+                |e| events.push(e),
+            );
+            assert!(
+                events.is_empty(),
+                "execution-specific filter must not infer router instruction"
+            );
+        }
+        let filter = EventTypeFilter::include_exclude(
+            vec![EventType::PumpFunTrade],
+            vec![EventType::RawInstruction],
+        );
+        let mut events = vec![];
+        super::parse_shred_transaction_events(
+            &tx,
+            tx.signatures[0],
+            1,
             None,
             0,
             &[Protocol::PumpFun],

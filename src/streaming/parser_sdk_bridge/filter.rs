@@ -16,7 +16,6 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
     matches!(
         ev,
         DexEvent::TokenAccountEvent(_)
-            | DexEvent::RawInstructionEvent(_)
             | DexEvent::TokenInfoEvent(_)
             | DexEvent::NonceAccountEvent(_)
             | DexEvent::BlockMetaEvent(_)
@@ -29,6 +28,11 @@ fn is_protocol_independent_event(ev: &DexEvent) -> bool {
 
 #[allow(clippy::match_like_matches_macro)]
 fn protocol_matches_event(p: &Protocol, ev: &DexEvent) -> bool {
+    if let DexEvent::RawInstructionEvent(raw) = ev {
+        // LaunchLab's program alone cannot establish StonkFun platform attribution.
+        return *p != Protocol::StonkFun
+            && raw.dexes.iter().any(|dex| p.get_program_id().contains(&dex.program_id));
+    }
     match (p, ev) {
         (Protocol::PumpFun, DexEvent::PumpRouteIntentEvent(_)) => true,
         (Protocol::PumpSwap, DexEvent::PumpRouteIntentEvent(e)) => {

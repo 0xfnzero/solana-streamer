@@ -65,6 +65,7 @@ mod tests {
         let source = PbDexEvent::RawInstruction(Box::new(
             sol_parser_sdk::core::events::RawInstructionEvent {
                 metadata: EventMetadata { slot: 42, ..Default::default() },
+                dexes: vec![],
                 program_id: program,
                 instruction_index: 3,
                 accounts: vec![Some(account), None, Some(account)],
@@ -72,8 +73,8 @@ mod tests {
                 instruction_data: vec![255, 0, 1],
             },
         ));
-        let event =
-            adapt_parser_event(source.clone(), None, 999, &[Protocol::PumpFun], None).unwrap();
+        let event = adapt_parser_event(source.clone(), None, 999, &[], None).unwrap();
+        assert!(adapt_parser_event(source.clone(), None, 999, &[Protocol::PumpFun], None).is_none());
         let DexEvent::RawInstructionEvent(ref raw) = event else { panic!() };
         assert_eq!(raw.metadata.protocol, ProtocolType::Common);
         assert_eq!(raw.metadata.event_type, EventType::RawInstruction);

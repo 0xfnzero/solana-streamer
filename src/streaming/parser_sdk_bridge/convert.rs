@@ -34,6 +34,7 @@ pub(crate) fn convert_parser_event(
                 e.program_id,
             );
             Some(DexEvent::RawInstructionEvent(RawInstructionEvent {
+                dexes: e.dexes,
                 metadata,
                 program_id: e.program_id,
                 instruction_index: e.instruction_index,
