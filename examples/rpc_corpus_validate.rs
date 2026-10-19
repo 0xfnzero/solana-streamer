@@ -27,9 +27,8 @@ fn main() -> Result<()> {
             let signature = wire["transaction"]["signatures"][0]
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("missing signature in {name}"))?;
-            let slot = wire["slot"]
-                .as_u64()
-                .ok_or_else(|| anyhow::anyhow!("missing slot in {name}"))?;
+            let slot =
+                wire["slot"].as_u64().ok_or_else(|| anyhow::anyhow!("missing slot in {name}"))?;
             let status = if wire["meta"]["err"].is_null() { "success" } else { "failed" };
             println!("{name}: {signature}, slot={slot}, status={status}");
         }

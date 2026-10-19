@@ -67,7 +67,6 @@ pub struct RaydiumCpmmSwapEvent {
     #[borsh(skip)]
     #[serde(default)]
     pub creator_fee_on_input: bool,
-
 }
 
 /// 存款

@@ -148,6 +148,9 @@ pub struct PumpFunCreateV2TokenEvent {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunTradeEvent {
     #[borsh(skip)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::wrapped_pumpfun_parser::ThirdProgram>,
+    #[borsh(skip)]
     #[serde(default)]
     pub creator_fee_unclaimed: u64,
     #[borsh(skip)]

@@ -1,5 +1,11 @@
 <div align="center">
 
+## v3.0.17 — Pump.fun 第三方来源透传与解析修复
+
+更新 sol-parser-sdk 至 0.7.19，Pump.fun 事件桥接保留可选的 `third_program` 第三方来源。同步按 mint 识别创建后买入及保留 IDL 版本化方法名的修复。第三方规则仍须显式启用，解析热路径不调用 RPC。
+
+[第三方 Pump.fun 包装指令：离线规则、热路径边界与真实交易回放](docs/wrapped-pumpfun.md)
+
 ## v3.0.16 — Shred 元数据透传与顺序范围
 
 保留并验证 `tx_index`、接收时间从解析入口传到原始指令回调。明确 Entries 消息内序号与 Yellowstone 节点 index 的区别：本地序号不是全 slot 索引；跨消息去重使用交易签名。此版本完善文档和回归保护，不改变现有字段或编号规则。
@@ -162,24 +168,24 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.16" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.17" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.16"
+solana-streamer-sdk = "3.0.17"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.16"
+solana-streamer-sdk = "3.0.17"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.16", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.17", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。

@@ -716,6 +716,7 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
     let pm = t.metadata.clone();
     let meta = adapt_pm(pm, bt, recv_wall_us, ProtocolType::PumpFun, event_type, pump_program());
     let st = PumpFunTradeEvent {
+        third_program: t.third_program,
         metadata: meta,
         mint: t.mint,
         sol_amount: t.sol_amount,
@@ -922,6 +923,27 @@ mod tests {
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }
+    }
+
+    #[test]
+    fn wrapped_pumpfun_provenance_survives_bridge() {
+        let source = sol_parser_sdk::wrapped_pumpfun_parser::ThirdProgram {
+            program_id: solana_sdk::pubkey!("rapidV5DAKtecYzetwCNoxXWHpezjeg4hGt9BGiVcGW"),
+            instruction_index: 3,
+            rule_id: "reviewed-layout".into(),
+        };
+        let ev = pumpfun_trade_from_parser_with_event_type(
+            sol_parser_sdk::core::events::PumpFunTradeEvent {
+                third_program: Some(source.clone()),
+                is_buy: true,
+                ..Default::default()
+            },
+            None,
+            123456,
+            EventType::PumpFunBuy,
+        );
+        let DexEvent::PumpFunTradeEvent(trade) = ev else { panic!() };
+        assert_eq!(trade.third_program, Some(source));
     }
 
     #[test]

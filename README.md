@@ -1,5 +1,11 @@
 <div align="center">
 
+## v3.0.17 — Wrapped Pump.fun provenance and parser fixes
+
+Updates sol-parser-sdk to 0.7.19 and preserves optional `third_program` provenance through the Pump.fun event bridge. Includes mint-scoped create-buy context and versioned IDL method-name fixes. Third-party rules remain explicit opt-in; the parsing hot path performs no RPC.
+
+[Wrapped Pump.fun: offline rules, hot-path boundaries, and real-transaction replays](docs/wrapped-pumpfun.md)
+
 ## v3.0.16 — Shred metadata passthrough and ordering scope
 
 Preserve and verify transaction position and receive time through raw instruction callbacks. Entries indexes are message-local, unlike Yellowstone node indexes; use signatures for cross-message deduplication. This release clarifies API documentation and adds regression protection without changing metadata fields or numbering behavior.
@@ -163,24 +169,24 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.16" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.17" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.16"
+solana-streamer-sdk = "3.0.17"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.16"
+solana-streamer-sdk = "3.0.17"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.16", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "3.0.17", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
