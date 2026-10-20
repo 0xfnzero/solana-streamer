@@ -479,15 +479,20 @@ mod tests {
                 |e| events.push(e),
             );
             assert_eq!(events.len(), 1);
-            let DexEvent::RawInstructionEvent(raw) = &events[0] else {
-                panic!("wrapper inferred as trade")
+            let DexEvent::PumpFunTradeEvent(candidate) = &events[0] else {
+                panic!("missing wrapper candidate")
             };
+            assert_eq!(
+                candidate.parse_status,
+                sol_parser_sdk::core::events::PumpFunParseStatus::Unresolved
+            );
+            let raw = candidate.third_program.as_ref().unwrap();
             let ix = &tx.message.instructions()[raw.instruction_index];
             assert_eq!(raw.instruction_data, ix.data);
             assert_eq!(raw.account_indices, ix.accounts);
-            assert_eq!(raw.metadata.tx_index, Some(7));
-            assert_eq!(raw.metadata.recv_us, 123456);
-            assert_eq!(raw.metadata.slot, rpc.slot);
+            assert_eq!(candidate.metadata.tx_index, Some(7));
+            assert_eq!(candidate.metadata.recv_us, 123456);
+            assert_eq!(candidate.metadata.slot, rpc.slot);
         }
         let filter = EventTypeFilter::include_only(vec![EventType::PumpFunTrade]);
         let mut events = vec![];
@@ -503,9 +508,7 @@ mod tests {
             |e| events.push(e),
         );
         assert_eq!(events.len(), 1);
-        assert!(
-            matches!(&events[0], DexEvent::RawInstructionEvent(raw) if raw.dexes.iter().any(|d| d.dex_type == sol_parser_sdk::core::events::RawInstructionDexType::PumpFun))
-        );
+        assert!(matches!(&events[0], DexEvent::PumpFunTradeEvent(t) if t.third_program.is_some()));
     }
 
     #[test]
@@ -570,6 +573,9 @@ mod tests {
                     .iter()
                     .map(|e| match e {
                         DexEvent::RawInstructionEvent(raw) => raw.instruction_index,
+                        DexEvent::PumpFunTradeEvent(t) => {
+                            t.third_program.as_ref().unwrap().instruction_index
+                        }
                         _ => panic!("not raw"),
                     })
                     .collect();
@@ -614,7 +620,9 @@ mod tests {
             None,
             |e| events.push(e),
         );
-        assert!(events.is_empty());
+        assert_eq!(events.len(), 2);
+        assert!(events.iter().all(|e| matches!(e, DexEvent::PumpFunTradeEvent(t)
+            if t.parse_status == sol_parser_sdk::core::events::PumpFunParseStatus::Unresolved)));
     }
 
     async fn parse_single_shred_create(tx_index: Option<u64>) -> DexEvent {

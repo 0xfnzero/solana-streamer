@@ -1,3 +1,5 @@
+当前版本：**4.0.0**。本轮同步 SDK、原生语言测试、示例及文档。升级说明见 [RELEASE_NOTES.md](RELEASE_NOTES.md)。
+
 <div align="center">
 
 ## v3.0.17 — Pump.fun 第三方来源透传与解析修复
@@ -168,24 +170,24 @@ git clone https://github.com/0xfnzero/solana-streamer
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.17" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "4.0.0" }
 ```
 
 ### 使用 crates.io
 
 ```toml
 # 添加到您的 Cargo.toml
-solana-streamer-sdk = "3.0.17"
+solana-streamer-sdk = "4.0.0"
 ```
 
 解析后端 feature：
 
 ```toml
 # 默认：sol-parser-sdk parse-borsh 后端
-solana-streamer-sdk = "3.0.17"
+solana-streamer-sdk = "4.0.0"
 
 # 面向低延迟 Bot 的 zero-copy 解析后端
-solana-streamer-sdk = { version = "3.0.17", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "4.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 如果同时启用 `sdk-parse-borsh` 和 `sdk-parse-zero-copy`，`sol-parser-sdk 0.6.1+` 会优先使用 zero-copy 后端。

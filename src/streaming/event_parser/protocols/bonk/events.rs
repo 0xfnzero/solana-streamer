@@ -13,6 +13,12 @@ use solana_sdk::pubkey::Pubkey;
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct BonkTradeEvent {
     #[borsh(skip)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
+    #[borsh(skip)]
+    #[serde(default)]
+    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
+    #[borsh(skip)]
     pub metadata: EventMetadata,
     pub pool_state: Pubkey,
     pub total_base_sell: u64,

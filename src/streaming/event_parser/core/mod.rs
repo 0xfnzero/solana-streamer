@@ -3,6 +3,7 @@ pub mod common_event_parser;
 pub mod dispatcher;
 pub mod global_state;
 pub mod parser_cache;
+mod trade_source;
 pub mod traits;
 pub mod transaction_cost_event;
 

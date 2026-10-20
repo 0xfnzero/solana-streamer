@@ -37,6 +37,10 @@ pub struct PoolFeeParameters {
 /// Meteora DAMM v2 Swap Event (对应 swap 指令)
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeteoraDammV2SwapEvent {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
+    #[serde(default)]
+    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
 
     // 来自 CPI Log Event 的数据
@@ -94,6 +98,10 @@ pub struct MeteoraDammV2SwapEvent {
 /// Meteora DAMM v2 Swap2 Event (对应 swap2 指令)
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeteoraDammV2Swap2Event {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
+    #[serde(default)]
+    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
 
     // 来自 CPI Log Event 的数据

@@ -1,3 +1,5 @@
+Current version: **4.0.0**. SDK, native-language tests, examples and documentation are synchronized in this release. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for migration details.
+
 <div align="center">
 
 ## v3.0.17 — Wrapped Pump.fun provenance and parser fixes
@@ -169,24 +171,24 @@ Add the dependency to your `Cargo.toml`:
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "3.0.17" }
+solana-streamer-sdk = { path = "./solana-streamer", version = "4.0.0" }
 ```
 
 ### Use crates.io
 
 ```toml
 # Add to your Cargo.toml
-solana-streamer-sdk = "3.0.17"
+solana-streamer-sdk = "4.0.0"
 ```
 
 Parser backend features:
 
 ```toml
 # Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "3.0.17"
+solana-streamer-sdk = "4.0.0"
 
 # Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "3.0.17", default-features = false, features = ["sdk-parse-zero-copy"] }
+solana-streamer-sdk = { version = "4.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
 ```
 
 If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.

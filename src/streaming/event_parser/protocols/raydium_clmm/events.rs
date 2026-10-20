@@ -7,6 +7,10 @@ use solana_sdk::pubkey::Pubkey;
 /// 交易
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RaydiumClmmSwapEvent {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
+    #[serde(default)]
+    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     pub amount: u64,
     pub other_amount_threshold: u64,
@@ -53,6 +57,10 @@ pub struct RaydiumClmmSwapEvent {
 /// 交易v2
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RaydiumClmmSwapV2Event {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
+    #[serde(default)]
+    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     pub amount: u64,
     pub other_amount_threshold: u64,

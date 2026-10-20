@@ -20,6 +20,8 @@ pub(crate) fn orca_swap_from_pb(
     meta: EventMetadata,
 ) -> OrcaWhirlpoolSwapEvent {
     OrcaWhirlpoolSwapEvent {
+        third_program: e.third_program,
+        parse_status: e.parse_status,
         metadata: meta,
         whirlpool: e.whirlpool,
         input_amount: e.input_amount,
@@ -248,6 +250,8 @@ pub(crate) fn meteora_dbc_swap_from_pb(
     meta: EventMetadata,
 ) -> MeteoraDbcSwapEvent {
     MeteoraDbcSwapEvent {
+        third_program: e.third_program,
+        parse_status: e.parse_status,
         metadata: meta,
         event_version: e.event_version,
         swap_mode: e.swap_mode,
@@ -309,6 +313,8 @@ pub(crate) fn meteora_pools_swap_from_pb(
     meta: EventMetadata,
 ) -> MeteoraPoolsSwapEvent {
     MeteoraPoolsSwapEvent {
+        third_program: e.third_program,
+        parse_status: e.parse_status,
         metadata: meta,
         in_amount: e.in_amount,
         out_amount: e.out_amount,
@@ -388,6 +394,8 @@ pub(crate) fn meteora_dlmm_swap_from_pb(
     meta: EventMetadata,
 ) -> MeteoraDlmmSwapEvent {
     MeteoraDlmmSwapEvent {
+        third_program: e.third_program,
+        parse_status: e.parse_status,
         metadata: meta,
         event_version: e.event_version,
         amount_left: e.amount_left,

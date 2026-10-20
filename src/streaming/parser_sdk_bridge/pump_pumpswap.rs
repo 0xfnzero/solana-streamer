@@ -511,6 +511,8 @@ pub(crate) fn pumpswap_buy_full_from_parser(
     meta: EventMetadata,
 ) -> PumpSwapBuyEvent {
     PumpSwapBuyEvent {
+        third_program: b.third_program,
+        parse_status: b.parse_status,
         metadata: meta,
         timestamp: b.timestamp,
         base_amount_out: b.base_amount_out,
@@ -572,6 +574,8 @@ pub(crate) fn pumpswap_sell_full_from_parser(
     meta: EventMetadata,
 ) -> PumpSwapSellEvent {
     PumpSwapSellEvent {
+        third_program: s.third_program,
+        parse_status: s.parse_status,
         metadata: meta,
         timestamp: s.timestamp,
         base_amount_in: s.base_amount_in,
@@ -717,6 +721,7 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
     let meta = adapt_pm(pm, bt, recv_wall_us, ProtocolType::PumpFun, event_type, pump_program());
     let st = PumpFunTradeEvent {
         third_program: t.third_program,
+        parse_status: t.parse_status,
         metadata: meta,
         mint: t.mint,
         sol_amount: t.sol_amount,
@@ -810,6 +815,8 @@ pub(crate) fn pumpswap_trade_from_parser(
     );
     if t.is_buy {
         Some(DexEvent::PumpSwapBuyEvent(PumpSwapBuyEvent {
+            third_program: t.third_program,
+            parse_status: t.parse_status,
             metadata: meta,
             timestamp: t.timestamp,
             base_amount_out: t.token_amount,
@@ -849,6 +856,8 @@ pub(crate) fn pumpswap_trade_from_parser(
         }))
     } else {
         Some(DexEvent::PumpSwapSellEvent(PumpSwapSellEvent {
+            third_program: t.third_program,
+            parse_status: t.parse_status,
             metadata: meta,
             timestamp: t.timestamp,
             base_amount_in: t.token_amount,
@@ -930,7 +939,8 @@ mod tests {
         let source = sol_parser_sdk::wrapped_pumpfun_parser::ThirdProgram {
             program_id: solana_sdk::pubkey!("rapidV5DAKtecYzetwCNoxXWHpezjeg4hGt9BGiVcGW"),
             instruction_index: 3,
-            rule_id: "reviewed-layout".into(),
+            instruction_data: vec![42],
+            ..Default::default()
         };
         let ev = pumpfun_trade_from_parser_with_event_type(
             sol_parser_sdk::core::events::PumpFunTradeEvent {

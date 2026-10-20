@@ -44,6 +44,8 @@ pub(crate) fn bonk_trade_from_parser(
     meta: EventMetadata,
 ) -> BonkTradeEvent {
     BonkTradeEvent {
+        third_program: b.third_program,
+        parse_status: b.parse_status,
         metadata: meta,
         pool_state: b.pool_state,
         total_base_sell: b.total_base_sell,
