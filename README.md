@@ -1,103 +1,93 @@
-Current version: **4.0.0**. SDK, native-language tests, examples and documentation are synchronized in this release. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for migration details.
-
 <div align="center">
-
-## v3.0.17 — Wrapped Pump.fun provenance and parser fixes
-
-Updates sol-parser-sdk to 0.7.19 and preserves optional `third_program` provenance through the Pump.fun event bridge. Includes mint-scoped create-buy context and versioned IDL method-name fixes. Third-party rules remain explicit opt-in; the parsing hot path performs no RPC.
-
-[Wrapped Pump.fun: offline rules, hot-path boundaries, and real-transaction replays](docs/wrapped-pumpfun.md)
-
-## v3.0.16 — Shred metadata passthrough and ordering scope
-
-Preserve and verify transaction position and receive time through raw instruction callbacks. Entries indexes are message-local, unlike Yellowstone node indexes; use signatures for cross-message deduplication. This release clarifies API documentation and adds regression protection without changing metadata fields or numbering behavior.
-
-
-## v3.0.16 — DEX-scoped RawInstruction and typed DEX identifiers
-
-Raw instructions now respect DEX subscriptions using programs referenced by each instruction. `RawInstructionDexType` provides typed identifiers with unchanged JSON strings. Unknown router layouts do not establish pool addresses, trade direction, or method versions.
-
-
-## v3.0.16 — Pump execution replay
-
-Current Anchor TradeEvent CPI decoding is supported alongside the historical encoding. RPC/gRPC instruction budgets and minimum outputs remain in instruction fields. Execution fields `sol_amount`, `quote_amount`, and `token_amount` come from execution events; without logs or event CPIs they remain zero (unavailable, not a proven zero fill).
-
-Run `cargo run --offline --example rpc_transaction_replay` from this repository to replay real transactions fetched on 2026-10-19 offline. The default case is Delta SellV2. Fetch another using `--fetch SIGNATURE OUTPUT.json`; replay with `--fixture OUTPUT.json`. Set `SOLANA_RPC_URL` for your RPC; transaction v1 is supported.
-
-The current Delta sell signature is `4ARos3Yq1SMNE3izDpy9YdKrRgMmD7UCDxvnVrBRaGCJHiifPHSmQWc4DPfjUaEUcxS7puGmEN64K7EZdeXLJaj2` (slot 458542546).  Older five-combination multi-hop fixtures are retained as regression tests, not labeled as new mainnet captures.
-
-## v3.0.16 — raw Shred instructions
-
-Protocol filters apply to raw DEX associations as well as decoded events.
-
-Default Shred parsing emits `RawInstruction` for unsupported third-party programs, including Rapid/Delta, without inferring direction, amounts, or internal buy methods. Infrastructure programs (System, Token, ATA, ComputeBudget, etc.) are omitted by default. Supported official DEX parsers are unchanged; official Pump/PumpSwap multi-hop instructions retain `PumpRouteIntent`.
-
-The payload contains `program_id`, `instruction_index`, `accounts`, `account_indices`, `instruction_data`, and transaction metadata. Account order and duplicates are preserved. Unresolved ALT addresses are null/None, with original indices retained; supply cached loaded addresses or a resolver. No hot-path RPC is performed. Data is copied verbatim without requiring a known layout.
-
-The raw event retains `metadata.tx_index` and `metadata.grpc_recv_us` from the parser arguments (streamer names the receive field `metadata.recv_us`). The default Entries client index is local to one received Entries message and restarts at zero for the next message; it is not a confirmed slot-wide transaction index. `instruction_index` orders outer instructions within a transaction. Receive time is a local microsecond timestamp, not an execution-order guarantee. Standalone replay APIs may default these values to zero; pass the upstream values when available.
-
-Without a filter, unknown third-party instructions are returned. Broad trade/swap filters (for example `PumpFunTrade` or `RaydiumCpmmSwap`) also return raw instructions associated with that DEX; direction-specific filters do not infer a buy or sell. Explicit `RawInstruction` selects all outer instructions only when no protocol restriction is set; streamer protocol restrictions always apply. Excluding `RawInstruction` wins. `dex_type` uses the public `RawInstructionDexType` enum (typed string constants in Go); JSON values remain unchanged, such as `"pumpfun"` and `"raydium_cpmm"`. `dexes` contains `{ dex_type, program_id, pool }` for each recognized DEX program targeted or referenced by this instruction, not other instructions in the transaction. Multi-DEX wrappers retain every association. Unknown or unresolved ALT references cannot satisfy a DEX subscription. `pool` is currently null: an unknown wrapper layout cannot establish the pool account. A program reference is not proof of an executed CPI. Raw callbacks are not fills.
-
-Wrapper adapter functions remain explicit compatibility helpers only; default Shred parsing does not call them. The released-version history below describes previous behavior.
-
-    <h1>🌊 Solana Streamer</h1>
-    <h3><em>Real-time event streaming from Solana DEX trading programs.</em></h3>
+    <h1>Solana Streamer</h1>
+    <p>Rust event subscriptions built on sol-parser-sdk</p>
+    <a href="https://crates.io/crates/solana-streamer-sdk"><img src="https://img.shields.io/crates/v/solana-streamer-sdk.svg" alt="solana-streamer-sdk"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
 </div>
 
 <p align="center">
-    <strong>A lightweight Rust streaming facade over sol-parser-sdk, with low-latency subscriptions and a stable bot-facing API.</strong>
+    <a href="README.md">English</a> · <a href="README_CN.md">中文</a> ·
+    <a href="#usage-examples">Examples</a> ·
+    <a href="docs/wrapped-pumpfun.md">Documentation</a> ·
+    <a href="RELEASE_NOTES.md">Release and migration</a> ·
+    <a href="#related-sdks">Related SDKs</a>
 </p>
 
-<p align="center">
-    <a href="https://crates.io/crates/solana-streamer-sdk">
-        <img src="https://img.shields.io/crates/v/solana-streamer-sdk.svg" alt="Crates.io">
-    </a>
-    <a href="https://docs.rs/solana-streamer-sdk">
-        <img src="https://docs.rs/solana-streamer-sdk/badge.svg" alt="Documentation">
-    </a>
-    <a href="https://github.com/0xfnzero/solana-streamer/blob/main/LICENSE">
-        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-    </a>
-    <a href="https://github.com/0xfnzero/solana-streamer">
-        <img src="https://img.shields.io/github/stars/0xfnzero/solana-streamer?style=social" alt="GitHub stars">
-    </a>
-    <a href="https://github.com/0xfnzero/solana-streamer/network">
-        <img src="https://img.shields.io/github/forks/0xfnzero/solana-streamer?style=social" alt="GitHub forks">
-    </a>
-</p>
+Manage gRPC and ShredStream subscriptions, event filters and dynamic subscriptions while preserving parser provenance and metadata.
 
-<p align="center">
-    <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
-    <img src="https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Solana">
-    <img src="https://img.shields.io/badge/Streaming-FF6B6B?style=for-the-badge&logo=livestream&logoColor=white" alt="Real-time Streaming">
-    <img src="https://img.shields.io/badge/gRPC-4285F4?style=for-the-badge&logo=grpc&logoColor=white" alt="gRPC">
-</p>
+Current version: **5.0.0**. Read the [migration notes](RELEASE_NOTES.md) before upgrading; see the [changelog](CHANGELOG.md) for historical changes.
 
-<p align="center">
-    <a href="README_CN.md">中文</a> | 
-    <a href="README.md">English</a> | 
-    <a href="https://fnzero.dev/">Website</a> |
-    <a href="https://t.me/fnzero_group">Telegram</a> |
-    <a href="https://discord.gg/vuazbGkqQE">Discord</a>
-</p>
+## Contents
 
----
+- [Related SDKs](#related-sdks)
+- [Installation](#installation)
+- [What This SDK Is For](#what-this-sdk-is-for)
+- [Project Features](#project-features)
+- [Usage Examples](#usage-examples)
+- [Trade provenance and parsing boundaries](#trade-provenance-and-parsing-boundaries)
+- [Supported Protocols](#supported-protocols)
+- [Documentation](#documentation)
+- [Configuration](#configuration-system)
+- [Dynamic subscriptions](#dynamic-subscription-management)
 
-## Table of Contents
+<a id="related-sdks"></a>
 
-- [🚀 Project Features](#-project-features)
-- [⚡ Installation](#-installation)
-- [🔄 Migration Guide](#-migration-guide)
-- [⚙️ Configuration System](#️-configuration-system)
-- [📚 Usage Examples](#-usage-examples)
-- [🔧 Supported Protocols](#-supported-protocols)
-- [🌐 Event Streaming Services](#-event-streaming-services)
-- [🏗️ Architecture Features](#️-architecture-features)
-- [📁 Project Structure](#-project-structure)
-- [⚡ Performance Considerations](#-performance-considerations)
-- [📄 License](#-license)
-- [📞 Contact](#-contact)
-- [⚠️ Important Notes](#️-important-notes)
+## Related SDKs
+
+Repositories are versioned independently; follow each SDK’s installation guide for compatible dependencies.
+
+| Language | Repository | Purpose | Version |
+|----------|------------|-------------|---------|
+| Rust | [sol-parser-sdk](https://github.com/0xfnzero/sol-parser-sdk) | DEX transaction and account event parsing | `v0.9.0` |
+| Node.js | [sol-parser-sdk-nodejs](https://github.com/0xfnzero/sol-parser-sdk-nodejs) | DEX transaction and account event parsing | `v0.9.0` |
+| Python | [sol-parser-sdk-python](https://github.com/0xfnzero/sol-parser-sdk-python) | DEX transaction and account event parsing | `v0.9.0` |
+| Go | [sol-parser-sdk-golang](https://github.com/0xfnzero/sol-parser-sdk-golang) | DEX transaction and account event parsing | `v0.9.0` |
+| Rust | [sol-trade-sdk](https://github.com/0xfnzero/sol-trade-sdk) | Transaction building, signing and multi-channel submission | `v9.0.0` |
+| Node.js | [sol-trade-sdk-nodejs](https://github.com/0xfnzero/sol-trade-sdk-nodejs) | Transaction building, signing and multi-channel submission | `v9.0.0` |
+| Python | [sol-trade-sdk-python](https://github.com/0xfnzero/sol-trade-sdk-python) | Transaction building, signing and multi-channel submission | `v9.0.0` |
+| Go | [sol-trade-sdk-golang](https://github.com/0xfnzero/sol-trade-sdk-golang) | Transaction building, signing and multi-channel submission | `v9.0.0` |
+| Rust | [sol-shred-sdk](https://github.com/0xfnzero/sol-shred-sdk) | Raw shred decoding and ShredStream instruction events | `v6.0.0` |
+| Rust | [solana-streamer](https://github.com/0xfnzero/solana-streamer) | gRPC / ShredStream subscriptions and event streaming | `v5.0.0` |
+| Rust | [sol-trade-router-sdk](https://github.com/0xfnzero/sol-trade-router-sdk) | On-chain multi-hop router and client SDK | `v0.3.0` |
+
+<a id="installation"></a>
+
+## Installation
+
+```toml
+# Add to your Cargo.toml
+solana-streamer-sdk = "5.0.0"
+```
+
+Parser backend features:
+
+```toml
+# Default: sol-parser-sdk parse-borsh backend
+solana-streamer-sdk = "5.0.0"
+
+# Zero-copy parser backend for latency-sensitive bots
+solana-streamer-sdk = { version = "5.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
+```
+
+If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
+
+### Use from source
+
+Clone this project to your project directory:
+
+```bash
+cd your_project_root_directory
+git clone https://github.com/0xfnzero/solana-streamer
+```
+
+Add the dependency to your `Cargo.toml`:
+
+```toml
+# Add to your Cargo.toml
+solana-streamer-sdk = { path = "./solana-streamer", version = "5.0.0" }
+```
+
+<a id="what-this-sdk-is-for"></a>
 
 ## What This SDK Is For
 
@@ -110,13 +100,15 @@ Wrapper adapter functions remain explicit compatibility helpers only; default Sh
 | Use cases | Real-time DEX event streaming, token launch monitoring, copy trading, account-state subscriptions, bot signal pipelines |
 | Parser backend | `sol-parser-sdk` with default Borsh parsing and optional zero-copy backend for latency-sensitive workloads |
 
+<a id="project-features"></a>
+
 ## 🚀 Project Features
 
 ### Core Capabilities
 - **Real-time Event Streaming**: Subscribe to live trading events from multiple Solana DEX protocols
 - **SDK-backed Parser Core**: Transaction, RPC, account, and ShredStream parsing are backed by `sol-parser-sdk`
 - **Yellowstone gRPC Support**: High-performance event subscription using Yellowstone gRPC
-- **ShredStream Support**: Alternative event streaming using ShredStream protocol; ALT-loaded accounts are parsed best-effort with default account placeholders
+- **ShredStream Support**: Alternative event streaming using ShredStream protocol; ALT addresses must come from supplied loaded addresses or a local cache; unresolved addresses are not guessed
 - **Unified Event Interface**: Consistent event handling across all supported protocols
 
 ### Multi-Protocol Support
@@ -125,7 +117,7 @@ Wrapper adapter functions remain explicit compatibility helpers only; default Sh
 - **PumpSwap**: PumpFun's swap protocol events
 - **LaunchLab**: Shared token-launch program events through `Protocol::LaunchLab`; `Protocol::Bonk` and `Protocol::RaydiumLaunchpad` remain compatible aliases
 - **StonkFun**: StonkFun-attributed LaunchLab events through `Protocol::StonkFun`; event metadata reports `ProtocolType::StonkFun`
-- **Raydium CPMM**: Raydium's Concentrated Pool Market Maker events
+- **Raydium CPMM**: Raydium's Constant Product Market Maker events
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker events
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 events
 - **Meteora DAMM v2**: Meteora DAMM v2 swap and liquidity events
@@ -156,315 +148,7 @@ Wrapper adapter functions remain explicit compatibility helpers only; default Sh
 - **Runtime Configuration Updates**: Dynamic configuration parameter updates at runtime
 - **Graceful Shutdown**: Support for programmatic stop() method for clean shutdown
 
-## ⚡ Installation
-
-### Direct Clone
-
-Clone this project to your project directory:
-
-```bash
-cd your_project_root_directory
-git clone https://github.com/0xfnzero/solana-streamer
-```
-
-Add the dependency to your `Cargo.toml`:
-
-```toml
-# Add to your Cargo.toml
-solana-streamer-sdk = { path = "./solana-streamer", version = "4.0.0" }
-```
-
-### Use crates.io
-
-```toml
-# Add to your Cargo.toml
-solana-streamer-sdk = "4.0.0"
-```
-
-Parser backend features:
-
-```toml
-# Default: sol-parser-sdk parse-borsh backend
-solana-streamer-sdk = "4.0.0"
-
-# Zero-copy parser backend for latency-sensitive bots
-solana-streamer-sdk = { version = "4.0.0", default-features = false, features = ["sdk-parse-zero-copy"] }
-```
-
-If both `sdk-parse-borsh` and `sdk-parse-zero-copy` are enabled, `sol-parser-sdk 0.6.1+` uses the zero-copy backend.
-
-## 🔄 Migration Guide
-
-## v3.0.13 — Pump route event support
-
-Route intents expose `is_buy` and `ix_name`, using existing trade field names and official IDL names. RapidBuy reports a buy intent and `buy_exact_quote_in_v2`; BuyPumpDelta reports only a buy intent. Multi-hop direction and unknown methods remain null. Currencies remain in `hops[].base_mint` / `quote_mint`. These hints do not confirm execution; filtering does not convert intents into trades.
-
-Streamer forwards complete route payloads as `DexEvent::PumpRouteIntentEvent` with protocol/event filtering. Old JSON defaults missing hints to unknown. Rust struct literals need the new fields; exhaustive streamer event matches need the new variant.
-
-## v3.0.12 — Pump routes and offline replay
-
-Pins sol-parser-sdk 0.7.14 and includes the latest streaming facade code and native hot-path benchmark. The raw parser re-export provides the new Pump route-intent and cached-ALT APIs.
-
-Route intents describe instructions before execution; use execution metadata for confirmed fills. Offline CPU timings do not measure production transport or transaction landing.
-
-## v3.0.11 — Pump depth-2 compatibility
-
-Pins sol-parser-sdk 0.7.13 and inherits signed Pump depth-2 create-event compatibility coverage through the parser bridge. Existing trading and event interfaces remain unchanged.
-
-Validation includes official Pump SDK 4.1.0 instruction comparisons, signed local LiteSVM simulations and SDK regressions. Local simulation state/config is synthetic; no funded transactions were broadcast and production latency was not measured.
-
-
-### v3.0.10
-
-Pins `sol-parser-sdk =0.7.12` and inherits the PumpFun migration event CPI parsing fix. Publishes the current bridge support for compact Pump trades, quote-coin fields, completion and fee-sweep events, protocol fee fields and synthetic migration handling. Includes captured mainnet compact-trade regression fixtures.
-
-Validation covers the streaming facade, parser bridge and offline transaction fixtures. Network transaction-landing latency is not an SLA.
-
-### v3.0.9
-
-- Pins `sol-parser-sdk 0.7.10` and inherits creation account matching, quote-account and historical-layout fixes, verified through the RPC facade and gRPC bridge.
-
-### v3.0.8
-
-Pins `sol-parser-sdk 0.7.9` and inherits PumpSwap boost account backfills and precompile log-index fixes. Preserves strict trade matching and ALT account handling. Adds offline mainnet regressions verifying pool vaults, token programs and sell mints through both the RPC facade and gRPC event bridge.
-
-### v3.0.7
-
-Uses `sol-parser-sdk 0.7.8`. Preserves CPMM creator-fee collection events, the AmmConfig share rate, swap instruction arguments and Orca/CLMM accounts through the bridge. Includes independent RPC corpus validation for 13 mainnet transactions and 17 target operations. Run `cargo run --example rpc_corpus_validate -- --list` to view signatures.
-
-### Upgrading to v3.0.6
-
-Version 3.0.6 pins `sol-parser-sdk 0.7.7`. Advanced callers can access StonkFun route analysis, migration registry and raw account subscriptions through `parser_sdk` / `sdk_bridge::raw`. Raw snapshots retain their parser SDK type and should be consumed directly rather than passed through the legacy streamer event adapter. Bridge regression fixtures are synchronized with the current Whirlpool/DLMM account fields.
-
-### Upgrading to v3.0.5
-
-Version 3.0.5 uses `sol-parser-sdk 0.7.5` and forwards the recovered Meteora DAMM v2 swap instruction accounts, including token mints, vaults, payer, token programs, and optional referral. Live mainnet regressions cover both swaps reported in issue #82.
-
-### Upgrading to v3.0.4
-
-Version 3.0.4 uses `sol-parser-sdk 0.7.4`, adds the user-facing `Protocol::LaunchLab`, `Protocol::StonkFun`, `ProtocolType::LaunchLab`, and `ProtocolType::StonkFun` identifiers, and filters shared LaunchLab traffic by StonkFun's official platform configuration accounts. LaunchLab trade events now forward complete reserves, fee legs, pool status, and the current three appended accounts. `Protocol::RaydiumLaunchpad` remains a source-compatible alias and displays as `LaunchLab`.
-
-### Upgrading to v3.0.3
-
-Version 3.0.3 uses `sol-parser-sdk 0.7.3` and synchronizes the current PumpFun, PumpSwap, and Pump Fees protocol schemas. PumpFun create/trade events and PumpSwap buy/sell/create-pool events now preserve creator-fee and holder-reward fields through the streamer bridge. PumpFun bonding-curve and PumpSwap pool account events also expose the new creator-fee editability and holder-reward state while retaining defaults for legacy accounts and JSON payloads. The parser rejects truncated current PumpSwap trade and CreatePool tails instead of returning partially populated events.
-
-### Upgrading to v3.0.2
-
-Version 3.0.2 uses `sol-parser-sdk 0.7.2` and forwards the new Meteora DAMM v2 events: `UpdateDelegatePermission`, `WithdrawDeadLiquidityReward`, `CreateConfig`, and `CreateDynamicConfig`. Transaction-cost events preserve all four Solana V1 config requests, and Yellowstone V1 messages are distinguished from V0 through `Message.config`. V1 ingestion requires a Yellowstone geyser server plugin version of at least `15.1.1`; older servers silently discard the config while downgrading V1 to V0.
-
-### Upgrading to v3.0.1
-
-Version 3.0.1 uses `sol-parser-sdk 0.7.1` and fixes current Meteora DAMM v2 Swap and AddLiquidity delivery. The bridge now preserves all current swap fee, transfer-fee, reserve, mode, and liquidity fields; exact AddLiquidity filtering follows the unified on-chain `EvtLiquidityChange` event. Streamer no longer maintains a separate DAMM swap payload decoder, keeping `sol-parser-sdk` as the single parsing implementation. Mainnet RPC regression tests cover both reported event types.
-
-### Upgrading to v3.0.0
-
-Version 3.0.0 uses `sol-parser-sdk 0.7.0` and Solana 4 public types. ShredStream Entry decoding now uses `wincode 0.5.5` in production and supports Solana V1 transactions. The normal dependency graph dropped from 677 to 544 package/version entries, while duplicated crate names dropped from 119 to 30 by removing redundant direct Solana/SPL dependencies and aligning versions with the parser. This release requires Rust 1.91 or newer and also forwards Meteora DLMM user token input/output accounts.
-
-### Upgrading to v2.0.3
-
-Version 2.0.3 uses `sol-parser-sdk 0.6.6` and pins `spl-pod 0.7.2` to keep fresh, lock-free builds compatible with `spl-list-view 0.1.0`. PumpFun trade events preserve the parser SDK's optional pre/post token balances in raw mint units and pre/post SOL balances in lamports, populated from transaction metadata without additional RPC calls. Meteora DLMM swaps also preserve `min_amount_out` separately from the executed `amount_out`.
-
-### Upgrading to v2.0.1
-
-Version 2.0.1 uses `sol-parser-sdk 0.6.1` from crates.io. PumpSwap Buy/Sell events now preserve the complete current cashback, buyback, signed virtual quote reserve, boost, and base-supply tail through dispatcher and SDK bridge paths. Truncated current layouts are rejected consistently by the default and zero-copy parser backends while historical layouts remain supported.
-
-### Upgrading to v1.5.16
-
-Version 1.5.16 fixes `StreamingOrdered` delivery for transactions that parse into multiple events. Events from the same `(slot, tx_index)` are admitted as a group, the streaming watermark advances once per transaction, and stable sorting preserves parser order for equal transaction indexes. It also pins `yellowstone-grpc-proto` to the `12.4.x` API used by `sol-parser-sdk 0.5.15` so CI and clean installs do not resolve an incompatible newer proto crate.
-
-### Upgrading to v1.5.15
-
-Version 1.5.15 tracks `sol-parser-sdk 0.5.15` at GitHub rev `36ec202`. Pump.fun `create_v2` now distinguishes 16-account SOL-sentinel creates from 19/20-account quote-pool creates, models Yellowstone gRPC loaded writable/readonly addresses correctly, rejects PumpFun program-account fillers as quote mints, and keeps ShredStream from guessing ALT-loaded quote mints when the static transaction keys do not contain them. gRPC/RPC inner instruction parsing now handles guarded 8-byte ordinary CPI instructions for all SDK-supported DEX parsers, so PumpSwap `create_pool` reads `is_cashback_coin` from instruction args before merging with log-derived `CreatePoolEvent` output. ShredStream remains outer-instruction only, but its outer discriminator gate is shared with the SDK parser and no longer diverges for supported DEX protocols.
-
-### Upgrading to v1.5.14
-
-Version 1.5.14 uses `sol-parser-sdk 0.5.14` from crates.io. Pump.fun canonical create events now expose `quote_mint`, `quote_vault`, and `quote_token_program` for `create_v2` quote pools, including USDC pools, across gRPC/RPC parser bridge and ShredStream-backed SDK output.
-
-### Upgrading to v1.5.13
-
-Version 1.5.13 uses `sol-parser-sdk 0.5.13` from crates.io. Pump.fun gRPC and ShredStream create/trade outputs now preserve real WSOL quote mints (`So11111111111111111111111111111111111111112`). The Solscan SOL sentinel (`So11111111111111111111111111111111111111111`) is used only when legacy data omits a quote mint.
-
-### Upgrading to v1.5.11
-
-Version 1.5.11 uses `sol-parser-sdk 0.5.11` from crates.io. PumpSwap `PumpSwapCreatePoolEvent` now carries `is_cashback_coin` when it is available from the `create_pool` instruction args, including ShredStream outer-instruction parsing. Log-only `CreatePoolEvent` payloads still default this field to `false` because the on-chain log event IDL does not carry it. `AccountPumpSwapPool` remains the authoritative account-state source for the pool flag.
-
-### Upgrading to v1.5.10
-
-Version 1.5.10 uses `sol-parser-sdk 0.5.10` from crates.io. PumpSwap `CreatePoolEvent` now matches the on-chain IDL: it exposes `is_mayhem_mode` but does not expose `is_cashback_coin`. To read the cashback flag, subscribe to `AccountPumpSwapPool` and use `PumpSwapPoolAccountEvent.pool.is_cashback_coin`. The PumpSwap CreatePool log payload length check now includes the final `is_mayhem_mode` byte.
-
-### Upgrading to v1.5.9
-
-Version 1.5.9 uses `sol-parser-sdk 0.5.9` from crates.io. It inherits the Yellowstone gRPC stop lifecycle fix: `stop()` now signals, aborts, and awaits the active subscription task, subscription lifecycle transitions are serialized, and gRPC stream errors are labeled as `Grpc Stream error` for easier log separation from ShredStream.
-
-### Upgrading to v1.5.8
-
-Version 1.5.8 uses `sol-parser-sdk 0.5.8` from crates.io. It inherits the Pump.fun ShredStream filter-family semantics from the parser SDK: `PumpFunBuy` covers `buy`, `buy_v2`, `buy_exact_sol_in`, and `buy_exact_quote_in_v2`; `PumpFunSell` covers `sell` and `sell_v2`; and `PumpFunTrade` covers all buy/sell instructions while the parser can emit unified trade events when only the generic trade filter is requested.
-
-### Upgrading to v1.5.5
-
-Version 1.5.5 uses `sol-parser-sdk 0.5.5` from crates.io. The SDK exposes LaunchLab as `RaydiumLaunchlab*`; streamer keeps the existing `Bonk*` event structs and `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` aliases for source compatibility, while routing parser calls and upstream gRPC event filters to the new LaunchLab SDK variants. This release also syncs the CLMM/CPMM/Orca account bridges, Meteora DAMM v2 initialize-pool events, Meteora DBC events, and parser warmup on client creation.
-
-### Upgrading to v1.5.4
-
-Version 1.5.4 uses `sol-parser-sdk 0.5.4` from crates.io. Pump.fun `create` and `create_v2` are delivered as one canonical `PumpFunCreateTokenEvent`; subscribing to either `PumpFunCreateToken` or `PumpFunCreateV2Token` receives the same complete create-family data. This prevents duplicate new-mint callbacks from gRPC log + instruction parsing while preserving create_v2 account fields on the canonical create event.
-
-### Upgrading to v1.5.3
-
-Version 1.5.3 uses `sol-parser-sdk 0.5.3` from crates.io. It preserves real Pump.fun v2 `ix_name` values through the streamer bridge, improves ShredStream Pump.fun v2 best-effort parsing for short account lists, and treats `PumpFunBuy` and `PumpFunBuyExactSolIn` subscriptions as compatible buy-family filters. ShredStream still uses the direct entry-reading path with automatic reconnect; callbacks should remain non-blocking and `tx_index` remains entry-local best-effort.
-
-### Upgrading to v1.5.2
-
-Version 1.5.2 uses `sol-parser-sdk 0.5.2` from crates.io. ShredStream delivery uses the SDK parser on a direct entry-reading path with automatic reconnect, avoiding the extra queue consumer task while keeping parser event buffers reused. ShredStream `tx_index` is entry-local best-effort, not the Yellowstone slot-level transaction index. User callbacks on the direct path run on the read task and should avoid blocking work.
-
-### Upgrading to v1.5.1
-
-Version 1.5.1 uses `sol-parser-sdk 0.5.1` from crates.io. It improves ShredStream ALT handling by parsing outer instructions best-effort with default placeholders for ALT-loaded accounts, adds dropped-event queue observability, and keeps CPI/inner-only events documented as a ShredStream limitation.
-
-### Upgrading to v1.5.0
-
-Version 1.5.0 uses `sol-parser-sdk 0.5.0`, wires Raydium CLMM account parsing through the SDK bridge, and reduces ordered-buffer allocation/move overhead in low-latency delivery paths. `sol-parser-sdk 0.4.19` and `solana-streamer-sdk 1.4.14` were superseded because adding public parser event variants belongs in the 0.5 line.
-
-### Upgrading to v1.4.14
-
-Version 1.4.14 was superseded by v1.5.0.
-
-### Upgrading to v1.4.13
-
-Version 1.4.13 uses `sol-parser-sdk 0.4.18` and updates Raydium CLMM integration to the official upgraded IDL: current log-side event discriminators, official Swap/Liquidity/Create/Collect layouts, limit-order events, dynamic-fee related events, and the reshaped PoolState/TickState account structs.
-
-### Upgrading to v1.4.12
-
-Version 1.4.12 uses `sol-parser-sdk 0.4.17` and normalizes legacy PumpFun SOL quote mints to the Solscan SOL sentinel while preserving real USDC quote mints and quote-reserve fields. Streamer bridge and merger paths keep the parser SDK semantics aligned for Yellowstone gRPC and ShredStream output.
-
-New optional capabilities:
-
-- `solana_streamer_sdk::parser_sdk` re-exports the raw `sol-parser-sdk` crate.
-- `solana_streamer_sdk::sdk_bridge` adapts raw SDK events back into streamer `DexEvent`.
-- `fetch_rpc_transaction_as_streamer_events` and `parse_encoded_rpc_transaction_as_streamer_events` parse RPC transactions into streamer events.
-- `grpc::ClientConfig::order_mode` supports `Unordered`, `Ordered`, `StreamingOrdered`, and `MicroBatch`.
-- `sdk-parse-zero-copy` enables the SDK zero-copy parser backend.
-
-### Migrating from v0.5.x to v1.x.x
-
-Version 1.0.0 introduces a major architectural change from trait-based event handling to enum-based events. This provides better type safety, improved performance, and simpler code patterns.
-
-**Key Changes:**
-
-1. **Event Type Changed** - `Box<dyn UnifiedEvent>` → `DexEvent` enum
-2. **Callback Signature** - Callbacks now receive concrete `DexEvent` instead of trait objects
-3. **Event Matching** - Use standard Rust `match` instead of `match_event!` macro
-4. **Metadata Access** - Event properties now accessed through `.metadata()` method
-
-**Quick Migration Example:**
-
-```rust
-// Old (v0.5.x)
-let callback = |event: Box<dyn UnifiedEvent>| {
-    println!("Event: {:?}", event.event_type());
-};
-
-// New (v1.x.x)
-let callback = |event: DexEvent| {
-    println!("Event: {:?}", event.metadata().event_type);
-};
-```
-
-## ⚙️ Configuration System
-
-You can customize client configuration:
-
-```rust
-use solana_streamer_sdk::streaming::{
-    grpc::{ClientConfig, OrderMode},
-    YellowstoneGrpc,
-};
-
-// Use default configuration
-let grpc = YellowstoneGrpc::new(endpoint, token)?;
-
-// Or create custom configuration
-let mut config = ClientConfig::default();
-config.enable_metrics = true;  // Enable performance monitoring
-config.connection.connect_timeout = 30;  // 30 seconds
-config.connection.request_timeout = 120;  // 120 seconds
-config.order_mode = OrderMode::MicroBatch;  // Unordered / Ordered / StreamingOrdered / MicroBatch
-config.order_timeout_ms = 100;
-config.micro_batch_us = 100;
-
-let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
-```
-
-**Available Configuration Options:**
-- `enable_metrics`: Enable/disable performance monitoring (default: false)
-- `connection.connect_timeout`: Connection timeout in seconds (default: 10)
-- `connection.request_timeout`: Request timeout in seconds (default: 60)
-- `connection.max_decoding_message_size`: Maximum message size in bytes (default: 10MB)
-- `order_mode`: Transaction event output ordering mode (default: `Unordered`)
-- `order_timeout_ms`: Flush timeout for `Ordered` and `StreamingOrdered` modes (default: 100)
-- `micro_batch_us`: Micro-batch window for `MicroBatch` mode (default: 100)
-
-### Minimal gRPC Subscription
-
-```rust
-use solana_streamer_sdk::streaming::{
-    event_parser::{
-        common::{filter::EventTypeFilter, EventType},
-        core::EventDispatcher,
-        DexEvent, Protocol,
-    },
-    yellowstone_grpc::{AccountFilter, TransactionFilter},
-    YellowstoneGrpc,
-};
-
-let grpc = YellowstoneGrpc::new(endpoint, token)?;
-
-let protocols = vec![
-    Protocol::PumpFun,
-    Protocol::PumpFees,
-    Protocol::PumpSwap,
-    Protocol::RaydiumLaunchpad,
-    Protocol::RaydiumCpmm,
-    Protocol::RaydiumClmm,
-    Protocol::RaydiumAmmV4,
-    Protocol::OrcaWhirlpool,
-    Protocol::MeteoraPools,
-    Protocol::MeteoraDammV2,
-    Protocol::MeteoraDlmm,
-];
-
-let program_ids = EventDispatcher::get_program_ids(&protocols)
-    .into_iter()
-    .map(|pubkey| pubkey.to_string())
-    .collect::<Vec<_>>();
-
-let transaction_filter = TransactionFilter {
-    account_include: program_ids.clone(),
-    account_exclude: vec![],
-    account_required: vec![],
-};
-let account_filter = AccountFilter { account: vec![], owner: program_ids, filters: vec![] };
-
-let event_type_filter = Some(EventTypeFilter::include_only(vec![
-    EventType::PumpFunBuy,
-    EventType::PumpSwapBuy,
-    EventType::BonkBuyExactIn,
-    EventType::RaydiumCpmmSwapBaseInput,
-    EventType::MeteoraDlmmSwap,
-]));
-
-grpc.subscribe_events_immediate(
-    protocols,
-    None,
-    vec![transaction_filter],
-    vec![account_filter],
-    event_type_filter,
-    None,
-    |event: DexEvent| {
-        println!("{:?}", event.metadata().event_type);
-    },
-)
-.await?;
-```
+<a id="usage-examples"></a>
 
 ## 📚 Usage Examples
 
@@ -479,8 +163,7 @@ grpc.subscribe_events_immediate(
 | Parse PumpFun quote-mint cases from RPC | `TX_SIGNATURES=<sig1,sig2> cargo run --example parse_pumpfun_quote_cases --release` | [examples/parse_pumpfun_quote_cases.rs](examples/parse_pumpfun_quote_cases.rs) |
 | Parse PumpSwap transaction from RPC | `cargo run --example parse_pumpswap_tx --release` | [examples/parse_pumpswap_tx.rs](examples/parse_pumpswap_tx.rs) |
 | Parse Meteora DAMM v2 transaction from RPC | `TX_SIGNATURE=<sig> cargo run --example parse_meteora_damm_tx --release` | [examples/parse_meteora_damm_tx.rs](examples/parse_meteora_damm_tx.rs) |
-| Debug PumpFun transaction (fetch, print meta/logs, parse) | `TX_SIGNATURE=<sig> cargo run --example debug_pump_tx --release` | [examples/debug_pump_tx.rs](examples/debug_pump_tx.rs) |
-| Debug PumpSwap transaction (fetch, print meta, parse) | `TX_SIGNATURE=<sig> cargo run --example debug_pumpswap_tx --release` | [examples/debug_pumpswap_tx.rs](examples/debug_pumpswap_tx.rs) |
+| Fetch any transaction and replay offline (preserves raw meta/logs/accounts) | `cargo run --example rpc_transaction_replay -- --fetch <SIGNATURE> /tmp/transaction.json` | [examples/rpc_transaction_replay.rs](examples/rpc_transaction_replay.rs) |
 | Update filters at runtime | `cargo run --example dynamic_subscription` | [examples/dynamic_subscription.rs](examples/dynamic_subscription.rs) |
 | Quick test: subscribe to PumpFun, print first 10 or run 60s | `cargo run --example pumpfun_quick_test --release` | [examples/pumpfun_quick_test.rs](examples/pumpfun_quick_test.rs) |
 | PumpFun trade filter: Buy/Sell/Create with latency | `cargo run --example pumpfun_trade_filter --release` | [examples/pumpfun_trade_filter.rs](examples/pumpfun_trade_filter.rs) |
@@ -593,6 +276,115 @@ instruction args, while log-only `CreatePoolEvent` payloads keep the default
 account value is also available from
 `PumpSwapPoolAccountEvent.pool.is_cashback_coin`.
 
+<a id="trade-provenance-and-parsing-boundaries"></a>
+
+## Trade provenance and parsing boundaries
+
+gRPC/RPC use supplied execution metadata and actual CPI instructions; Shred sees outer instructions and locally resolved accounts. An unknown third-party instruction referencing Pump.fun in its own accounts can produce a `PumpFunTrade` candidate with the original input in `third_program` and `Unresolved` status. This does not establish execution, direction or amounts. Buy/sell-only filters do not treat an unknown direction as a fill.
+
+The parsing hot path performs no RPC. Check `parse_status` before interpreting defaults as amounts. Original account order and instruction bytes remain in `third_program`; transaction position and receive time remain in event metadata. A local Shred index is not confirmed slot-wide execution order. See [wrapped transactions](docs/wrapped-pumpfun.md).
+
+<a id="configuration-system"></a>
+
+## ⚙️ Configuration System
+
+You can customize client configuration:
+
+```rust
+use solana_streamer_sdk::streaming::{
+    grpc::{ClientConfig, OrderMode},
+    YellowstoneGrpc,
+};
+
+// Use default configuration
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+// Or create custom configuration
+let mut config = ClientConfig::default();
+config.enable_metrics = true;  // Enable performance monitoring
+config.connection.connect_timeout = 30;  // 30 seconds
+config.connection.request_timeout = 120;  // 120 seconds
+config.order_mode = OrderMode::MicroBatch;  // Unordered / Ordered / StreamingOrdered / MicroBatch
+config.order_timeout_ms = 100;
+config.micro_batch_us = 100;
+
+let grpc = YellowstoneGrpc::new_with_config(endpoint, token, config)?;
+```
+
+**Available Configuration Options:**
+- `enable_metrics`: Enable/disable performance monitoring (default: false)
+- `connection.connect_timeout`: Connection timeout in seconds (default: 10)
+- `connection.request_timeout`: Request timeout in seconds (default: 60)
+- `connection.max_decoding_message_size`: Maximum message size in bytes (default: 10MB)
+- `order_mode`: Transaction event output ordering mode (default: `Unordered`)
+- `order_timeout_ms`: Flush timeout for `Ordered` and `StreamingOrdered` modes (default: 100)
+- `micro_batch_us`: Micro-batch window for `MicroBatch` mode (default: 100)
+
+### Minimal gRPC Subscription
+
+```rust
+use solana_streamer_sdk::streaming::{
+    event_parser::{
+        common::{filter::EventTypeFilter, EventType},
+        core::EventDispatcher,
+        DexEvent, Protocol,
+    },
+    yellowstone_grpc::{AccountFilter, TransactionFilter},
+    YellowstoneGrpc,
+};
+
+let grpc = YellowstoneGrpc::new(endpoint, token)?;
+
+let protocols = vec![
+    Protocol::PumpFun,
+    Protocol::PumpFees,
+    Protocol::PumpSwap,
+    Protocol::RaydiumLaunchpad,
+    Protocol::RaydiumCpmm,
+    Protocol::RaydiumClmm,
+    Protocol::RaydiumAmmV4,
+    Protocol::OrcaWhirlpool,
+    Protocol::MeteoraPools,
+    Protocol::MeteoraDammV2,
+    Protocol::MeteoraDlmm,
+];
+
+let program_ids = EventDispatcher::get_program_ids(&protocols)
+    .into_iter()
+    .map(|pubkey| pubkey.to_string())
+    .collect::<Vec<_>>();
+
+let transaction_filter = TransactionFilter {
+    account_include: program_ids.clone(),
+    account_exclude: vec![],
+    account_required: vec![],
+};
+let account_filter = AccountFilter { account: vec![], owner: program_ids, filters: vec![] };
+
+let event_type_filter = Some(EventTypeFilter::include_only(vec![
+    EventType::PumpFunBuy,
+    EventType::PumpSwapBuy,
+    EventType::BonkBuyExactIn,
+    EventType::RaydiumCpmmSwapBaseInput,
+    EventType::MeteoraDlmmSwap,
+]));
+
+grpc.subscribe_events_immediate(
+    protocols,
+    None,
+    vec![transaction_filter],
+    vec![account_filter],
+    event_type_filter,
+    None,
+    |event: DexEvent| {
+        println!("{:?}", event.metadata().event_type);
+    },
+)
+.await?;
+```
+
+<a id="dynamic-subscription-management"></a>
+
 ## Dynamic Subscription Management
 
 Update subscription filters at runtime without reconnecting to the stream.
@@ -620,6 +412,8 @@ grpc.update_subscription(
 
 Note: Multiple subscription attempts on the same client return an error.
 
+<a id="supported-protocols"></a>
+
 ## 🔧 Supported Protocols
 
 - **PumpFun**: Primary meme coin trading platform
@@ -627,7 +421,7 @@ Note: Multiple subscription attempts on the same client return an error.
 - **PumpSwap**: PumpFun's swap protocol
 - **LaunchLab**: Token launch platform; `Bonk` and `RaydiumLaunchpad` are kept as compatibility aliases
 - **StonkFun**: StonkFun-attributed LaunchLab trade and pool-create events
-- **Raydium CPMM**: Raydium's Concentrated Pool Market Maker protocol
+- **Raydium CPMM**: Raydium's Constant Product Market Maker protocol
 - **Raydium CLMM**: Raydium's Concentrated Liquidity Market Maker protocol
 - **Raydium AMM V4**: Raydium's Automated Market Maker V4 protocol
 - **Meteora DAMM v2**: Meteora DAMM v2 protocol
@@ -637,10 +431,14 @@ Note: Multiple subscription attempts on the same client return an error.
 - **Meteora DLMM**: Meteora Dynamic Liquidity Market Maker protocol
 - **Common/account events**: Token accounts, token metadata, nonce accounts, block metadata, ComputeBudget events, and supported protocol account states such as Raydium CLMM/CPMM, Pump/PumpSwap, and Orca Whirlpool accounts
 
+<a id="event-streaming-services"></a>
+
 ## 🌐 Event Streaming Services
 
 - **Yellowstone gRPC**: High-performance Solana event streaming
 - **ShredStream**: Alternative event streaming protocol
+
+<a id="architecture-features"></a>
 
 ## 🏗️ Architecture Features
 
@@ -661,6 +459,8 @@ Note: Multiple subscription attempts on the same client return an error.
 - **Yellowstone gRPC Client**: Optimized for Solana event streaming
 - **ShredStream Client**: Alternative streaming implementation
 - **Async Processing**: Non-blocking event handling
+
+<a id="project-structure"></a>
 
 ## 📁 Project Structure
 
@@ -684,6 +484,8 @@ src/
 └── main.rs           # Example program
 ```
 
+<a id="performance-considerations"></a>
+
 ## ⚡ Performance Considerations
 
 1. **Connection Management**: Properly handle connection lifecycle and reconnection
@@ -694,18 +496,7 @@ src/
 6. **Performance Monitoring**: Enable performance monitoring to identify bottlenecks and optimization opportunities
 7. **Graceful Shutdown**: Use the stop() method for clean shutdown and implement signal handlers for proper resource cleanup
 
----
-
-## 📄 License
-
-MIT License
-
-## 📞 Contact
-
-- **Website**: https://fnzero.dev/
-- **Project Repository**: https://github.com/0xfnzero/solana-streamer
-- **Telegram Group**: https://t.me/fnzero_group
-- **Discord**: https://discord.gg/vuazbGkqQE
+<a id="important-notes"></a>
 
 ## ⚠️ Important Notes
 
@@ -714,20 +505,17 @@ MIT License
 3. **Error Recovery**: Implement proper error handling and reconnection logic
 5. **Compliance**: Ensure compliance with relevant laws and regulations
 
-## Language Versions
-
-- [English](README.md)
-- [中文](README_CN.md)
-
+<a id="pump-upgrade-october-2026"></a>
 
 ## Pump upgrade (October 2026)
 
 Compact Pump v3 and PumpSwap v2 trades use their new 17-account layouts. New typed events cover `PumpFunPostCompleteBuy`, `PumpFunComplete`, `PumpFunSweepBondingCurveFee` and `PumpSwapSweepPoolFee`, with program-scoped log and CPI parsing. Historical SOL CompleteEvent payloads remain supported. Curve/pool retained fees and synthetic counters are exposed; optional historical tails default to zero.
 
-For a synthetic completing buy, retain TradeEvent **and** PostCompleteBuyEvent and aggregate execution amounts within the same invocation. CompleteEvent is the completion notification. For `multi_hop_swap`, retain each venue's trade events; different venues are not merged into one fill. The multi-hop intent decoder exposes the fixed user accounts, input/minimum limits and 5 roles per hop; these limits are not actual executed amounts. Streamer forwards the typed events and account fields through its parser bridge (its re-exported `parser_sdk` also provides the intent decoder).
+For completing buys, aggregate TradeEvent and PostCompleteBuyEvent amounts within the same invocation. CompleteEvent is a notification. Multi-hop execution retains each venue’s trade events in order; separate venues are not merged into one fill. There is no route-intent decoder or raw-event callback. Shred candidates carry original wrapper input in third_program and remain unresolved; gRPC/RPC uses actual execution metadata.
 
 Reference: [pump-public-docs](https://github.com/pump-fun/pump-public-docs/tree/8cda1fa30ea658b20909d8aedf002047119388d2). Validation uses offline official IDL fixtures; no live trade is sent by the tests.
 
+<a id="reproducible-local-hot-path-latency"></a>
 
 ## Reproducible local hot-path latency
 
@@ -745,3 +533,36 @@ same configuration and fixtures before comparing changes.
 The workload measures the public Pump trade event bridge, with and without a
 recent blockhash. Input cloning happens outside the measured interval; output
 destruction is included. This is CPU conversion latency, not network latency.
+
+<a id="documentation"></a>
+
+## Documentation
+
+- [Release and migration](RELEASE_NOTES.md)
+- [Usage guide](docs/wrapped-pumpfun.md)
+
+<a id="language-versions"></a>
+
+## Language Versions
+
+- [English](README.md)
+- [中文](README_CN.md)
+
+
+<a id="license"></a>
+
+## 📄 License
+
+MIT License
+
+<a id="contact"></a>
+
+## 📞 Contact
+
+- **Website**: https://fnzero.dev/
+- **Project Repository**: https://github.com/0xfnzero/solana-streamer
+- **Telegram Group**: https://t.me/fnzero_group
+- **Discord**: https://discord.gg/vuazbGkqQE
+
+
+Shared stock bridges: 34 official stock/ETF mints and 63 pools. See [eleven-SDK catalog and routing alignment](docs/STOCK_BRIDGE_SYNC.md) for configuration, USDC routing and cache-only boundaries.

@@ -11,3 +11,6 @@ pub use streaming::{
     fetch_rpc_transaction_as_streamer_events, fetch_rpc_transaction_as_streamer_events_async,
     parse_encoded_rpc_transaction_as_streamer_events, RpcParseError,
 };
+
+/// Shared screened identities and stock price tracking from the parser.
+pub use sol_parser_sdk::stock_prices;

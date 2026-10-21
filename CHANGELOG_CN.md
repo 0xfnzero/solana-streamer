@@ -1,0 +1,220 @@
+# 版本记录
+
+## v5.0.0 — 2026-10-22
+
+同步 SDK、examples、版本导航及 AI 发布规则。请阅读 [发布与迁移说明](RELEASE_NOTES.md)，尤其注意事件精简、V3 默认行为和 Go /v9 模块迁移。
+
+以下保留旧版 README 的发布与集成记录，其中接口、依赖和验证结果描述当时版本，不代表当前行为。当前用法见 [README](README_CN.md) 和 [发布与迁移说明](RELEASE_NOTES.md)。
+
+## v4.0.0
+
+详见 [发布与迁移说明](RELEASE_NOTES.md)。
+
+## v3.0.17 — Pump.fun 第三方来源透传与解析修复
+
+更新 sol-parser-sdk 至 0.7.19，Pump.fun 事件桥接保留可选的 `third_program` 第三方来源。同步按 mint 识别创建后买入及保留 IDL 版本化方法名的修复。第三方规则仍须显式启用，解析热路径不调用 RPC。
+
+[第三方 Pump.fun 包装指令：离线规则、热路径边界与真实交易回放](docs/wrapped-pumpfun.md)
+
+## v3.0.16 — Shred 元数据透传与顺序范围
+
+保留并验证 `tx_index`、接收时间从解析入口传到原始指令回调。明确 Entries 消息内序号与 Yellowstone 节点 index 的区别：本地序号不是全 slot 索引；跨消息去重使用交易签名。此版本完善文档和回归保护，不改变现有字段或编号规则。
+
+## v3.0.16 — RawInstruction 协议过滤与 DEX 枚举
+
+修复原始指令绕过 DEX 订阅范围的问题。按单条指令引用的官方程序识别 DEX，使用 `RawInstructionDexType` 枚举；JSON 字符串保持不变。未知 router 不推断池子地址、买卖方向或方法版本。
+
+## v3.0.16 — Pump 执行事件与最新回放示例
+
+修复官方 Anchor CPI TradeEvent 前缀识别，保留历史编码兼容。RPC/gRPC 的实际 `sol_amount`、`quote_amount`、`token_amount` 只从执行事件合并；预算和最小输出保留在指令参数字段。如果日志及事件 CPI 均缺失，实际金额字段为 0（表示无执行数据，不代表已确认零成交）。非 SOL 报价金额不能当作 SOL。
+
+在本仓库运行 `cargo run --offline --example rpc_transaction_replay`，离线回放 2026-10-19 重新抓取的真实交易。默认样本为 Delta SellV2；使用 `--fetch SIGNATURE OUTPUT.json` 抓取另一笔，再用 `--fixture OUTPUT.json` 回放。通过 `SOLANA_RPC_URL` 选择 RPC，支持 transaction v1。
+
+新 Delta 卖出样本：`4ARos3Yq1SMNE3izDpy9YdKrRgMmD7UCDxvnVrBRaGCJHiifPHSmQWc4DPfjUaEUcxS7puGmEN64K7EZdeXLJaj2`，slot 458542546。旧的五种双跳组合仅作为回归样本，未冒充本次新抓取交易。
+
+## v3.0.16 — Shred 原始指令透传
+
+协议过滤同时作用于原始指令的 DEX 关联和已解码事件。
+
+默认 Shred 入口将未适配的第三方程序（包括 Rapid/Delta）作为 `RawInstruction` 返回，不再推断买卖方向、金额或内部 buy 版本。System、Token、ATA、ComputeBudget 等基础程序默认不透传；已支持的官方 DEX 指令继续正常解析，官方 Pump/PumpSwap 多跳仍返回 `PumpRouteIntent`。
+
+事件包含 `program_id`、`instruction_index`、`accounts`、`account_indices`、`instruction_data` 和交易 metadata。账户保留原顺序与重复项；未解析 ALT 地址为 null/None，原始索引仍保留。使用缓存 loaded-addresses/resolver 补齐，热路径不请求 RPC。data 是完整原始字节，不要求已知布局。
+
+原始事件保留调用方传入的 `metadata.tx_index` 和 `metadata.grpc_recv_us`（streamer 对应 `metadata.recv_us`）。默认 Entries 客户端的交易序号仅在单条接收消息内递增，下一条消息从 0 重新计数，不等于已确认的整个 slot 交易序号。`instruction_index` 表示交易内外层指令顺序；接收时间是本地微秒时间戳，不保证链上执行顺序。独立回放 API 可能默认填 0，调用时应传入上游已有的序号与接收时间。
+
+无过滤器时返回未知第三方指令。宽泛交易/Swap 订阅（如 `PumpFunTrade`、`RaydiumCpmmSwap`）也返回关联该 DEX 的原始指令；买/卖方向订阅不推测方向。显式 `RawInstruction` 仅在未限制协议时返回全部外层指令，streamer 的协议限制始终生效；显式排除 `RawInstruction` 优先。`dex_type` 使用公开枚举 `RawInstructionDexType`（Go 为命名字符串类型与常量）；JSON 仍为 `"pumpfun"`、`"raydium_cpmm"` 等原有字符串。`dexes` 数组包含各关联 DEX 的 `{ dex_type, program_id, pool }`，只识别本条指令直接调用或账户中引用的 DEX 程序，不借用同笔其他指令的账户；多 DEX 包装保留所有关联。未知或未解析 ALT 中的程序不能匹配 DEX 订阅。`pool` 当前为 null：未知包装布局无法确定池子账户。program 引用不证明执行了 CPI，原始回调不是成交。
+
+已有 wrapper 适配函数仅作为显式调用的兼容接口保留，不参与默认 Shred 解码。以下已发布版本的历史说明描述旧行为。
+
+## 🔄 迁移指南
+
+## v3.0.13 — Pump 路由事件完善
+
+路由意图新增 `is_buy` 和 `ix_name`，沿用交易事件字段名和官方 IDL 方法名。RapidBuy 为买入意图，方法为 `buy_exact_quote_in_v2`；BuyPumpDelta 仅确定买入方向；多跳方向与未知方法保持为空。币种仍从 `hops[].base_mint` / `quote_mint` 获取。这些信息不代表已成交，过滤器也不会将路由意图转换为交易事件。
+
+Streamer 现在通过 `DexEvent::PumpRouteIntentEvent` 转发完整路由字段并支持过滤。旧 JSON 缺少新字段时保持未知；Rust 结构体字面量需补齐新字段，穷举 streamer 事件的代码需处理新变体。
+
+## v3.0.12 — Pump routes and offline replay
+
+Pins sol-parser-sdk 0.7.14 and includes the latest streaming facade code and native hot-path benchmark. The raw parser re-export provides the new Pump route-intent and cached-ALT APIs.
+
+Route intents describe instructions before execution; use execution metadata for confirmed fills. Offline CPU timings do not measure production transport or transaction landing.
+
+## v3.0.11 — Pump depth-2 compatibility
+
+Pins sol-parser-sdk 0.7.13 and inherits signed Pump depth-2 create-event compatibility coverage through the parser bridge. Existing trading and event interfaces remain unchanged.
+
+Validation includes official Pump SDK 4.1.0 instruction comparisons, signed local LiteSVM simulations and SDK regressions. Local simulation state/config is synthetic; no funded transactions were broadcast and production latency was not measured.
+
+### v3.0.10
+
+锁定 sol-parser-sdk 0.7.12，同步 PumpFun migration event CPI 解析修复。发布当前 bridge 的 compact trade、quote coin、complete/fee sweep 事件、协议费用字段和 synthetic migration 支持，包含离线主网交易回归样本。
+
+### v3.0.9
+
+- 锁定 `sol-parser-sdk 0.7.10`，同步创建账户匹配、quote 账户及历史布局修复；通过 RPC facade 与 gRPC bridge 主网回归验证。
+
+### v3.0.8
+
+固定依赖 `sol-parser-sdk 0.7.9`，继承 PumpSwap boost 账户回填与预编译指令日志索引修复，保留严格交易匹配和 ALT 账户处理。新增离线主网回归样本，验证 RPC facade 和 gRPC 事件桥接层完整保留池金库、token program 及卖出 token mint。
+
+### v3.0.7
+
+Uses `sol-parser-sdk 0.7.8`. Preserves CPMM creator-fee collection events, the AmmConfig share rate, swap instruction arguments and Orca/CLMM accounts through the bridge. Includes independent RPC corpus validation for 13 mainnet transactions and 17 target operations. Run `cargo run --example rpc_corpus_validate -- --list` to view signatures.
+
+### 升级到 v3.0.6
+
+v3.0.6 固定使用 `sol-parser-sdk 0.7.7`。通过 `parser_sdk` / `sdk_bridge::raw` 可访问 StonkFun 路由分析、迁移注册表和原始账户订阅。原始快照保留 parser SDK 类型，应直接消费，不要经过旧 streamer 事件转换层。bridge 回归样本已同步当前 Whirlpool/DLMM 账户字段。
+
+### 升级到 v3.0.5
+
+v3.0.5 使用 `sol-parser-sdk 0.7.5`，并转发 Meteora DAMM v2 swap 指令中恢复的 mint、vault、payer、token program 及可选 referral 等账户。真实主网回归覆盖 issue #82 报告的两笔交易。
+
+### 升级到 v3.0.4
+
+v3.0.4 使用 `sol-parser-sdk 0.7.4`，新增面向用户的 `Protocol::LaunchLab`、`Protocol::StonkFun`、`ProtocolType::LaunchLab` 与 `ProtocolType::StonkFun` 标识，并根据 StonkFun 官方 platform config 过滤共享 LaunchLab 流量。LaunchLab 交易事件现在会完整转发储备量、手续费、池状态与当前新增的三个尾部账户。`Protocol::RaydiumLaunchpad` 继续作为源码兼容别名保留，其显示名称统一为 `LaunchLab`。
+
+### 升级到 v3.0.3
+
+v3.0.3 使用 `sol-parser-sdk 0.7.3`，同步当前 PumpFun、PumpSwap 和 Pump Fees 协议 schema。PumpFun create/trade 事件以及 PumpSwap buy/sell/create-pool 事件现在会通过 streamer bridge 完整保留 creator fee 与 holder reward 字段；PumpFun bonding curve 和 PumpSwap pool 账户事件也会暴露新的 creator fee 可编辑状态与 holder reward 状态，同时继续为旧账户布局和旧 JSON 数据提供默认值。解析器会拒绝截断的当前 PumpSwap trade 和 CreatePool 尾部，不再返回字段不完整的事件。
+
+### 升级到 v3.0.2
+
+v3.0.2 使用 `sol-parser-sdk 0.7.2`，并转发新增的 Meteora DAMM v2 事件：`UpdateDelegatePermission`、`WithdrawDeadLiquidityReward`、`CreateConfig`、`CreateDynamicConfig`。TransactionCost 事件会完整保留 Solana V1 的四项 config 请求，并通过 `Message.config` 区分 V1 与 V0。接入 V1 要求 Yellowstone geyser 服务端插件至少为 `15.1.1`；更旧的服务端会静默丢弃 config 并把 V1 降级成 V0。
+
+### 升级到 v3.0.1
+
+v3.0.1 使用 `sol-parser-sdk 0.7.1`，修复当前 Meteora DAMM v2 Swap 与 AddLiquidity 的投递。bridge 现在会完整保留 swap fee、transfer fee、reserve、mode 和流动性字段；AddLiquidity 精确过滤会跟随链上统一的 `EvtLiquidityChange` 事件。Streamer 不再维护独立的 DAMM swap payload 解码器，由 `sol-parser-sdk` 作为唯一解析实现，并增加两类问题事件的主网 RPC 回归测试。
+
+### 升级到 v3.0.0
+
+v3.0.0 使用 `sol-parser-sdk 0.7.0` 和 Solana 4 公开类型。生产 ShredStream Entry 解码已切换到 `wincode 0.5.5`，并支持 Solana V1 交易。通过删除重复的 Solana/SPL 直接依赖并与 parser 对齐版本，normal 依赖图从 677 个 package/version 项降到 544 个，重复 crate 名从 119 个降到 30 个。此版本要求 Rust 1.91 或更新版本，并会继续转发 Meteora DLMM 用户 token 输入/输出账户。
+
+### 升级到 v2.0.3
+
+v2.0.3 使用 `sol-parser-sdk 0.6.6`，并固定 `spl-pod 0.7.2`，确保无锁文件的全新构建与 `spl-list-view 0.1.0` 兼容。PumpFun 交易事件会保留 parser SDK 提供的可选交易前后 token 余额（mint 原始精度）和 SOL 余额（lamports），这些字段直接来自交易 metadata，无需额外 RPC 请求。Meteora DLMM swap 也会单独保留 `min_amount_out`，不再与实际成交的 `amount_out` 混淆。
+
+### 升级到 v2.0.1
+
+v2.0.1 使用 crates.io 上的 `sol-parser-sdk 0.6.1`。PumpSwap Buy/Sell 事件现在会在 dispatcher 和 SDK bridge 路径中完整保留 cashback、buyback、带符号 virtual quote reserve、boost 和 base supply 尾部字段。默认和 zero-copy 解析后端会一致拒绝截断的当前布局，同时继续兼容历史布局。
+
+### 升级到 v1.5.16
+
+v1.5.16 修复 `StreamingOrdered` 模式下同一交易解析出多个事件时的投递问题。同一 `(slot, tx_index)` 的事件会作为一组进入缓冲，streaming watermark 每笔交易只推进一次，并用 stable sort 保留相同交易索引下的解析器输出顺序。同时将 `yellowstone-grpc-proto` 固定到 `sol-parser-sdk 0.5.15` 使用的 `12.4.x` API，避免 CI 和干净安装解析到不兼容的新 proto crate。
+
+### 升级到 v1.5.15
+
+v1.5.15 跟随 GitHub rev `36ec202` 上的 `sol-parser-sdk 0.5.15`。Pump.fun `create_v2` 现在会区分 16 账户 SOL sentinel 创建和 19/20 账户 quote-pool 创建；填充账户时会先选择实际的 create/create_v2 指令，再读取 quote 字段。gRPC/RPC inner instruction 解析现在会按 program id + discriminator 守卫解析所有 SDK 已支持 DEX 的 8-byte 普通 CPI instruction，PumpSwap `create_pool` 因此能从 instruction args 读取 `is_cashback_coin` 并与 log 事件合并。ShredStream 仍只解析外层指令，但外层 discriminator gate 已和 SDK 统一，避免支持协议之间规则分叉。
+
+### 升级到 v1.5.14
+
+v1.5.14 使用 crates.io 上的 `sol-parser-sdk 0.5.14`。Pump.fun canonical create 事件现在会为 `create_v2` quote 池暴露 `quote_mint`、`quote_vault`、`quote_token_program`，包括 USDC 池；gRPC/RPC parser bridge 和 ShredStream-backed SDK 输出都会保留这些字段。
+
+### 升级到 v1.5.13
+
+v1.5.13 使用 crates.io 上的 `sol-parser-sdk 0.5.13`。Pump.fun gRPC 和 ShredStream create/trade 输出现在会保留真实 WSOL quote mint（`So11111111111111111111111111111111111111112`）。只有 legacy 数据缺失 quote mint 时，才使用 Solscan SOL sentinel（`So11111111111111111111111111111111111111111`）。
+
+### 升级到 v1.5.11
+
+v1.5.11 使用 crates.io 上的 `sol-parser-sdk 0.5.11`。PumpSwap `PumpSwapCreatePoolEvent` 现在会在 `create_pool` instruction args 可用时携带 `is_cashback_coin`，包括 ShredStream 外层指令解析。log-only 的 `CreatePoolEvent` payload 因为链上 log event IDL 不包含该字段，仍会保持默认 `false`。`AccountPumpSwapPool` 仍是读取池子账户状态里该标记的权威来源。
+
+### 升级到 v1.5.10
+
+v1.5.10 使用 crates.io 上的 `sol-parser-sdk 0.5.10`。PumpSwap `CreatePoolEvent` 现在与链上 IDL 对齐：暴露 `is_mayhem_mode`，但不暴露 `is_cashback_coin`。如果需要 cashback 标记，请订阅 `AccountPumpSwapPool`，并读取 `PumpSwapPoolAccountEvent.pool.is_cashback_coin`。PumpSwap CreatePool log payload 长度检查现在包含最后的 `is_mayhem_mode` 字节。
+
+### 升级到 v1.5.9
+
+v1.5.9 使用 crates.io 上的 `sol-parser-sdk 0.5.9`。该版本继承 Yellowstone gRPC stop 生命周期修复：`stop()` 现在会通知、abort 并等待当前订阅任务结束，订阅生命周期切换会串行化，并且 gRPC 流错误日志会标记为 `Grpc Stream error`，便于和 ShredStream 日志区分。
+
+### 升级到 v1.5.8
+
+v1.5.8 使用 crates.io 上的 `sol-parser-sdk 0.5.8`。该版本继承 parser SDK 的 Pump.fun ShredStream 过滤大类语义：`PumpFunBuy` 覆盖 `buy`、`buy_v2`、`buy_exact_sol_in`、`buy_exact_quote_in_v2`；`PumpFunSell` 覆盖 `sell`、`sell_v2`；`PumpFunTrade` 覆盖所有 buy/sell 指令，并且当只请求通用 trade filter 时，parser 可统一输出 trade 事件。
+
+### 升级到 v1.5.5
+
+v1.5.5 使用 crates.io 上的 `sol-parser-sdk 0.5.5`。底层 SDK 已将 LaunchLab 事件统一暴露为 `RaydiumLaunchlab*`；streamer 仍保留现有 `Bonk*` 事件结构以及 `Protocol::Bonk` / `Protocol::RaydiumLaunchpad` 兼容别名，同时把解析调用和上游 gRPC 事件过滤映射到新的 LaunchLab SDK variant。该版本也同步了 CLMM/CPMM/Orca account bridge、Meteora DAMM v2 initialize-pool、Meteora DBC 事件，以及客户端创建时的 parser warmup。
+
+### 升级到 v1.5.4
+
+v1.5.4 使用 crates.io 上的 `sol-parser-sdk 0.5.4`。Pump.fun `create` 和 `create_v2` 会统一投递为 canonical `PumpFunCreateTokenEvent`；订阅 `PumpFunCreateToken` 或 `PumpFunCreateV2Token` 任意一个，都能收到同一份完整 create-family 数据。该版本避免 gRPC log + instruction 双路径解析导致新 mint 回调重复，同时在 canonical create 事件上保留 create_v2 账户字段。
+
+### 升级到 v1.5.3
+
+v1.5.3 使用 crates.io 上的 `sol-parser-sdk 0.5.3`。该版本会通过 streamer bridge 保留真实的 Pump.fun v2 `ix_name`，改进 ShredStream 对 Pump.fun v2 短账户列表的 best-effort 解析，并让订阅 `PumpFunBuy` 或 `PumpFunBuyExactSolIn` 都能匹配兼容的 buy-family 事件。ShredStream 仍使用直接读取 Entry 的自动重连低延迟路径；回调应避免阻塞，`tx_index` 仍是 Entry 内 best-effort 索引。
+
+### 升级到 v1.5.2
+
+v1.5.2 使用 crates.io 上的 `sol-parser-sdk 0.5.2`。ShredStream 投递使用直接读取 Entry 并调用 SDK parser 的低延迟路径，支持自动重连，避免额外的队列消费任务并复用解析事件缓冲。ShredStream 的 `tx_index` 是 Entry 内 best-effort 索引，不是 Yellowstone 的 slot 级交易索引。direct-callback 路径中的用户回调运行在读流任务中，应避免阻塞操作。
+
+### 升级到 v1.5.1
+
+v1.5.1 使用 crates.io 上的 `sol-parser-sdk 0.5.1`。该版本改进 ShredStream 的 ALT 处理：ALT-loaded 账户会以默认账户占位，外层指令按 data/discriminator 尽量解析；同时增加队列满时的 dropped event 可观测性，并明确 CPI/inner-only 事件仍是 ShredStream 的固有限制。
+
+### 升级到 v1.5.0
+
+v1.5.0 使用 `sol-parser-sdk 0.5.0`，打通 Raydium CLMM 账户解析的 SDK bridge，并降低有序缓冲低延迟投递路径中的分配和搬移开销。`sol-parser-sdk 0.4.19` 和 `solana-streamer-sdk 1.4.14` 已由 v1.5.0 取代，因为新增公开 parser event variant 应放到 0.5 版本线。
+
+### 升级到 v1.4.14
+
+v1.4.14 已由 v1.5.0 取代。
+
+### 升级到 v1.4.13
+
+v1.4.13 使用 `sol-parser-sdk 0.4.18`，并按 Raydium CLMM 官方升级后 IDL 更新集成：当前 log-side event discriminator、官方 Swap/Liquidity/Create/Collect 事件布局、限价单事件、dynamic fee 相关事件，以及重塑后的 PoolState/TickState 账户结构。
+
+### 升级到 v1.4.12
+
+v1.4.12 使用 `sol-parser-sdk 0.4.17`，会把 legacy PumpFun SOL 的 `quote_mint` 归一为 Solscan SOL sentinel，同时保留真实 USDC quote mint 和 quote reserve 字段。Streamer bridge 与 merger 路径继续保持 Yellowstone gRPC 和 ShredStream 输出与 parser SDK 语义一致。
+
+新增可选能力：
+
+- `solana_streamer_sdk::parser_sdk` 重新导出原始 `sol-parser-sdk` crate。
+- `solana_streamer_sdk::sdk_bridge` 可将原始 SDK 事件适配回 streamer `DexEvent`。
+- `fetch_rpc_transaction_as_streamer_events` 和 `parse_encoded_rpc_transaction_as_streamer_events` 可将 RPC 交易解析为 streamer 事件。
+- `grpc::ClientConfig::order_mode` 支持 `Unordered`、`Ordered`、`StreamingOrdered` 和 `MicroBatch`。
+- `sdk-parse-zero-copy` 可启用 SDK zero-copy 解析后端。
+
+### 从 v0.5.x 迁移到 v1.x.x
+
+版本 1.0.0 引入了从基于 trait 的事件处理到基于 enum 的事件的重大架构变更。这提供了更好的类型安全性、改进的性能和更简单的代码模式。
+
+**主要变更：**
+
+1. **事件类型变更** - `Box<dyn UnifiedEvent>` → `DexEvent` 枚举
+2. **回调签名** - 回调现在接收具体的 `DexEvent` 而不是 trait 对象
+3. **事件匹配** - 使用标准 Rust `match` 而不是 `match_event!` 宏
+4. **元数据访问** - 事件属性现在通过 `.metadata()` 方法访问
+
+**快速迁移示例：**
+
+```rust
+// 旧版 (v0.5.x)
+let callback = |event: Box<dyn UnifiedEvent>| {
+    println!("Event: {:?}", event.event_type());
+};
+
+// 新版 (v1.x.x)
+let callback = |event: DexEvent| {
+    println!("Event: {:?}", event.metadata().event_type);
+};
+```

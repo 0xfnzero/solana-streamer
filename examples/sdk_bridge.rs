@@ -9,8 +9,9 @@ use solana_streamer_sdk::streaming::event_parser::common::{filter::EventTypeFilt
 
 fn main() {
     let streamer_filter = EventTypeFilter::include_only(vec![
-        EventType::PumpFunBuy,
-        EventType::PumpFunSell,
+        // Include unresolved Shred candidates as well as decoded buys/sells.
+        // Inspect parse_status and third_program before using amounts.
+        EventType::PumpFunTrade,
         EventType::TokenAccount,
     ]);
     let sdk_filter = sdk_bridge::event_type_filter_to_sdk(Some(&streamer_filter));
