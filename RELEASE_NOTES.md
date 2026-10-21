@@ -1,6 +1,14 @@
 # solana-streamer v5.0.0
 
-Released 2026-10-22. The Rust, Node.js, Python and Go parser packages use the same family version, 0.9.0. Streamer 5.0.0 and Shred 6.0.0 are separately versioned integrations.
+Released 2026-10-22. The Rust, Node.js, Python and Go parser packages use the same family version, 0.9.0. Streamer 5.0.0 and Shred 6.0.1 are separately versioned integrations.
+
+## Default stock pools / 默认股票代币池子
+
+Remove five pools from the default catalog: two have captured single-transaction withdrawals reducing both vault balances by at least 50%; four have less than $500 in USDC/WSOL-side reserves at the 2026-10-22 04:25 UTC+8 snapshot (one meets both criteria). Defaults now contain 58 stock pools across 33 mints; trading adds the SOL/USDC conversion pool for 59 pools total. COPX.US is no longer a default mint. See [the synchronized catalog notes](docs/STOCK_BRIDGE_SYNC.md) for addresses and evidence.
+
+This is a static catalog refresh, not continuous liquidity monitoring, certified executable depth, or an LP-lock guarantee. Explicit custom catalogs remain supported. No RPC or history scanning was added to parsing or trading hot paths.
+
+中文：默认目录剔除 5 个池子，涵盖整池双边储备单笔下降至少 50% 的历史记录，以及快照中 USDC/WSOL 一侧储备不足 500 美元的池子。保留 58 个股票池、33 个 mint；交易侧加 SOL/USDC 共 59 个池子。该目录为静态快照，不保证实时深度或流动性锁定。
 
 ## Changes / 更新
 
@@ -17,4 +25,4 @@ Subscribe to PumpFunTrade and inspect third_program and parse_status. Remove mat
 
 Version alignment does not imply identical APIs across languages. Offline fixtures validate captured cases, not current chain state or production latency. See README and docs/wrapped-pumpfun.md for the supported surface.
 
-Pins sol-parser-sdk =0.9.0 and forwards the simplified callback model. Update exhaustive streamer event matches when upgrading.
+Pins sol-parser-sdk =0.9.1 and forwards the simplified callback model. Update exhaustive streamer event matches when upgrading.
