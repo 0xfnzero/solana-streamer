@@ -936,7 +936,7 @@ mod tests {
 
     #[test]
     fn wrapped_pumpfun_provenance_survives_bridge() {
-        let source = sol_parser_sdk::wrapped_pumpfun_parser::ThirdProgram {
+        let source = sol_parser_sdk::core::events::RawInstructionPayload {
             program_id: solana_sdk::pubkey!("rapidV5DAKtecYzetwCNoxXWHpezjeg4hGt9BGiVcGW"),
             instruction_index: 3,
             instruction_data: vec![42],

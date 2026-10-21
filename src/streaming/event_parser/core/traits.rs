@@ -14,7 +14,6 @@ use crate::streaming::event_parser::protocols::pumpswap::events::*;
 use crate::streaming::event_parser::protocols::raydium_amm_v4::events::*;
 use crate::streaming::event_parser::protocols::raydium_clmm::events::*;
 use crate::streaming::event_parser::protocols::raydium_cpmm::events::*;
-use crate::streaming::event_parser::protocols::sol_parser_forward::events::RawInstructionEvent;
 use crate::streaming::event_parser::protocols::sol_parser_forward::events::{
     MeteoraDbcCurveCompleteEvent, MeteoraDbcInitializePoolEvent, MeteoraDbcSwapEvent,
     MeteoraDlmmAddLiquidityEvent, MeteoraDlmmClaimFeeEvent, MeteoraDlmmClosePositionEvent,
@@ -33,7 +32,6 @@ use std::fmt::Debug;
 /// Unified Event Enum - Replaces the trait-based approach with a type-safe enum
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum DexEvent {
-    RawInstructionEvent(RawInstructionEvent),
     // Bonk events
     BonkTradeEvent(BonkTradeEvent),
     BonkPoolCreateEvent(BonkPoolCreateEvent),
@@ -47,7 +45,6 @@ pub enum DexEvent {
     PumpFunCreateTokenEvent(PumpFunCreateTokenEvent),
     PumpFunCreateV2TokenEvent(PumpFunCreateV2TokenEvent),
     PumpFunTradeEvent(PumpFunTradeEvent),
-    PumpRouteIntentEvent(PumpRouteIntentEvent),
     PumpFunMigrateEvent(PumpFunMigrateEvent),
     PumpFeesCreateFeeSharingConfigEvent(PumpFeesCreateFeeSharingConfigEvent),
     PumpFeesInitializeFeeConfigEvent(PumpFeesInitializeFeeConfigEvent),
@@ -199,7 +196,6 @@ macro_rules! impl_dex_event_metadata {
 }
 
 impl_dex_event_metadata!(
-    RawInstructionEvent,
     PumpFunPostCompleteBuyEvent,
     PumpFunSweepBondingCurveFeeEvent,
     PumpFunCompleteEvent,
@@ -216,7 +212,6 @@ impl_dex_event_metadata!(
     PumpFunCreateTokenEvent,
     PumpFunCreateV2TokenEvent,
     PumpFunTradeEvent,
-    PumpRouteIntentEvent,
     PumpFunMigrateEvent,
     PumpFeesCreateFeeSharingConfigEvent,
     PumpFeesInitializeFeeConfigEvent,

@@ -23,59 +23,6 @@ pub(crate) fn convert_parser_event(
     recv_wall_us: i64,
 ) -> Option<DexEvent> {
     match ev {
-        PbDexEvent::RawInstruction(e) => {
-            use crate::streaming::event_parser::protocols::sol_parser_forward::events::RawInstructionEvent;
-            let metadata = adapt_pm(
-                e.metadata,
-                bt,
-                recv_wall_us,
-                ProtocolType::Common,
-                EventType::RawInstruction,
-                e.program_id,
-            );
-            Some(DexEvent::RawInstructionEvent(RawInstructionEvent {
-                dexes: e.dexes,
-                metadata,
-                program_id: e.program_id,
-                instruction_index: e.instruction_index,
-                accounts: e.accounts,
-                account_indices: e.account_indices,
-                instruction_data: e.instruction_data,
-            }))
-        }
-        PbDexEvent::PumpRouteIntent(e) => {
-            use crate::streaming::event_parser::protocols::pumpfun::events::{
-                PumpRouteIntentEvent, PumpRouteKind,
-            };
-            let protocol = if e.kind == PumpRouteKind::MultiHopSwap {
-                ProtocolType::PumpSwap
-            } else {
-                ProtocolType::PumpFun
-            };
-            let metadata = adapt_pm(
-                e.metadata,
-                bt,
-                recv_wall_us,
-                protocol,
-                EventType::PumpRouteIntent,
-                e.program,
-            );
-            Some(DexEvent::PumpRouteIntentEvent(PumpRouteIntentEvent {
-                metadata,
-                kind: e.kind,
-                is_buy: e.is_buy,
-                ix_name: e.ix_name,
-                program: e.program,
-                instruction_index: e.instruction_index,
-                user: e.user,
-                input_account: e.input_account,
-                output_account: e.output_account,
-                amount_in: e.amount_in,
-                min_amount_out: e.min_amount_out,
-                hops: e.hops,
-                instruction_data: e.instruction_data,
-            }))
-        }
         PbDexEvent::PumpFunPostCompleteBuy(e) => {
             let meta = adapt_pm(
                 e.metadata.clone(),

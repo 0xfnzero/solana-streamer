@@ -90,7 +90,6 @@ pub enum EventType {
     PumpFunCreateToken,
     PumpFunCreateV2Token,
     PumpFunTrade,
-    PumpRouteIntent,
     PumpFunBuy,
     PumpFunBuyExactSolIn,
     PumpFunSell,
@@ -234,7 +233,6 @@ pub enum EventType {
     // Appended to preserve existing Borsh enum discriminants.
     TransactionCost,
     RaydiumCpmmCollectCreatorFee,
-    RawInstruction,
 }
 
 pub const ACCOUNT_EVENT_TYPES: &[EventType] = &[

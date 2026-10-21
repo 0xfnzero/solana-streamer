@@ -1,6 +1,5 @@
 use crate::streaming::event_parser::common::EventMetadata;
 use serde::{Deserialize, Serialize};
-pub use sol_parser_sdk::core::events::{RawInstructionDex, RawInstructionDexType};
 use solana_sdk::pubkey::Pubkey;
 
 /// `sol-parser-sdk` 错误占位（无有效 EventMetadata 字段）
@@ -482,16 +481,4 @@ pub struct MeteoraDlmmClaimFeeEvent {
     pub owner: Pubkey,
     pub fee_x: u64,
     pub fee_y: u64,
-}
-/// Outer instruction bytes; no claim about internal CPI calls or trade direction.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RawInstructionEvent {
-    #[serde(default)]
-    pub dexes: Vec<RawInstructionDex>,
-    pub metadata: EventMetadata,
-    pub program_id: Pubkey,
-    pub instruction_index: usize,
-    pub accounts: Vec<Option<Pubkey>>,
-    pub account_indices: Vec<u8>,
-    pub instruction_data: Vec<u8>,
 }
