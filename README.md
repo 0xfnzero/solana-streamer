@@ -1,19 +1,44 @@
 <div align="center">
-    <h1>Solana Streamer</h1>
-    <p>Rust event subscriptions built on sol-parser-sdk</p>
-    <a href="https://crates.io/crates/solana-streamer-sdk"><img src="https://img.shields.io/crates/v/solana-streamer-sdk.svg" alt="solana-streamer-sdk"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+    <h1>🌊 Solana Streamer</h1>
+    <h3><em>Real-time event streaming from Solana DEX trading programs.</em></h3>
 </div>
 
 <p align="center">
-    <a href="README.md">English</a> · <a href="README_CN.md">中文</a> ·
-    <a href="#usage-examples">Examples</a> ·
-    <a href="docs/wrapped-pumpfun.md">Documentation</a> ·
-    <a href="RELEASE_NOTES.md">Release and migration</a> ·
-    <a href="#related-sdks">Related SDKs</a>
+    <strong>A lightweight Rust streaming facade over sol-parser-sdk, with low-latency subscriptions and a stable bot-facing API.</strong>
 </p>
 
-Manage gRPC and ShredStream subscriptions, event filters and dynamic subscriptions while preserving parser provenance and metadata.
+<p align="center">
+    <a href="https://crates.io/crates/solana-streamer-sdk">
+        <img src="https://img.shields.io/crates/v/solana-streamer-sdk.svg" alt="Crates.io">
+    </a>
+    <a href="https://docs.rs/solana-streamer-sdk">
+        <img src="https://docs.rs/solana-streamer-sdk/badge.svg" alt="Documentation">
+    </a>
+    <a href="https://github.com/0xfnzero/solana-streamer/blob/main/LICENSE">
+        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+    </a>
+    <a href="https://github.com/0xfnzero/solana-streamer">
+        <img src="https://img.shields.io/github/stars/0xfnzero/solana-streamer?style=social" alt="GitHub stars">
+    </a>
+    <a href="https://github.com/0xfnzero/solana-streamer/network">
+        <img src="https://img.shields.io/github/forks/0xfnzero/solana-streamer?style=social" alt="GitHub forks">
+    </a>
+</p>
+
+<p align="center">
+    <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
+    <img src="https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Solana">
+    <img src="https://img.shields.io/badge/Streaming-FF6B6B?style=for-the-badge&logo=livestream&logoColor=white" alt="Real-time Streaming">
+    <img src="https://img.shields.io/badge/gRPC-4285F4?style=for-the-badge&logo=grpc&logoColor=white" alt="gRPC">
+</p>
+
+<p align="center">
+    <a href="https://github.com/0xfnzero/solana-streamer/blob/main/README_CN.md">中文</a> |
+    <a href="https://github.com/0xfnzero/solana-streamer/blob/main/README.md">English</a> |
+    <a href="https://fnzero.dev/">Website</a> |
+    <a href="https://t.me/fnzero_group">Telegram</a> |
+    <a href="https://discord.gg/vuazbGkqQE">Discord</a>
+</p>
 
 Current version: **5.0.0**. Read the [migration notes](RELEASE_NOTES.md) before upgrading; see the [changelog](CHANGELOG.md) for historical changes.
 
