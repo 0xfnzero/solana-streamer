@@ -23,3 +23,8 @@ Cargo.lock
 .cargo/
 .claude/
 .DS_Store
+
+# Share portable Cargo build settings; keep other local Cargo files private.
+!/.cargo/
+/.cargo/*
+!/.cargo/config.toml
