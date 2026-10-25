@@ -52,14 +52,27 @@ pub(crate) fn pumpfun_create_token_from_parser(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
-        quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
+        quote_mint: c.quote_mint,
         quote_vault: c.quote_vault,
         quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
         creator_fee_bps: c.creator_fee_bps,
         is_holder_reward: c.is_holder_reward,
         depth: c.depth,
-        ix_name: "create".to_string(),
+        ix_name: if c.ix_name.is_empty() { "create".into() } else { c.ix_name },
+        mint_authority: c.mint_authority,
+        associated_bonding_curve: c.associated_bonding_curve,
+        global: c.global,
+        system_program: c.system_program,
+        associated_token_program: c.associated_token_program,
+        mayhem_program_id: c.mayhem_program_id,
+        global_params: c.global_params,
+        sol_vault: c.sol_vault,
+        mayhem_state: c.mayhem_state,
+        mayhem_token_vault: c.mayhem_token_vault,
+        event_authority: c.event_authority,
+        program: c.program,
+        observed_fee_recipient: c.observed_fee_recipient,
         ..Default::default()
     }
 }
@@ -85,7 +98,7 @@ pub(crate) fn pumpfun_create_token_from_parser_v2(
         token_program: c.token_program,
         is_mayhem_mode: c.is_mayhem_mode,
         is_cashback_enabled: c.is_cashback_enabled,
-        quote_mint: normalize_pumpfun_quote_mint(c.quote_mint),
+        quote_mint: c.quote_mint,
         quote_vault: c.quote_vault,
         quote_token_program: c.quote_token_program,
         virtual_quote_reserves: c.virtual_quote_reserves,
@@ -776,7 +789,7 @@ pub(crate) fn pumpfun_trade_from_parser_with_event_type(
         buyback_fee_basis_points: t.buyback_fee_basis_points,
         buyback_fee: t.buyback_fee,
         shareholders: t.shareholders.into_iter().map(pump_fees_shareholder_from_parser).collect(),
-        quote_mint: normalize_pumpfun_quote_mint(t.quote_mint),
+        quote_mint: t.quote_mint,
         quote_amount: t.quote_amount,
         virtual_quote_reserves: t.virtual_quote_reserves,
         creator_fee_unclaimed: t.creator_fee_unclaimed,
@@ -896,7 +909,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pumpfun_default_quote_mint_uses_solscan_sol_sentinel() {
+    fn pumpfun_unknown_quote_mint_stays_unknown() {
         let ev = pumpfun_trade_from_parser_with_event_type(
             sol_parser_sdk::core::events::PumpFunTradeEvent { is_buy: true, ..Default::default() },
             None,
@@ -906,7 +919,7 @@ mod tests {
 
         match ev {
             DexEvent::PumpFunTradeEvent(t) => {
-                assert_eq!(t.quote_mint.to_string(), "So11111111111111111111111111111111111111111");
+                assert_eq!(t.quote_mint, Pubkey::default());
             }
             _ => panic!("expected PumpFunTradeEvent"),
         }
