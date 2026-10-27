@@ -305,9 +305,9 @@ account value is also available from
 
 ## Trade provenance and parsing boundaries
 
-gRPC/RPC use supplied execution metadata and actual CPI instructions; Shred sees outer instructions and locally resolved accounts. An unknown third-party instruction referencing Pump.fun in its own accounts can produce a `PumpFunTrade` candidate with the original input in `third_program` and `Unresolved` status. This does not establish execution, direction or amounts. Buy/sell-only filters do not treat an unknown direction as a fill.
+gRPC/RPC use supplied execution metadata and actual CPI instructions; Shred sees outer instructions and locally resolved accounts. An unknown third-party instruction referencing Pump.fun in its own accounts can produce a `PumpFunTrade` candidate with the original input in `third_program`. This does not establish execution, direction or amounts. Buy/sell-only filters do not treat an unknown direction as a fill.
 
-The parsing hot path performs no RPC. Check `parse_status` before interpreting defaults as amounts. Original account order and instruction bytes remain in `third_program`; transaction position and receive time remain in event metadata. A local Shred index is not confirmed slot-wide execution order. See [wrapped transactions](docs/wrapped-pumpfun.md).
+The parsing hot path performs no RPC. Missing fields retain defaults and must not be interpreted as actual zero fills. Original account order and instruction bytes remain in `third_program`; transaction position and receive time remain in event metadata. A local Shred index is not confirmed slot-wide execution order. See [wrapped transactions](docs/wrapped-pumpfun.md).
 
 Known Pump.fun create/trade instructions keep their callbacks with unresolved ALT accounts; unknown addresses stay unknown. The bridge preserves `create_v2`, V2/V3 method names, original creation accounts and official `multi_hop_swap` provenance. Run `cargo run --example rpc_transaction_replay` to compare the reported signed transactions through the static Shred and execution facades offline. Shred route budgets are not per-hop fill amounts; execution metadata supplies actual quote/token amounts.
 

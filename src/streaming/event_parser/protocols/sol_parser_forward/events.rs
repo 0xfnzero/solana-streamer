@@ -15,8 +15,6 @@ pub struct ParserSdkErrorEvent {
 pub struct OrcaWhirlpoolSwapEvent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
-    #[serde(default)]
-    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     pub whirlpool: Pubkey,
     pub input_amount: u64,
@@ -255,8 +253,6 @@ pub struct OrcaWhirlpoolsConfigAccount {
 pub struct MeteoraDbcSwapEvent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
-    #[serde(default)]
-    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     pub pool: Pubkey,
     pub config: Pubkey,
@@ -319,8 +315,6 @@ pub struct MeteoraDbcCurveCompleteEvent {
 pub struct MeteoraPoolsSwapEvent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
-    #[serde(default)]
-    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     pub in_amount: u64,
     pub out_amount: u64,
@@ -380,8 +374,6 @@ pub struct MeteoraPoolsSetPoolFeesEvent {
 pub struct MeteoraDlmmSwapEvent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
-    #[serde(default)]
-    pub parse_status: sol_parser_sdk::core::events::TradeParseStatus,
     pub metadata: EventMetadata,
     #[serde(default)]
     pub token_x_mint: Pubkey,

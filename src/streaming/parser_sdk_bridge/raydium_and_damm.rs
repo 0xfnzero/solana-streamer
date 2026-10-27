@@ -41,7 +41,6 @@ pub(crate) fn meteora_damm_v2_swap_from_parser(
 ) -> MeteoraDammV2SwapEvent {
     MeteoraDammV2SwapEvent {
         third_program: e.third_program,
-        parse_status: e.parse_status,
         metadata: meta,
         pool: e.pool,
         trade_direction: e.trade_direction,
@@ -121,7 +120,6 @@ pub(crate) fn raydium_cpmm_swap_from_parser(
 ) -> RaydiumCpmmSwapEvent {
     RaydiumCpmmSwapEvent {
         third_program: e.third_program,
-        parse_status: e.parse_status,
         metadata: meta,
         input_vault_before: e.input_vault_before,
         output_vault_before: e.output_vault_before,
@@ -309,7 +307,6 @@ pub(crate) fn raydium_amm_v4_swap_from_parser(
 ) -> RaydiumAmmV4SwapEvent {
     RaydiumAmmV4SwapEvent {
         third_program: e.third_program,
-        parse_status: e.parse_status,
         metadata: meta,
         amount_in: e.amount_in,
         minimum_amount_out: e.minimum_amount_out,
@@ -460,7 +457,6 @@ pub(crate) fn raydium_clmm_swap_from_parser(
 ) -> RaydiumClmmSwapEvent {
     RaydiumClmmSwapEvent {
         third_program: e.third_program,
-        parse_status: e.parse_status,
         metadata: meta,
         amount: e.amount,
         other_amount_threshold: e.other_amount_threshold,

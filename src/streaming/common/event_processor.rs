@@ -482,10 +482,6 @@ mod tests {
             let DexEvent::PumpFunTradeEvent(candidate) = &events[0] else {
                 panic!("missing wrapper candidate")
             };
-            assert_eq!(
-                candidate.parse_status,
-                sol_parser_sdk::core::events::PumpFunParseStatus::Unresolved
-            );
             let raw = candidate.third_program.as_ref().unwrap();
             let ix = &tx.message.instructions()[raw.instruction_index];
             assert_eq!(raw.instruction_data, ix.data);

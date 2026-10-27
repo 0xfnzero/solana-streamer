@@ -27,13 +27,11 @@ mod raydium_and_damm;
 #[cfg(test)]
 mod provenance_tests {
     use super::convert_parser_event;
-    use sol_parser_sdk::core::events::{
-        DexEvent as ParserEvent, RawInstructionPayload, TradeParseStatus,
-    };
+    use sol_parser_sdk::core::events::{DexEvent as ParserEvent, RawInstructionPayload};
     use solana_sdk::pubkey::Pubkey;
 
     #[test]
-    fn every_supported_trade_bridge_preserves_source_and_status() {
+    fn every_supported_trade_bridge_preserves_source() {
         let source = RawInstructionPayload {
             program_id: Pubkey::new_unique(),
             instruction_index: 4,
@@ -44,90 +42,73 @@ mod provenance_tests {
         for event in [
             ParserEvent::PumpFunTrade(sol_parser_sdk::core::events::PumpFunTradeEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpFunBuy(sol_parser_sdk::core::events::PumpFunTradeEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpFunSell(sol_parser_sdk::core::events::PumpFunTradeEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpFunBuyExactSolIn(sol_parser_sdk::core::events::PumpFunTradeEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpSwapTrade(sol_parser_sdk::core::events::PumpSwapTradeEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpSwapBuy(sol_parser_sdk::core::events::PumpSwapBuyEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::PumpSwapSell(sol_parser_sdk::core::events::PumpSwapSellEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::RaydiumLaunchlabTrade(
                 sol_parser_sdk::core::events::RaydiumLaunchlabTradeEvent {
                     third_program: Some(source.clone()),
-                    parse_status: TradeParseStatus::ExecutionConfirmed,
                     ..Default::default()
                 },
             ),
             ParserEvent::RaydiumCpmmSwap(sol_parser_sdk::core::events::RaydiumCpmmSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::RaydiumClmmSwap(sol_parser_sdk::core::events::RaydiumClmmSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::RaydiumAmmV4Swap(sol_parser_sdk::core::events::RaydiumAmmV4SwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::OrcaWhirlpoolSwap(sol_parser_sdk::core::events::OrcaWhirlpoolSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::MeteoraPoolsSwap(sol_parser_sdk::core::events::MeteoraPoolsSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::MeteoraDammV2Swap(sol_parser_sdk::core::events::MeteoraDammV2SwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::MeteoraDlmmSwap(sol_parser_sdk::core::events::MeteoraDlmmSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
             ParserEvent::MeteoraDbcSwap(sol_parser_sdk::core::events::MeteoraDbcSwapEvent {
                 third_program: Some(source.clone()),
-                parse_status: TradeParseStatus::ExecutionConfirmed,
                 ..Default::default()
             }),
         ] {
             let converted = convert_parser_event(event, None, 123).expect("supported trade");
             assert_eq!(converted.third_program(), Some(&source));
-            assert_eq!(converted.trade_parse_status(), Some(TradeParseStatus::ExecutionConfirmed));
         }
     }
 }

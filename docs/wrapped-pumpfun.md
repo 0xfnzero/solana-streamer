@@ -1,7 +1,6 @@
 # Wrapped Pump.fun transactions
 
-The streamer preserves `PumpFunTradeEvent.third_program`, `parse_status` and
-transaction metadata from sol-parser-sdk. Subscribe to the PumpFunTrade family
+The streamer preserves `PumpFunTradeEvent.third_program` and transaction metadata from sol-parser-sdk. Subscribe to the PumpFunTrade family
 to receive unresolved Shred candidates as well as gRPC trades.
 
 Shred candidates only establish that an unknown outer instruction references

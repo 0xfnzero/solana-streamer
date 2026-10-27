@@ -152,9 +152,6 @@ pub struct PumpFunTradeEvent {
     pub third_program: Option<sol_parser_sdk::core::events::RawInstructionPayload>,
     #[borsh(skip)]
     #[serde(default)]
-    pub parse_status: sol_parser_sdk::core::events::PumpFunParseStatus,
-    #[borsh(skip)]
-    #[serde(default)]
     pub creator_fee_unclaimed: u64,
     #[borsh(skip)]
     pub metadata: EventMetadata,
