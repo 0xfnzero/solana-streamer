@@ -92,6 +92,7 @@ fn print_trade(e: &PumpFunTradeEvent, now_us: i64) {
 }
 
 fn print_create_legacy(e: &PumpFunCreateTokenEvent, now_us: i64) {
+    println!("Transaction version: {:?}", e.transaction_version);
     let latency_us = now_us - e.metadata.recv_us;
     println!(
         "│ CREATE | sig={:.8}.. | name={} symbol={} | mint={:.8}.. | latency={} μs",

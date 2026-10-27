@@ -7,6 +7,10 @@ use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Gl
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunCreateTokenEvent {
+    /// Transaction message version from gRPC/RPC context, independent of create/create_v2.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub transaction_version: Option<sol_parser_sdk::grpc::YellowstoneMessageVersion>,
     #[borsh(skip)]
     #[serde(default)]
     pub depth: u8,
