@@ -533,7 +533,11 @@ mod tests {
     async fn shred_transaction_preserves_unknown_tx_index() {
         let event = parse_single_shred_create(None).await;
 
-        assert!(matches!(event, DexEvent::PumpFunCreateTokenEvent(_)));
+        let DexEvent::PumpFunCreateTokenEvent(create) = &event else { panic!("create callback") };
+        assert_eq!(
+            create.transaction_version,
+            Some(sol_parser_sdk::YellowstoneMessageVersion::V0)
+        );
         assert_eq!(event.metadata().tx_index, None);
     }
 

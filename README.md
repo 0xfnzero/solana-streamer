@@ -301,7 +301,7 @@ instruction args, while log-only `CreatePoolEvent` payloads keep the default
 account value is also available from
 `PumpSwapPoolAccountEvent.pool.is_cashback_coin`.
 
-`PumpFunCreateTokenEvent.transaction_version` reports the transaction message version as `Some(YellowstoneMessageVersion::Legacy)`, `V0` or `V1` on gRPC/RPC. JSON uses `"legacy"`, `"v0"` and `"v1"`. It remains `None` without transaction context (including standalone Shred parsing). This is independent of the Pump instruction name in `ix_name`.
+`PumpFunCreateTokenEvent.transaction_version` reports the transaction message version as `Some(YellowstoneMessageVersion::Legacy)`, `V0` or `V1` on Shred/gRPC/RPC. JSON uses `"legacy"`, `"v0"` and `"v1"`. It remains `None` without transaction context (for example, parsing an isolated event log). This is independent of the Pump instruction name in `ix_name`.
 
 <a id="trade-provenance-and-parsing-boundaries"></a>
 
