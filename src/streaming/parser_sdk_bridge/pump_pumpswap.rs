@@ -36,6 +36,7 @@ pub(crate) fn pumpfun_create_token_from_parser(
     meta: EventMetadata,
 ) -> PumpFunCreateTokenEvent {
     PumpFunCreateTokenEvent {
+        alt_addresses: c.alt_addresses,
         transaction_version: c.transaction_version,
         metadata: meta,
         name: c.name,
@@ -83,6 +84,7 @@ pub(crate) fn pumpfun_create_token_from_parser_v2(
     meta: EventMetadata,
 ) -> PumpFunCreateTokenEvent {
     PumpFunCreateTokenEvent {
+        alt_addresses: c.alt_addresses,
         transaction_version: c.transaction_version,
         metadata: meta,
         name: c.name,

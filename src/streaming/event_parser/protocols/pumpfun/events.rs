@@ -7,6 +7,11 @@ use crate::streaming::event_parser::protocols::pumpfun::types::{BondingCurve, Gl
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunCreateTokenEvent {
+    /// ALT account keys referenced by the whole transaction, in message order.
+    /// None when there are no lookups or transaction context is unavailable.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub alt_addresses: Option<Vec<Pubkey>>,
     /// Transaction message version from Shred/gRPC/RPC context, independent of create/create_v2.
     #[borsh(skip)]
     #[serde(default)]
@@ -91,6 +96,11 @@ pub struct PumpFunCreateTokenEvent {
 /// CreateV2 事件：与 create_v2 指令 16 个账户一致（见 parser 注释）。
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshDeserialize)]
 pub struct PumpFunCreateV2TokenEvent {
+    /// ALT account keys referenced by the whole transaction, in message order.
+    /// None when there are no lookups or transaction context is unavailable.
+    #[borsh(skip)]
+    #[serde(default)]
+    pub alt_addresses: Option<Vec<Pubkey>>,
     #[borsh(skip)]
     pub metadata: EventMetadata,
     pub name: String,

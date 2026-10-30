@@ -339,6 +339,7 @@ mod tests {
         let quote_vault = Pubkey::new_unique();
         let quote_token_program = Pubkey::new_unique();
         let c = PbPumpCreateV2 {
+            alt_addresses: Some(vec![global, event_authority]),
             transaction_version: Some(sol_parser_sdk::YellowstoneMessageVersion::V1),
             metadata: EventMetadata {
                 signature: Signature::default(),
@@ -366,6 +367,7 @@ mod tests {
         let ev = convert_parser_event(PbDexEvent::PumpFunCreateV2(c), None, 999).expect("convert");
         match ev {
             DexEvent::PumpFunCreateTokenEvent(st) => {
+                assert_eq!(st.alt_addresses, Some(vec![global, event_authority]));
                 assert_eq!(
                     st.transaction_version,
                     Some(sol_parser_sdk::YellowstoneMessageVersion::V1)

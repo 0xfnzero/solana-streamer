@@ -23,7 +23,7 @@ sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
 
 [dependencies]
 # Unreleased parser API; replace the Git pin with the next registry release before publishing.
-sol-parser-sdk = { version = "=0.10.0", git = "https://github.com/0xfnzero/sol-parser-sdk", rev = "0e32287e4056113ff047e2199dc1b5e8289e8f98", default-features = false }
+sol-parser-sdk = { version = "=0.10.0", git = "https://github.com/0xfnzero/sol-parser-sdk", rev = "e3e8d6620e2a128c71d5c37cde219a38d438c73e", default-features = false }
 solana-sdk = "=4.0.1"
 solana-client = "=4.2.2"
 solana-transaction-status = { version = "=4.2.2", features = ["agave-unstable-api"] }

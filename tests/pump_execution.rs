@@ -27,6 +27,10 @@ async fn reported_alt_creates_and_multi_hop_survive_the_streamer_facade() {
                 serde_json::from_value(case["wire_rpc"].clone()).unwrap();
             let signed = rpc.transaction.transaction.decode().unwrap();
             signed.verify_and_hash_message().unwrap();
+            let expected_alt_addresses =
+                signed.message.address_table_lookups().filter(|lookups| !lookups.is_empty()).map(
+                    |lookups| lookups.iter().map(|lookup| lookup.account_key).collect::<Vec<_>>(),
+                );
             let captured = Arc::new(Mutex::new(Vec::new()));
             let output = captured.clone();
             process_shred_transaction(
@@ -45,6 +49,7 @@ async fn reported_alt_creates_and_multi_hop_survive_the_streamer_facade() {
             };
             let DexEvent::PumpFunTradeEvent(trade) = &events[1] else { panic!("trade missing") };
             assert_eq!(create.ix_name, "create_v2");
+            assert_eq!(create.alt_addresses, expected_alt_addresses);
             assert_eq!(create.mint, trade.mint);
             assert!(trade.is_created_buy && trade.is_buy);
             for event in &*events {
@@ -100,6 +105,10 @@ async fn reported_alt_creates_and_multi_hop_survive_the_streamer_facade() {
                         ..Default::default()
                     }, &[Protocol::PumpFun], Some(&filter), None);
                 for executed in [rpc_events, grpc_events] {
+                    let DexEvent::PumpFunCreateTokenEvent(c) = &executed[0] else {
+                        panic!("create event")
+                    };
+                    assert_eq!(c.alt_addresses, expected_alt_addresses);
                     assert!(
                         matches!(&executed[0], DexEvent::PumpFunCreateTokenEvent(c) if c.ix_name == "create_v2"),
                         "{} mode {mode}: {:?}",

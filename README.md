@@ -303,6 +303,22 @@ account value is also available from
 
 `PumpFunCreateTokenEvent.transaction_version` reports the transaction message version as `Some(YellowstoneMessageVersion::Legacy)`, `V0` or `V1` on Shred/gRPC/RPC. JSON uses `"legacy"`, `"v0"` and `"v1"`. It remains `None` without transaction context (for example, parsing an isolated event log). This is independent of the Pump instruction name in `ix_name`.
 
+Pump.fun creation events expose `alt_addresses: Option<Vec<Pubkey>>`: only the
+`MessageAddressTableLookup.account_key` values for the whole transaction, in
+message order, including repeated keys. This is not the list of loaded addresses
+or a claim that every table is used by the creation instruction. It is `None`
+when there are no lookups or no transaction context. Reading it requires no ALT
+resolution or RPC; use it to prioritize cache warming outside the receive task.
+Only creation events with nonempty lookups allocate a list.
+
+```rust
+if let Some(tables) = &create.alt_addresses {
+    for address in tables {
+        println!("ALT table: {address}");
+    }
+}
+```
+
 <a id="trade-provenance-and-parsing-boundaries"></a>
 
 ## Trade provenance and parsing boundaries

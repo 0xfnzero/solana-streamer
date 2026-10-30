@@ -283,6 +283,20 @@ log-only 的 `CreatePoolEvent` payload 因为 IDL 不包含该字段，会保持
 
 `PumpFunCreateTokenEvent.transaction_version` 在 Shred/gRPC/RPC 路径下表示交易消息版本：`Some(YellowstoneMessageVersion::Legacy)`、`V0` 或 `V1`，JSON 分别为 `"legacy"`、`"v0"`、`"v1"`。缺少交易上下文时（例如单独解析一条事件日志）为 `None`。该字段与 `ix_name` 表示的 Pump 指令版本相互独立。
 
+Pump.fun 创建事件提供 `alt_addresses: Option<Vec<Pubkey>>`，仅包含整笔交易的
+`MessageAddressTableLookup.account_key`，保留消息顺序和重复项。它不是表内加载的
+账户列表，也不代表每张表都用于创建指令；没有 ALT 或缺少交易上下文时为 `None`。
+读取该字段无需展开 ALT，也不调用 RPC；使用者可据此在接收任务之外安排缓存预热。
+仅带非空 ALT 列表的创建事件会分配列表。
+
+```rust
+if let Some(tables) = &create.alt_addresses {
+    for address in tables {
+        println!("ALT table: {address}");
+    }
+}
+```
+
 <a id="交易来源与解析边界"></a>
 
 ## 交易来源与解析边界
