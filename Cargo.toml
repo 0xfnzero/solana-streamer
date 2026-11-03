@@ -1,6 +1,6 @@
 [package]
 name = "solana-streamer-sdk"
-version = "5.0.1"
+version = "6.0.0"
 edition = "2021"
 rust-version = "1.91"
 authors = ["William <byteblock6@gmail.com>", "sgxiang <sgxiang@gmail.com>", "wei <1415121722@qq.com>"]
@@ -22,8 +22,7 @@ sdk-perf-stats = ["sol-parser-sdk/perf-stats"]
 sdk-ultra-perf = ["sol-parser-sdk/ultra-perf"]
 
 [dependencies]
-# Unreleased parser API; replace the Git pin with the next registry release before publishing.
-sol-parser-sdk = { version = "=0.10.0", git = "https://github.com/0xfnzero/sol-parser-sdk", rev = "e3e8d6620e2a128c71d5c37cde219a38d438c73e", default-features = false }
+sol-parser-sdk = { version = "=0.11.0", default-features = false }
 solana-sdk = "=4.0.1"
 solana-client = "=4.2.2"
 solana-transaction-status = { version = "=4.2.2", features = ["agave-unstable-api"] }
